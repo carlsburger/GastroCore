@@ -1107,7 +1107,78 @@ async def send_test_email_endpoint(
     )
     
     return result
-    return logs
+
+
+# ============== DATA IMPORT (Sprint: Data Onboarding) ==============
+@api_router.post("/staff/import", tags=["Admin"])
+async def import_staff_endpoint(
+    data: str = None,
+    format: str = "json",
+    override: bool = False,
+    user: dict = Depends(require_admin)
+):
+    """
+    Import staff members from JSON or CSV
+    
+    - format: "json" or "csv"
+    - override: If true, update existing fields even if not empty
+    - data: JSON array or CSV text
+    """
+    if not data:
+        raise HTTPException(status_code=400, detail="Keine Daten übermittelt")
+    
+    if format.lower() == "csv":
+        result = await import_staff_from_csv(data, override)
+    else:
+        try:
+            json_data = json.loads(data)
+            if not isinstance(json_data, list):
+                json_data = [json_data]
+            result = await import_staff_from_json(json_data, override)
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail=f"Ungültiges JSON: {str(e)}")
+    
+    # Audit log
+    await create_audit_log(
+        actor=user,
+        entity="staff_import",
+        entity_id="batch",
+        action="import",
+        after={"created": result["created"], "updated": result["updated"], "skipped": result["skipped"]}
+    )
+    
+    return result
+
+
+@api_router.post("/import/carlsburg", tags=["Admin"])
+async def import_carlsburg_endpoint(
+    mode: str = "dry_run",
+    user: dict = Depends(require_admin)
+):
+    """
+    Import content from carlsburg.de (predefined data)
+    
+    - mode: "dry_run" (preview only) or "apply" (actually import)
+    """
+    if mode not in ["dry_run", "apply"]:
+        raise HTTPException(status_code=400, detail="Mode must be 'dry_run' or 'apply'")
+    
+    result = await import_predefined_carlsburg_data(mode)
+    
+    if mode == "apply":
+        # Audit log
+        await create_audit_log(
+            actor=user,
+            entity="carlsburg_import",
+            entity_id="batch",
+            action="import",
+            after={
+                "veranstaltungen": result["veranstaltungen"],
+                "aktionen": result["aktionen"]
+            }
+        )
+    
+    return result
 
 
 # ============== PDF EXPORT ==============
