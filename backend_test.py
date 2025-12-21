@@ -1305,6 +1305,506 @@ class GastroCoreAPITester:
         
         return settings_success
 
+    def test_sprint4_events_authentication(self):
+        """Test Sprint 4: Events Module Authentication"""
+        print("\n🎭 Testing Events Module Authentication...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Events Authentication", False, "Admin token not available")
+            return False
+        
+        auth_success = True
+        
+        # Test admin access to events
+        result = self.make_request("GET", "events", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("Admin access to /api/events", True)
+        else:
+            self.log_test("Admin access to /api/events", False, f"Status: {result['status_code']}")
+            auth_success = False
+        
+        # Test schichtleiter access to events
+        if "schichtleiter" in self.tokens:
+            result = self.make_request("GET", "events", token=self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("Schichtleiter access to /api/events", True)
+            else:
+                self.log_test("Schichtleiter access to /api/events", False, f"Status: {result['status_code']}")
+                auth_success = False
+        
+        return auth_success
+
+    def test_sprint4_events_crud(self):
+        """Test Sprint 4: Events CRUD Operations"""
+        print("\n🎪 Testing Events CRUD Operations...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Events CRUD", False, "Admin token not available")
+            return False
+        
+        events_success = True
+        
+        # 1. GET /api/events (list all events)
+        result = self.make_request("GET", "events", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            events = result["data"]
+            self.log_test("GET /api/events", True, f"Retrieved {len(events)} events")
+            
+            # Store existing events for later tests
+            if events:
+                for event in events:
+                    if event.get("booking_mode") == "ticket_only":
+                        self.test_data["kabarett_event_id"] = event["id"]
+                    elif event.get("booking_mode") == "reservation_with_preorder":
+                        self.test_data["gaense_event_id"] = event["id"]
+        else:
+            self.log_test("GET /api/events", False, f"Status: {result['status_code']}")
+            events_success = False
+        
+        # 2. Create new event (draft status)
+        event_data = {
+            "title": "Test Event - Automated Testing",
+            "description": "Test event created by automated testing",
+            "start_datetime": "2025-03-15T19:00:00",
+            "end_datetime": "2025-03-15T22:00:00",
+            "capacity_total": 50,
+            "status": "draft",
+            "booking_mode": "ticket_only",
+            "pricing_mode": "fixed_ticket_price",
+            "ticket_price": 25.00,
+            "currency": "EUR",
+            "requires_payment": False
+        }
+        
+        result = self.make_request("POST", "events", event_data, self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            test_event_id = result["data"]["id"]
+            self.test_data["test_event_id"] = test_event_id
+            self.log_test("POST /api/events (create)", True, f"Event created with ID: {test_event_id}")
+        else:
+            self.log_test("POST /api/events (create)", False, f"Status: {result['status_code']}")
+            events_success = False
+            return events_success
+        
+        # 3. GET /api/events/{id} (get single event)
+        result = self.make_request("GET", f"events/{test_event_id}", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            event = result["data"]
+            if event.get("title") == "Test Event - Automated Testing":
+                self.log_test("GET /api/events/{id}", True, f"Retrieved event: {event.get('title')}")
+            else:
+                self.log_test("GET /api/events/{id}", False, "Event data mismatch")
+                events_success = False
+        else:
+            self.log_test("GET /api/events/{id}", False, f"Status: {result['status_code']}")
+            events_success = False
+        
+        # 4. PATCH /api/events/{id} (update event)
+        update_data = {
+            "title": "Updated Test Event",
+            "capacity_total": 75
+        }
+        
+        result = self.make_request("PATCH", f"events/{test_event_id}", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_event = result["data"]
+            if updated_event.get("title") == "Updated Test Event" and updated_event.get("capacity_total") == 75:
+                self.log_test("PATCH /api/events/{id}", True, "Event updated successfully")
+            else:
+                self.log_test("PATCH /api/events/{id}", False, "Event not updated correctly")
+                events_success = False
+        else:
+            self.log_test("PATCH /api/events/{id}", False, f"Status: {result['status_code']}")
+            events_success = False
+        
+        # 5. POST /api/events/{id}/publish (publish draft event)
+        result = self.make_request("POST", f"events/{test_event_id}/publish", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("POST /api/events/{id}/publish", True, "Event published successfully")
+        else:
+            self.log_test("POST /api/events/{id}/publish", False, f"Status: {result['status_code']}")
+            events_success = False
+        
+        # 6. POST /api/events/{id}/cancel (cancel event)
+        result = self.make_request("POST", f"events/{test_event_id}/cancel", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("POST /api/events/{id}/cancel", True, "Event cancelled successfully")
+        else:
+            self.log_test("POST /api/events/{id}/cancel", False, f"Status: {result['status_code']}")
+            events_success = False
+        
+        return events_success
+
+    def test_sprint4_event_products_crud(self):
+        """Test Sprint 4: EventProducts CRUD Operations"""
+        print("\n🍽️ Testing EventProducts CRUD Operations...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("EventProducts CRUD", False, "Admin token not available")
+            return False
+        
+        # Use Gänseabend event if available
+        gaense_event_id = self.test_data.get("gaense_event_id")
+        if not gaense_event_id:
+            self.log_test("EventProducts CRUD", False, "No Gänseabend event available for testing")
+            return False
+        
+        products_success = True
+        
+        # 1. GET /api/events/{id}/products
+        result = self.make_request("GET", f"events/{gaense_event_id}/products", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            products = result["data"]
+            self.log_test("GET /api/events/{id}/products", True, f"Retrieved {len(products)} products")
+        else:
+            self.log_test("GET /api/events/{id}/products", False, f"Status: {result['status_code']}")
+            products_success = False
+        
+        # 2. POST /api/events/{id}/products (create product)
+        product_data = {
+            "event_id": gaense_event_id,
+            "name": "Test Vorspeise",
+            "description": "Test appetizer for automated testing",
+            "price_delta": 5.00,
+            "required": False,
+            "selection_type": "single_choice",
+            "sort_order": 10,
+            "is_active": True
+        }
+        
+        result = self.make_request("POST", f"events/{gaense_event_id}/products", product_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            test_product_id = result["data"]["id"]
+            self.test_data["test_product_id"] = test_product_id
+            self.log_test("POST /api/events/{id}/products", True, f"Product created with ID: {test_product_id}")
+        else:
+            self.log_test("POST /api/events/{id}/products", False, f"Status: {result['status_code']}")
+            products_success = False
+            return products_success
+        
+        # 3. PATCH /api/events/{id}/products/{product_id} (update)
+        update_data = {
+            "name": "Updated Test Vorspeise",
+            "price_delta": 7.50
+        }
+        
+        result = self.make_request("PATCH", f"events/{gaense_event_id}/products/{test_product_id}", 
+                                 update_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_product = result["data"]
+            if updated_product.get("name") == "Updated Test Vorspeise":
+                self.log_test("PATCH /api/events/{id}/products/{product_id}", True, "Product updated successfully")
+            else:
+                self.log_test("PATCH /api/events/{id}/products/{product_id}", False, "Product not updated correctly")
+                products_success = False
+        else:
+            self.log_test("PATCH /api/events/{id}/products/{product_id}", False, f"Status: {result['status_code']}")
+            products_success = False
+        
+        # 4. DELETE /api/events/{id}/products/{product_id} (archive)
+        result = self.make_request("DELETE", f"events/{gaense_event_id}/products/{test_product_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("DELETE /api/events/{id}/products/{product_id}", True, "Product archived successfully")
+        else:
+            self.log_test("DELETE /api/events/{id}/products/{product_id}", False, f"Status: {result['status_code']}")
+            products_success = False
+        
+        return products_success
+
+    def test_sprint4_public_events_api(self):
+        """Test Sprint 4: Public Events API"""
+        print("\n🌍 Testing Public Events API...")
+        
+        public_success = True
+        
+        # 1. GET /api/public/events (list published events - no auth)
+        result = self.make_request("GET", "public/events", expected_status=200)
+        if result["success"]:
+            events = result["data"]
+            self.log_test("GET /api/public/events", True, f"Retrieved {len(events)} public events")
+            
+            # Store event IDs for booking tests
+            for event in events:
+                if event.get("booking_mode") == "ticket_only":
+                    self.test_data["public_kabarett_id"] = event["id"]
+                elif event.get("booking_mode") == "reservation_with_preorder":
+                    self.test_data["public_gaense_id"] = event["id"]
+        else:
+            self.log_test("GET /api/public/events", False, f"Status: {result['status_code']}")
+            public_success = False
+        
+        # 2. GET /api/public/events/{id} (event detail with products - no auth)
+        gaense_id = self.test_data.get("public_gaense_id")
+        if gaense_id:
+            result = self.make_request("GET", f"public/events/{gaense_id}", expected_status=200)
+            if result["success"]:
+                event = result["data"]
+                if "products" in event and isinstance(event["products"], list):
+                    self.log_test("GET /api/public/events/{id} (with products)", True, 
+                                f"Event has {len(event['products'])} products")
+                else:
+                    self.log_test("GET /api/public/events/{id} (with products)", False, "No products found")
+                    public_success = False
+            else:
+                self.log_test("GET /api/public/events/{id} (with products)", False, f"Status: {result['status_code']}")
+                public_success = False
+        
+        return public_success
+
+    def test_sprint4_public_event_booking(self):
+        """Test Sprint 4: Public Event Booking"""
+        print("\n🎫 Testing Public Event Booking...")
+        
+        booking_success = True
+        
+        # Test 1: Kabarett booking (ticket_only mode)
+        kabarett_id = self.test_data.get("public_kabarett_id")
+        if kabarett_id:
+            booking_data = {
+                "event_id": kabarett_id,
+                "guest_name": "Max Mustermann",
+                "guest_phone": "+49 170 1234567",
+                "guest_email": "max.mustermann@example.de",
+                "party_size": 2
+            }
+            
+            result = self.make_request("POST", f"public/events/{kabarett_id}/book", booking_data, expected_status=200)
+            if result["success"]:
+                booking_response = result["data"]
+                if booking_response.get("success") and "confirmation_code" in booking_response:
+                    self.log_test("POST /api/public/events/{kabarett_id}/book (ticket_only)", True, 
+                                f"Booking created, code: {booking_response.get('confirmation_code')}")
+                    self.test_data["kabarett_booking_id"] = booking_response.get("id")
+                else:
+                    self.log_test("POST /api/public/events/{kabarett_id}/book (ticket_only)", False, 
+                                f"Booking failed: {booking_response}")
+                    booking_success = False
+            else:
+                self.log_test("POST /api/public/events/{kabarett_id}/book (ticket_only)", False, 
+                            f"Status: {result['status_code']}")
+                booking_success = False
+        
+        # Test 2: Gänseabend booking (reservation_with_preorder mode)
+        gaense_id = self.test_data.get("public_gaense_id")
+        if gaense_id:
+            # First get the products to select from
+            result = self.make_request("GET", f"public/events/{gaense_id}", expected_status=200)
+            if result["success"]:
+                event = result["data"]
+                products = event.get("products", [])
+                
+                if products:
+                    # Select the first product (should be "Gans")
+                    selected_product_id = products[0]["id"]
+                    
+                    booking_data = {
+                        "event_id": gaense_id,
+                        "guest_name": "Anna Schmidt",
+                        "guest_phone": "+49 170 9876543",
+                        "guest_email": "anna.schmidt@example.de",
+                        "party_size": 2,
+                        "items": [
+                            {
+                                "event_product_id": selected_product_id,
+                                "quantity": 2
+                            }
+                        ]
+                    }
+                    
+                    result = self.make_request("POST", f"public/events/{gaense_id}/book", booking_data, expected_status=200)
+                    if result["success"]:
+                        booking_response = result["data"]
+                        if booking_response.get("success") and "confirmation_code" in booking_response:
+                            self.log_test("POST /api/public/events/{gänseabend_id}/book (reservation_with_preorder)", True, 
+                                        f"Booking created, code: {booking_response.get('confirmation_code')}")
+                            self.test_data["gaense_booking_id"] = booking_response.get("id")
+                        else:
+                            self.log_test("POST /api/public/events/{gänseabend_id}/book (reservation_with_preorder)", False, 
+                                        f"Booking failed: {booking_response}")
+                            booking_success = False
+                    else:
+                        self.log_test("POST /api/public/events/{gänseabend_id}/book (reservation_with_preorder)", False, 
+                                    f"Status: {result['status_code']}")
+                        booking_success = False
+                else:
+                    self.log_test("POST /api/public/events/{gänseabend_id}/book (reservation_with_preorder)", False, 
+                                "No products available for selection")
+                    booking_success = False
+        
+        return booking_success
+
+    def test_sprint4_event_bookings_management(self):
+        """Test Sprint 4: EventBookings Management"""
+        print("\n📋 Testing EventBookings Management...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("EventBookings Management", False, "Admin token not available")
+            return False
+        
+        bookings_success = True
+        
+        # Test with Kabarett event
+        kabarett_id = self.test_data.get("public_kabarett_id")
+        if kabarett_id:
+            # 1. GET /api/events/{id}/bookings (list bookings)
+            result = self.make_request("GET", f"events/{kabarett_id}/bookings", 
+                                     token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                bookings = result["data"]
+                self.log_test("GET /api/events/{id}/bookings", True, f"Retrieved {len(bookings)} bookings")
+                
+                if bookings:
+                    booking_id = bookings[0]["id"]
+                    
+                    # 2. PATCH /api/events/{id}/bookings/{booking_id} (update status)
+                    update_data = {
+                        "status": "confirmed",
+                        "notes": "Confirmed by admin during testing"
+                    }
+                    
+                    result = self.make_request("PATCH", f"events/{kabarett_id}/bookings/{booking_id}", 
+                                             update_data, self.tokens["admin"], expected_status=200)
+                    if result["success"]:
+                        updated_booking = result["data"]
+                        if updated_booking.get("status") == "confirmed":
+                            self.log_test("PATCH /api/events/{id}/bookings/{booking_id}", True, "Booking status updated")
+                        else:
+                            self.log_test("PATCH /api/events/{id}/bookings/{booking_id}", False, "Status not updated correctly")
+                            bookings_success = False
+                    else:
+                        self.log_test("PATCH /api/events/{id}/bookings/{booking_id}", False, f"Status: {result['status_code']}")
+                        bookings_success = False
+            else:
+                self.log_test("GET /api/events/{id}/bookings", False, f"Status: {result['status_code']}")
+                bookings_success = False
+        
+        return bookings_success
+
+    def test_sprint4_capacity_validation(self):
+        """Test Sprint 4: Capacity Validation"""
+        print("\n🎯 Testing Capacity Validation...")
+        
+        capacity_success = True
+        
+        # Test capacity validation by trying to book more than available
+        kabarett_id = self.test_data.get("public_kabarett_id")
+        if kabarett_id:
+            # Try to book with a very large party size (should exceed capacity)
+            booking_data = {
+                "event_id": kabarett_id,
+                "guest_name": "Large Group Test",
+                "guest_phone": "+49 170 9999999",
+                "guest_email": "large.group@example.de",
+                "party_size": 999  # This should exceed capacity
+            }
+            
+            result = self.make_request("POST", f"public/events/{kabarett_id}/book", booking_data, expected_status=409)
+            if result["success"]:
+                self.log_test("Capacity validation (booking respects capacity_total)", True, "Large booking rejected as expected")
+            else:
+                # Check if it's a different error code but still rejected
+                if result["status_code"] in [400, 422]:
+                    self.log_test("Capacity validation (booking respects capacity_total)", True, 
+                                f"Large booking rejected with status {result['status_code']}")
+                else:
+                    self.log_test("Capacity validation (booking respects capacity_total)", False, 
+                                f"Expected rejection, got status {result['status_code']}")
+                    capacity_success = False
+        
+        # Test sold_out status auto-set when capacity reached
+        # This is harder to test without knowing exact current capacity, so we'll check the logic exists
+        if "admin" in self.tokens and kabarett_id:
+            result = self.make_request("GET", f"events/{kabarett_id}", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                event = result["data"]
+                if "booked_count" in event and "available_capacity" in event:
+                    self.log_test("Capacity tracking (booked_count and available_capacity)", True, 
+                                f"Booked: {event.get('booked_count')}, Available: {event.get('available_capacity')}")
+                else:
+                    self.log_test("Capacity tracking (booked_count and available_capacity)", False, 
+                                "Missing capacity tracking fields")
+                    capacity_success = False
+        
+        return capacity_success
+
+    def test_sprint4_seed_events(self):
+        """Test Sprint 4: Seed Events Verification"""
+        print("\n🌱 Testing Seed Events...")
+        
+        seed_success = True
+        
+        # Check if the seeded events exist and have correct properties
+        result = self.make_request("GET", "public/events", expected_status=200)
+        if result["success"]:
+            events = result["data"]
+            
+            # Look for Kabarett event
+            kabarett_found = False
+            gaense_found = False
+            
+            for event in events:
+                if "Kabarett" in event.get("title", ""):
+                    kabarett_found = True
+                    if (event.get("booking_mode") == "ticket_only" and 
+                        event.get("ticket_price") == 29.0):
+                        self.log_test("Seed Event: Kabarett-Abend (ticket_only, 29€)", True, 
+                                    f"Found: {event.get('title')}")
+                    else:
+                        self.log_test("Seed Event: Kabarett-Abend (ticket_only, 29€)", False, 
+                                    f"Properties mismatch: mode={event.get('booking_mode')}, price={event.get('ticket_price')}")
+                        seed_success = False
+                
+                elif "Gänse" in event.get("title", ""):
+                    gaense_found = True
+                    if (event.get("booking_mode") == "reservation_with_preorder" and 
+                        event.get("ticket_price") == 49.0):
+                        self.log_test("Seed Event: Gänseabend (reservation_with_preorder, 49€)", True, 
+                                    f"Found: {event.get('title')}")
+                        
+                        # Check if it has products
+                        event_id = event.get("id")
+                        if event_id:
+                            detail_result = self.make_request("GET", f"public/events/{event_id}", expected_status=200)
+                            if detail_result["success"]:
+                                event_detail = detail_result["data"]
+                                products = event_detail.get("products", [])
+                                if len(products) >= 3:  # Should have Gans, Fisch, Vegetarisch
+                                    product_names = [p.get("name", "") for p in products]
+                                    if any("Gans" in name for name in product_names):
+                                        self.log_test("Seed Event: Gänseabend has products (Gans/Fisch/Vegetarisch)", True, 
+                                                    f"Found {len(products)} products")
+                                    else:
+                                        self.log_test("Seed Event: Gänseabend has products (Gans/Fisch/Vegetarisch)", False, 
+                                                    f"Products found but missing expected items: {product_names}")
+                                        seed_success = False
+                                else:
+                                    self.log_test("Seed Event: Gänseabend has products (Gans/Fisch/Vegetarisch)", False, 
+                                                f"Only {len(products)} products found")
+                                    seed_success = False
+                    else:
+                        self.log_test("Seed Event: Gänseabend (reservation_with_preorder, 49€)", False, 
+                                    f"Properties mismatch: mode={event.get('booking_mode')}, price={event.get('ticket_price')}")
+                        seed_success = False
+            
+            if not kabarett_found:
+                self.log_test("Seed Event: Kabarett-Abend (ticket_only, 29€)", False, "Kabarett event not found")
+                seed_success = False
+            
+            if not gaense_found:
+                self.log_test("Seed Event: Gänseabend (reservation_with_preorder, 49€)", False, "Gänseabend event not found")
+                seed_success = False
+        else:
+            self.log_test("Seed Events Verification", False, f"Could not retrieve public events: {result['status_code']}")
+            seed_success = False
+        
+        return seed_success
+
     def cleanup_test_data(self):
         """Clean up test data created during testing"""
         print("\n🧹 Cleaning up test data...")
