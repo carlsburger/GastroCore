@@ -117,11 +117,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/POST/PATCH/DELETE /api/reminder-rules implemented"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All CRUD operations working. GET returns rules, POST creates with validation, PATCH updates correctly, DELETE archives properly. Authentication required (admin only)."
 
   - task: "WhatsApp Deep-Link Generator"
     implemented: true
@@ -129,11 +132,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/reservations/{id}/whatsapp-reminder generates wa.me link"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: WhatsApp deep-link generation working perfectly. Generates proper wa.me URLs with encoded messages in German. Requires manager+ role. Message logs created correctly."
 
   - task: "Guest Confirmation by Link"
     implemented: true
@@ -141,11 +147,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/POST /api/public/reservations/{id}/confirm-info and confirm"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Guest confirmation working. GET confirm-info returns reservation details, POST confirm updates status to 'bestaetigt'. Token validation working correctly. Public endpoints (no auth required)."
 
   - task: "Cancellation Deadline Check"
     implemented: true
@@ -153,11 +162,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/public/reservations/{id}/cancel-info with deadline check"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Cancellation functionality working as part of existing public cancellation system."
 
   - task: "Message Log"
     implemented: true
@@ -165,11 +177,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/message-logs - logs all sent messages"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Message logs working perfectly. GET /api/message-logs returns all logs, filtering by channel (whatsapp/email) works correctly. Admin authentication required."
 
   - task: "Guest Status Check"
     implemented: true
@@ -177,11 +192,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/guests/check/{phone} returns flag and no_show_count"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Guest status check working. Returns proper flag (none/greylist/blacklist) and no_show_count. Manager+ authentication required."
 
 frontend:
   - task: "Settings Page (Reminder & No-Show Config)"
