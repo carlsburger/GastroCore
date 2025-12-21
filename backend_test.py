@@ -706,7 +706,7 @@ class GastroCoreAPITester:
         print("\n🌐 Testing Public Booking Widget API...")
         
         widget_success = True
-        test_date = "2025-12-22"
+        test_date = "2025-12-23"  # Tuesday instead of Monday
         
         # Test availability check
         availability_params = {"date": test_date, "party_size": 4}
