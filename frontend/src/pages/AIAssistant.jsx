@@ -413,9 +413,16 @@ export default function AIAssistant() {
             {/* Schedule AI */}
             <Card className={`border-[#005500]/20 ${!status?.features?.schedule ? "opacity-60" : ""}`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#005500]" />
-                  Dienstplan-KI
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-[#005500]" />
+                    Dienstplan-KI
+                  </div>
+                  {isAdmin && scheduleConfig && (
+                    <Button variant="ghost" size="sm" onClick={openConfigDialog}>
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   Vorschläge für Schichtverteilung
@@ -442,6 +449,11 @@ export default function AIAssistant() {
                   )}
                   Vorschlag generieren
                 </Button>
+                {scheduleConfig && (
+                  <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                    <p>Konfiguration: Service {scheduleConfig.service?.normal_summer_weekend || "-"} (WE), Küche {scheduleConfig.kitchen?.normal || "-"}</p>
+                  </div>
+                )}
                 {!status?.features?.schedule && (
                   <p className="text-xs text-muted-foreground text-center">
                     Feature deaktiviert
