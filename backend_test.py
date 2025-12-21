@@ -626,7 +626,7 @@ class GastroCoreAPITester:
         
         if "schichtleiter" in self.tokens:
             result = self.make_request("POST", "reservations", invalid_reservation, 
-                                     self.tokens["schichtleiter"], expected_status=400)
+                                     self.tokens["schichtleiter"], expected_status=422)
             if result["success"]:
                 error_data = result["data"]
                 if "error_code" in error_data and "detail" in error_data:
@@ -638,7 +638,7 @@ class GastroCoreAPITester:
                     error_success = False
             else:
                 self.log_test("Error handling: Invalid reservation returns proper error", False, 
-                            f"Expected 400, got {result['status_code']}")
+                            f"Expected 422, got {result['status_code']}")
                 error_success = False
         
         # Test accessing non-existent resource
