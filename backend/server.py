@@ -54,6 +54,7 @@ class ReservationStatus(str, Enum):
     ANGEKOMMEN = "angekommen"
     ABGESCHLOSSEN = "abgeschlossen"
     NO_SHOW = "no_show"
+    STORNIERT = "storniert"
 
 # ============== MODELS ==============
 class UserBase(BaseModel):
