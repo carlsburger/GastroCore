@@ -423,12 +423,24 @@ async def get_reservation(reservation_id: str, user: dict = Depends(get_current_
     return reservation
 
 @api_router.post("/reservations")
-async def create_reservation(data: ReservationCreate, user: dict = Depends(require_roles(UserRole.ADMIN, UserRole.SCHICHTLEITER))):
+async def create_reservation(
+    data: ReservationCreate, 
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_roles(UserRole.ADMIN, UserRole.SCHICHTLEITER))
+):
     reservation = Reservation(**data.model_dump())
     doc = serialize_datetime(reservation.model_dump())
     
     await db.reservations.insert_one(doc)
     await create_audit_log(user, "reservation", reservation.id, "create", None, safe_dict_for_audit(doc))
+    
+    # Send confirmation email in background
+    if reservation.guest_email:
+        area_name = None
+        if reservation.area_id:
+            area = await db.areas.find_one({"id": reservation.area_id}, {"_id": 0})
+            area_name = area.get("name") if area else None
+        background_tasks.add_task(send_confirmation_email, doc, area_name)
     
     return reservation
 
