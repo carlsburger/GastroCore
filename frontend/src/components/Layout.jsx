@@ -21,10 +21,12 @@ import {
   UserCog,
   CalendarClock,
   Building2,
+  Utensils,
 } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: LayoutDashboard, label: "nav.dashboard", roles: ["admin", "schichtleiter"] },
+  { path: "/service-terminal", icon: Utensils, label: "Service-Terminal", roles: ["admin", "schichtleiter"] },
   { path: "/events-admin", icon: Calendar, label: "nav.events", roles: ["admin", "schichtleiter"] },
   { path: "/schedule", icon: CalendarClock, label: "nav.schedule", roles: ["admin", "schichtleiter"] },
   { path: "/staff", icon: UserCog, label: "nav.staff", roles: ["admin", "schichtleiter"] },
