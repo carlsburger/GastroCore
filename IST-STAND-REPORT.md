@@ -3,6 +3,16 @@
 # Stand: 21. Dezember 2025
 # ============================================================
 
+## ⚠️ VOR TAB SCHLIEßEN – BACKUP ERSTELLEN
+
+```bash
+cd /app && bash scripts/make_backup.sh
+```
+
+Dann **ZIP-Datei aus `/app/backups/` lokal herunterladen** und sicher aufbewahren!
+
+---
+
 ## 1) VERSION / ARCHITEKTUR
 
 ### Modulstruktur
