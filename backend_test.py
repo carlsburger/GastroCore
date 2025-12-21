@@ -1490,25 +1490,34 @@ class GastroCoreAPITester:
         if result["success"]:
             incomplete_member_id = result["data"]["id"]
             
-            # Try to set status to "aktiv" - should get warnings
-            status_update = {"status": "aktiv"}
-            result = self.make_request("PATCH", f"staff/members/{incomplete_member_id}", status_update, 
+            # First set status to "inaktiv" to ensure we can test the warning
+            status_inactive = {"status": "inaktiv"}
+            result = self.make_request("PATCH", f"staff/members/{incomplete_member_id}", status_inactive, 
                                      self.tokens["admin"], expected_status=200)
+            
             if result["success"]:
-                response_data = result["data"]
-                if "warnings" in response_data and response_data["warnings"]:
-                    warning = response_data["warnings"][0]
-                    if "missing_fields" in warning:
-                        self.log_test("Status Warning: Missing fields warning", True, 
-                                    f"Warning: {warning.get('message', '')}")
+                # Now try to set status to "aktiv" - should get warnings
+                status_update = {"status": "aktiv"}
+                result = self.make_request("PATCH", f"staff/members/{incomplete_member_id}", status_update, 
+                                         self.tokens["admin"], expected_status=200)
+                if result["success"]:
+                    response_data = result["data"]
+                    if "warnings" in response_data and response_data["warnings"]:
+                        warning = response_data["warnings"][0]
+                        if "missing_fields" in warning:
+                            self.log_test("Status Warning: Missing fields warning", True, 
+                                        f"Warning: {warning.get('message', '')}")
+                        else:
+                            self.log_test("Status Warning: Missing fields warning", False, "Warning missing missing_fields")
+                            hr_success = False
                     else:
-                        self.log_test("Status Warning: Missing fields warning", False, "Warning missing missing_fields")
+                        self.log_test("Status Warning: Missing fields warning", False, "No warnings in response")
                         hr_success = False
                 else:
-                    self.log_test("Status Warning: Missing fields warning", False, "No warnings in response")
+                    self.log_test("Status Warning: Missing fields warning", False, f"Status: {result['status_code']}")
                     hr_success = False
             else:
-                self.log_test("Status Warning: Missing fields warning", False, f"Status: {result['status_code']}")
+                self.log_test("Status Warning: Set to inactive first", False, f"Status: {result['status_code']}")
                 hr_success = False
         else:
             self.log_test("Status Warning: Create incomplete staff", False, f"Status: {result['status_code']}")
