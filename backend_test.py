@@ -4868,18 +4868,22 @@ class GastroCoreAPITester:
         return cleanup_success
 
     def run_all_tests(self):
-        """Run all test suites - Focus on HR Fields Extension (Sprint 7.1)"""
-        print("🚀 Starting GastroCore Backend API Tests - HR Fields Extension (Sprint 7.1) Focus")
+        """Run all test suites - Focus on Security Enhancement (Sprint 7.2)"""
+        print("🚀 Starting GastroCore Backend API Tests - Security Enhancement (Sprint 7.2) Focus")
         print("=" * 80)
         
-        # Test sequence - focused on HR Fields Extension
+        # Test sequence - focused on Security Enhancement
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # HR Fields Extension (Sprint 7.1) tests - PRIMARY FOCUS
+        # PRIORITY: Security Enhancement Tests (Sprint 7.2) - CRITICAL
+        print("\n🔒 SECURITY ENHANCEMENT (SPRINT 7.2) TESTING - CRITICAL:")
+        test_results.append(self.test_security_enhancement_sprint72())
+        
+        # HR Fields Extension (Sprint 7.1) tests
         print("\n🏢 HR FIELDS EXTENSION (SPRINT 7.1) TESTING:")
         test_results.append(self.test_hr_fields_extension_sprint71())
         
@@ -4900,6 +4904,13 @@ class GastroCoreAPITester:
             print(f"\n❌ FAILED TESTS ({len(self.failed_tests)}):")
             for test in self.failed_tests:
                 print(f"  • {test['name']}: {test['details']}")
+                
+            # Highlight critical security failures
+            security_failures = [t for t in self.failed_tests if "security" in t['name'].lower() or "rbac" in t['name'].lower()]
+            if security_failures:
+                print(f"\n🚨 CRITICAL SECURITY FAILURES ({len(security_failures)}):")
+                for test in security_failures:
+                    print(f"  🔴 {test['name']}")
         else:
             print("\n✅ ALL TESTS PASSED!")
         
