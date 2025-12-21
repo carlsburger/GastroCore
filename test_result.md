@@ -271,11 +271,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Online Booking Widget API"
-    - "Walk-In Quick Entry"
-    - "Waitlist Management"
-    - "PDF Table Plan Export"
-  stuck_tasks: []
+    - "Online Booking Widget"
+  stuck_tasks:
+    - "Online Booking Widget"
   test_all: false
   test_priority: "high_first"
 
@@ -284,3 +282,5 @@ agent_communication:
     message: "Sprint 2 features implemented. Please test the following backend endpoints: 1) POST /api/public/book (public booking), 2) POST /api/walk-ins (walk-in entry), 3) GET/POST/PATCH /api/waitlist (waitlist CRUD), 4) GET /api/export/table-plan?date=2025-12-21 (PDF export). Test users: admin@gastrocore.de / NewAdmin123!"
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: All Sprint 2 backend APIs tested successfully with 98% success rate (48/49 tests passed). Key findings: 1) Authentication working with admin@gastrocore.de / NewAdmin123!, 2) Public booking widget API fully functional, 3) Walk-in quick entry creates reservations with 'angekommen' status, 4) Waitlist management CRUD operations working, 5) Guest management with greylist/blacklist flags working, 6) PDF export generates valid PDFs. Minor issue: SMTP email authentication needs configuration but email service code is correct. All core Sprint 2 functionality is working correctly."
+  - agent: "testing"
+    message: "✅ FRONTEND TESTING COMPLETE: Sprint 2 frontend features tested with 75% success rate (3/4 major features working). WORKING: 1) Dashboard with Walk-In button and PDF export, 2) Navigation to Warteliste and Gäste pages, 3) Waitlist management with 'Neuer Eintrag' functionality, 4) Guests page with filter buttons. ISSUE: Public booking widget route /book is not accessible - redirects to login instead of showing public booking form. This is a routing/authentication configuration issue, not a component issue."
