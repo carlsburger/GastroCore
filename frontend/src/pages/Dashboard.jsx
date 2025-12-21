@@ -104,6 +104,40 @@ const STATUS_CONFIG = {
   },
 };
 
+// Payment Status configuration
+const PAYMENT_STATUS_CONFIG = {
+  unpaid: { label: "Offen", className: "bg-gray-100 text-gray-700 border-gray-300" },
+  payment_pending: { label: "Ausstehend", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+  paid: { label: "Bezahlt", className: "bg-green-100 text-green-700 border-green-300" },
+  partially_paid: { label: "Teilweise", className: "bg-orange-100 text-orange-700 border-orange-300" },
+  refunded: { label: "Erstattet", className: "bg-purple-100 text-purple-700 border-purple-300" },
+  failed: { label: "Fehlgeschlagen", className: "bg-red-100 text-red-700 border-red-300" },
+};
+
+// Payment Badge component
+const PaymentBadge = ({ paymentStatus, amount }) => {
+  if (!paymentStatus || paymentStatus === "unpaid") return null;
+  const config = PAYMENT_STATUS_CONFIG[paymentStatus];
+  if (!config) return null;
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <Badge className={`${config.className} border text-xs px-2 py-1`}>
+            <CreditCard className="h-3 w-3 mr-1" />
+            {config.label}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Zahlung: {config.label}</p>
+          {amount > 0 && <p>Betrag: {amount.toFixed(2)} €</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 // Quick action button component for 1-click status changes
 const QuickActionButton = ({ reservation, onStatusChange, disabled }) => {
   const config = STATUS_CONFIG[reservation.status];
