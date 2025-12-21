@@ -103,17 +103,17 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Sprint 4 für GastroCore - Veranstaltungen-Modul (ADDITIV):
-  A) Kabarett: fester Eintrittspreis (29€), begrenzte Plätze
-  B) Gänseabend: Event mit verpflichtender Vorbestellung (Fisch/Fleisch/Veg)
+  Sprint 4 für GastroCore - Payment-Modul (ADDITIV):
+  Zahlungen für Reservierungen & Events mit Stripe.
   
   Features:
-  - Event CRUD mit Status (draft/published/sold_out/cancelled)
-  - EventProducts für Vorbestellungen
-  - EventBookings mit Buchungscode
-  - Öffentliche Event-Seite und Buchungsflow
-  - Integration ins Backoffice
-  - Kapazitätsprüfung und Validierung
+  - Payment Rules (konfigurierbar): Event, Großgruppen, Greylist, Feiertag
+  - Payment Types: Anzahlung pro Person, Fixe Anzahlung, Komplettzahlung
+  - Stripe Checkout Integration
+  - Zahlungsstatus im Dashboard sichtbar
+  - Manual Payment (Admin only)
+  - Refund-Funktion
+  - Payment Logs und Audit
 
 backend:
   - task: "Event CRUD API"
