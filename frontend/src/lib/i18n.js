@@ -50,6 +50,7 @@ const translations = {
       angekommen: "Angekommen",
       abgeschlossen: "Abgeschlossen",
       no_show: "No-Show",
+      storniert: "Storniert",
     },
     // Areas
     areas: {
