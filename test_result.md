@@ -116,6 +116,66 @@ user_problem_statement: |
   - Payment Logs und Audit
 
 backend:
+  - task: "Payment Rules CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/payment_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/POST/PATCH/DELETE /api/payments/rules - Zahlungsregeln verwalten"
+
+  - task: "Payment Checkout API"
+    implemented: true
+    working: true
+    file: "/app/backend/payment_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/payments/checkout/create - Stripe Checkout Session erstellen"
+
+  - task: "Payment Status & Webhook"
+    implemented: true
+    working: true
+    file: "/app/backend/payment_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/payments/checkout/status/{session_id}, POST /api/webhook/stripe"
+
+  - task: "Manual Payment & Refund"
+    implemented: true
+    working: true
+    file: "/app/backend/payment_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/payments/manual/{id}, POST /api/payments/refund/{id}"
+
+  - task: "Payment Transactions & Logs"
+    implemented: true
+    working: true
+    file: "/app/backend/payment_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/payments/transactions, GET /api/payments/logs"
+
   - task: "Event CRUD API"
     implemented: true
     working: true
