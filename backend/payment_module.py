@@ -769,27 +769,48 @@ async def request_refund(
         }}
     )
     
-    # Update entity
+    # Update entity - also set status to cancelled/storniert on refund
     entity_type = transaction.get("entity_type")
     entity_id = transaction.get("entity_id")
     
     if entity_type == "reservation":
         await db.reservations.update_one(
             {"id": entity_id},
-            {"$set": {"payment_status": PaymentStatus.REFUNDED.value, "updated_at": now_iso()}}
+            {"$set": {
+                "payment_status": PaymentStatus.REFUNDED.value,
+                "status": "storniert",  # Also cancel the reservation
+                "updated_at": now_iso()
+            }}
         )
     elif entity_type == "event_booking":
         await db.event_bookings.update_one(
             {"id": entity_id},
-            {"$set": {"payment_status": PaymentStatus.REFUNDED.value, "updated_at": now_iso()}}
+            {"$set": {
+                "payment_status": PaymentStatus.REFUNDED.value,
+                "status": "cancelled",  # Also cancel the booking
+                "updated_at": now_iso()
+            }}
         )
+        # Check if event can be reopened for bookings
+        booking = await db.event_bookings.find_one({"id": entity_id})
+        if booking:
+            from events_module import update_event_status_if_needed, get_event_booked_count
+            event = await db.events.find_one({"id": booking.get("event_id")})
+            if event and event.get("status") == "sold_out":
+                booked = await get_event_booked_count(booking.get("event_id"), include_pending=False)
+                if booked < event.get("capacity_total", 0):
+                    await db.events.update_one(
+                        {"id": booking.get("event_id")},
+                        {"$set": {"status": "published", "updated_at": now_iso()}}
+                    )
     
     await create_payment_log(
         transaction_id=transaction_id,
         action="refund",
         status=PaymentStatus.REFUNDED.value,
         amount=transaction.get("amount"),
-        actor=user
+        actor=user,
+        provider_response={"reason": data.reason}  # Log reason in provider_response
     )
     
     await create_audit_log(
