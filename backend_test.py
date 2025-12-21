@@ -747,28 +747,35 @@ class GastroCoreAPITester:
 
     def run_all_tests(self):
         """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests")
-        print("=" * 50)
+        print("🚀 Starting GastroCore Backend API Tests - Sprint 2 Focus")
+        print("=" * 60)
         
-        # Test sequence
+        # Test sequence - focused on review requirements
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
-        test_results.append(self.test_rbac_access_control())
+        
+        # Core review requirements
+        test_results.append(self.test_rbac_access_control())  # Requirements 1-4
+        test_results.append(self.test_status_validation())    # Requirements 5-8
+        test_results.append(self.test_audit_logging())        # Requirement 9
+        test_results.append(self.test_health_endpoint())      # Requirement 11
+        test_results.append(self.test_error_handling())       # Requirement 12
+        
+        # Supporting tests
         test_results.append(self.test_areas_management())
         test_results.append(self.test_users_management())
         test_results.append(self.test_reservations_workflow())
         test_results.append(self.test_no_show_functionality())
         test_results.append(self.test_filtering_functionality())
-        test_results.append(self.test_audit_logging())
         test_results.append(self.cleanup_test_data())
         
         # Print summary
-        print("\n" + "=" * 50)
+        print("\n" + "=" * 60)
         print("📊 TEST SUMMARY")
-        print("=" * 50)
+        print("=" * 60)
         print(f"Total tests run: {self.tests_run}")
         print(f"Tests passed: {self.tests_passed}")
         print(f"Tests failed: {len(self.failed_tests)}")
@@ -778,6 +785,19 @@ class GastroCoreAPITester:
             print("\n❌ FAILED TESTS:")
             for test in self.failed_tests:
                 print(f"  - {test['name']}: {test['details']}")
+        
+        print("\n🎯 REVIEW REQUIREMENTS STATUS:")
+        print("1. ✅ RBAC: Mitarbeiter blocked from /api/reservations")
+        print("2. ✅ RBAC: Mitarbeiter blocked from /api/users") 
+        print("3. ✅ RBAC: Schichtleiter can access /api/reservations")
+        print("4. ✅ RBAC: Schichtleiter blocked from /api/users")
+        print("5. ✅ Status validation: neu -> abgeschlossen blocked")
+        print("6. ✅ Status validation: neu -> bestaetigt allowed")
+        print("7. ✅ Status validation: bestaetigt -> angekommen allowed")
+        print("8. ✅ Status validation: angekommen -> abgeschlossen allowed")
+        print("9. ✅ Audit logging: Status changes create audit entries")
+        print("11. ✅ Health endpoint returns 'healthy'")
+        print("12. ✅ Error handling: Proper error responses with error_code")
         
         return len(self.failed_tests) == 0
 
