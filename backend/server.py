@@ -469,6 +469,7 @@ async def update_reservation(
 async def update_reservation_status(
     reservation_id: str,
     new_status: ReservationStatus,
+    background_tasks: BackgroundTasks,
     user: dict = Depends(require_roles(UserRole.ADMIN, UserRole.SCHICHTLEITER))
 ):
     existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
@@ -485,6 +486,15 @@ async def update_reservation_status(
     
     updated = await db.reservations.find_one({"id": reservation_id}, {"_id": 0})
     await create_audit_log(user, "reservation", reservation_id, "status_change", before, safe_dict_for_audit(updated))
+    
+    # Send confirmation email when status changes to "bestaetigt"
+    if new_status == ReservationStatus.BESTAETIGT and existing.get("status") != "bestaetigt":
+        if updated.get("guest_email"):
+            area_name = None
+            if updated.get("area_id"):
+                area = await db.areas.find_one({"id": updated["area_id"]}, {"_id": 0})
+                area_name = area.get("name") if area else None
+            background_tasks.add_task(send_confirmation_email, updated, area_name)
     
     return updated
 
