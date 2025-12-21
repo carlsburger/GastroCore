@@ -476,7 +476,8 @@ async def create_reservation(
             area_name = area_doc.get("name") if area_doc else None
         background_tasks.add_task(send_confirmation_email, reservation, area_name)
     
-    return reservation
+    # Return without _id
+    return {k: v for k, v in reservation.items() if k != "_id"}
 
 @api_router.put("/reservations/{reservation_id}", tags=["Reservations"])
 async def update_reservation(
