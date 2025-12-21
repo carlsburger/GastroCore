@@ -19,15 +19,35 @@ load_dotenv(ROOT_DIR / '.env')
 
 logger = logging.getLogger(__name__)
 
-# SMTP Configuration
-SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.ionos.de')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
+# SMTP Configuration - ALL values from ENV, NO defaults for sensitive data
+SMTP_HOST = os.environ.get('SMTP_HOST', '')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '465'))
 SMTP_USER = os.environ.get('SMTP_USER', '')
-SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM_EMAIL', 'reservierung@carlsburg.de')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # NEVER log or expose
+SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM', os.environ.get('SMTP_FROM_EMAIL', 'reservierungen@carlsburg.de'))
 SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'Carlsburg Restaurant')
+SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'false').lower() == 'true'
 APP_URL = os.environ.get('APP_URL', 'http://localhost:3000')
 CANCEL_SECRET = os.environ.get('JWT_SECRET', 'secret-key')
+
+
+def is_smtp_configured() -> bool:
+    """Check if SMTP is fully configured"""
+    return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
+
+
+def get_smtp_status() -> dict:
+    """Get SMTP configuration status (without exposing secrets)"""
+    return {
+        "configured": is_smtp_configured(),
+        "host": SMTP_HOST if SMTP_HOST else "NOT SET",
+        "port": SMTP_PORT,
+        "user": SMTP_USER[:3] + "***" if SMTP_USER else "NOT SET",
+        "from_email": SMTP_FROM_EMAIL,
+        "from_name": SMTP_FROM_NAME,
+        "use_tls": SMTP_USE_TLS,
+        "message": "SMTP bereit" if is_smtp_configured() else "SMTP nicht konfiguriert - E-Mails werden nur geloggt"
+    }
 
 
 def generate_cancel_token(reservation_id: str) -> str:
