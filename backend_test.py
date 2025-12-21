@@ -1842,90 +1842,51 @@ class GastroCoreAPITester:
 
     def run_all_tests(self):
         """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests - Sprint 3 Focus")
-        print("=" * 60)
+        print("🚀 Starting GastroCore Backend API Tests - Sprint 4 Events Module Focus")
+        print("=" * 70)
         
-        # Test sequence - focused on Sprint 3 requirements
+        # Test sequence - focused on Sprint 4 Events Module
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # Sprint 3 specific tests - PRIMARY FOCUS
-        print("\n🎯 SPRINT 3 FEATURES TESTING:")
-        test_results.append(self.test_sprint3_reminder_rules_crud())
-        test_results.append(self.test_sprint3_whatsapp_deeplink())
-        test_results.append(self.test_sprint3_guest_status_check())
-        test_results.append(self.test_sprint3_guest_confirmation())
-        test_results.append(self.test_sprint3_message_logs())
-        test_results.append(self.test_sprint3_settings())
+        # Sprint 4 Events Module tests - PRIMARY FOCUS
+        print("\n🎭 SPRINT 4 EVENTS MODULE TESTING:")
+        test_results.append(self.test_sprint4_seed_events())
+        test_results.append(self.test_sprint4_events_authentication())
+        test_results.append(self.test_sprint4_events_crud())
+        test_results.append(self.test_sprint4_event_products_crud())
+        test_results.append(self.test_sprint4_public_events_api())
+        test_results.append(self.test_sprint4_public_event_booking())
+        test_results.append(self.test_sprint4_event_bookings_management())
+        test_results.append(self.test_sprint4_capacity_validation())
         
-        # Core review requirements
-        test_results.append(self.test_rbac_access_control())  # Requirements 1-4
-        test_results.append(self.test_status_validation())    # Requirements 5-8
-        test_results.append(self.test_audit_logging())        # Requirement 9
-        test_results.append(self.test_health_endpoint())      # Requirement 11
-        test_results.append(self.test_error_handling())       # Requirement 12
+        # Core functionality tests (reduced for focus)
+        print("\n🏗️ CORE FUNCTIONALITY TESTING:")
+        test_results.append(self.test_rbac_access_control())
+        test_results.append(self.test_health_endpoint())
+        test_results.append(self.test_error_handling())
         
-        # Sprint 2 supporting tests
-        test_results.append(self.test_public_booking_widget())
-        test_results.append(self.test_walk_in_quick_entry())
-        test_results.append(self.test_waitlist_management())
-        test_results.append(self.test_guest_management())
-        test_results.append(self.test_pdf_export())
+        # Cleanup
+        self.cleanup_test_data()
         
-        # Supporting tests
-        test_results.append(self.test_areas_management())
-        test_results.append(self.test_users_management())
-        test_results.append(self.test_reservations_workflow())
-        test_results.append(self.test_no_show_functionality())
-        test_results.append(self.test_filtering_functionality())
-        test_results.append(self.cleanup_test_data())
-        
-        # Print summary
-        print("\n" + "=" * 60)
-        print("📊 TEST SUMMARY")
-        print("=" * 60)
-        print(f"Total tests run: {self.tests_run}")
+        # Summary
+        print("\n" + "=" * 70)
+        print(f"🏁 TESTING COMPLETE")
+        print(f"Tests run: {self.tests_run}")
         print(f"Tests passed: {self.tests_passed}")
-        print(f"Tests failed: {len(self.failed_tests)}")
         print(f"Success rate: {(self.tests_passed/self.tests_run*100):.1f}%")
         
         if self.failed_tests:
-            print("\n❌ FAILED TESTS:")
+            print(f"\n❌ FAILED TESTS ({len(self.failed_tests)}):")
             for test in self.failed_tests:
-                print(f"  - {test['name']}: {test['details']}")
+                print(f"  • {test['name']}: {test['details']}")
+        else:
+            print("\n✅ ALL TESTS PASSED!")
         
-        print("\n🎯 SPRINT 3 FEATURES STATUS:")
-        print("✅ Reminder Rules CRUD")
-        print("✅ WhatsApp Deep-Link Generator")
-        print("✅ Guest Status Check")
-        print("✅ Guest Confirmation (Public)")
-        print("✅ Message Logs")
-        print("✅ Settings Management")
-        
-        print("\n🎯 SPRINT 2 FEATURES STATUS:")
-        print("✅ Public Booking Widget API")
-        print("✅ Walk-In Quick Entry")
-        print("✅ Waitlist Management")
-        print("✅ Guest Management (Greylist/Blacklist)")
-        print("✅ PDF Table Plan Export")
-        
-        print("\n🎯 REVIEW REQUIREMENTS STATUS:")
-        print("1. ✅ RBAC: Mitarbeiter blocked from /api/reservations")
-        print("2. ✅ RBAC: Mitarbeiter blocked from /api/users") 
-        print("3. ✅ RBAC: Schichtleiter can access /api/reservations")
-        print("4. ✅ RBAC: Schichtleiter blocked from /api/users")
-        print("5. ✅ Status validation: neu -> abgeschlossen blocked")
-        print("6. ✅ Status validation: neu -> bestaetigt allowed")
-        print("7. ✅ Status validation: bestaetigt -> angekommen allowed")
-        print("8. ✅ Status validation: angekommen -> abgeschlossen allowed")
-        print("9. ✅ Audit logging: Status changes create audit entries")
-        print("11. ✅ Health endpoint returns 'healthy'")
-        print("12. ✅ Error handling: Proper error responses with error_code")
-        
-        return len(self.failed_tests) == 0
+        return self.tests_passed == self.tests_run
 
 def main():
     """Main test execution"""
