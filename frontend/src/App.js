@@ -67,6 +67,7 @@ function App() {
           <Route path="/book" element={<BookingWidget />} />
           <Route path="/cancel/:reservationId" element={<CancelReservation />} />
           <Route path="/confirm/:reservationId" element={<ConfirmReservation />} />
+          <Route path="/unsubscribe/:customerId" element={<Unsubscribe />} />
           {/* Public Events */}
           <Route path="/events-public" element={<PublicEventsList />} />
           <Route path="/events/:eventId" element={<PublicEventDetail />} />
