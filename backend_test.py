@@ -355,8 +355,89 @@ class GastroCoreAPITester:
         
         return users_success
 
+    def test_status_validation(self):
+        """Test status transition validation - Specific requirements from review"""
+        print("\n🔄 Testing status transition validation...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Status validation", False, "Schichtleiter token not available")
+            return False
+        
+        status_success = True
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Create test reservations for status validation
+        reservations_for_status_test = []
+        
+        for i in range(4):
+            reservation_data = {
+                "guest_name": f"Status Test {i+1}",
+                "guest_phone": f"+49 170 {1000000 + i}",
+                "party_size": 2,
+                "date": today,
+                "time": f"{18 + i}:00"
+            }
+            
+            result = self.make_request("POST", "reservations", reservation_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and "id" in result["data"]:
+                reservations_for_status_test.append(result["data"]["id"])
+            else:
+                self.log_test(f"Create status test reservation {i+1}", False, f"Status: {result['status_code']}")
+                status_success = False
+        
+        if len(reservations_for_status_test) < 4:
+            self.log_test("Status validation setup", False, "Could not create enough test reservations")
+            return False
+        
+        # 5. Status-Validierung: neu -> abgeschlossen MUSS blockiert werden
+        result = self.make_request("PATCH", f"reservations/{reservations_for_status_test[0]}/status", 
+                                 {"status": "abgeschlossen"}, self.tokens["schichtleiter"], 
+                                 expected_status=400)
+        if result["success"]:
+            self.log_test("Status validation: neu -> abgeschlossen BLOCKED", True, "Invalid transition blocked as expected")
+        else:
+            self.log_test("Status validation: neu -> abgeschlossen BLOCKED", False, 
+                        f"Expected 400, got {result['status_code']}")
+            status_success = False
+        
+        # 6. Status-Validierung: neu -> bestaetigt ERLAUBT
+        result = self.make_request("PATCH", f"reservations/{reservations_for_status_test[1]}/status", 
+                                 {"status": "bestaetigt"}, self.tokens["schichtleiter"], 
+                                 expected_status=200)
+        if result["success"]:
+            self.log_test("Status validation: neu -> bestaetigt ALLOWED", True)
+        else:
+            self.log_test("Status validation: neu -> bestaetigt ALLOWED", False, f"Status: {result['status_code']}")
+            status_success = False
+        
+        # 7. Status-Validierung: bestaetigt -> angekommen ERLAUBT
+        result = self.make_request("PATCH", f"reservations/{reservations_for_status_test[1]}/status", 
+                                 {"status": "angekommen"}, self.tokens["schichtleiter"], 
+                                 expected_status=200)
+        if result["success"]:
+            self.log_test("Status validation: bestaetigt -> angekommen ALLOWED", True)
+        else:
+            self.log_test("Status validation: bestaetigt -> angekommen ALLOWED", False, f"Status: {result['status_code']}")
+            status_success = False
+        
+        # 8. Status-Validierung: angekommen -> abgeschlossen ERLAUBT
+        result = self.make_request("PATCH", f"reservations/{reservations_for_status_test[1]}/status", 
+                                 {"status": "abgeschlossen"}, self.tokens["schichtleiter"], 
+                                 expected_status=200)
+        if result["success"]:
+            self.log_test("Status validation: angekommen -> abgeschlossen ALLOWED", True)
+        else:
+            self.log_test("Status validation: angekommen -> abgeschlossen ALLOWED", False, f"Status: {result['status_code']}")
+            status_success = False
+        
+        # Store reservation IDs for audit log testing
+        self.test_data["status_test_reservations"] = reservations_for_status_test
+        
+        return status_success
+
     def test_reservations_workflow(self):
-        """Test reservations CRUD and status transitions"""
+        """Test reservations CRUD and basic workflow"""
         print("\n📅 Testing reservations workflow...")
         
         if "schichtleiter" not in self.tokens:
@@ -397,20 +478,6 @@ class GastroCoreAPITester:
         else:
             self.log_test("Get reservations", False, f"Status: {result['status_code']}")
             reservations_success = False
-        
-        # Test status transitions: neu -> bestaetigt -> angekommen -> abgeschlossen
-        status_transitions = ["bestaetigt", "angekommen", "abgeschlossen"]
-        
-        for new_status in status_transitions:
-            # The status change endpoint expects the status as a query parameter
-            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status={new_status}", 
-                                     {}, self.tokens["schichtleiter"], 
-                                     expected_status=200)
-            if result["success"]:
-                self.log_test(f"Status change to {new_status}", True)
-            else:
-                self.log_test(f"Status change to {new_status}", False, f"Status: {result['status_code']}")
-                reservations_success = False
         
         # Test search functionality
         result = self.make_request("GET", "reservations", {"search": "Schmidt"}, 
