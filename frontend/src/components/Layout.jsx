@@ -20,6 +20,7 @@ import {
   CreditCard,
   UserCog,
   CalendarClock,
+  Building2,
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { path: "/events-admin", icon: Calendar, label: "nav.events", roles: ["admin", "schichtleiter"] },
   { path: "/schedule", icon: CalendarClock, label: "nav.schedule", roles: ["admin", "schichtleiter"] },
   { path: "/staff", icon: UserCog, label: "nav.staff", roles: ["admin", "schichtleiter"] },
+  { path: "/taxoffice", icon: Building2, label: "nav.taxoffice", roles: ["admin"] },
   { path: "/payments", icon: CreditCard, label: "nav.payments", roles: ["admin"] },
   { path: "/waitlist", icon: Clock, label: "nav.waitlist", roles: ["admin", "schichtleiter"] },
   { path: "/guests", icon: UserX, label: "nav.guests", roles: ["admin", "schichtleiter"] },
