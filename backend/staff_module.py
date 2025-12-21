@@ -661,16 +661,16 @@ async def update_hr_fields(
     data: StaffHRFieldsUpdate, 
     user: dict = Depends(require_admin)
 ):
-    """Update HR fields for a staff member - Admin only with enhanced audit logging"""
+    """Update HR fields for a staff member - Admin only with encryption and audit logging"""
     existing = await db.staff_members.find_one({"id": member_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Mitarbeiter")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
-        return existing
+        return filter_member_for_role(existing, "admin", masked=True)
     
-    # Validate fields
+    # Validate fields before encryption
     validation_errors = []
     
     if "tax_id" in update_data and update_data["tax_id"]:
@@ -688,40 +688,98 @@ async def update_hr_fields(
     if validation_errors:
         raise ValidationException("; ".join(validation_errors))
     
-    update_data["updated_at"] = now_iso()
-    
-    # Track which sensitive fields are being changed
+    # Track which sensitive fields are being changed (before encryption)
     changed_sensitive = []
     for field in AUDIT_SENSITIVE_FIELDS:
-        if field in update_data and update_data[field] != existing.get(field):
-            changed_sensitive.append(field)
+        if field in update_data:
+            existing_decrypted = decrypt_field(existing.get(field, ""))
+            if update_data[field] != existing_decrypted:
+                changed_sensitive.append(field)
+    
+    # ENCRYPT high-security fields before storing
+    for field in HIGH_SECURITY_FIELDS:
+        if field in update_data and update_data[field]:
+            update_data[field] = encrypt_field(update_data[field])
+    
+    update_data["updated_at"] = now_iso()
     
     await db.staff_members.update_one({"id": member_id}, {"$set": update_data})
     updated = await db.staff_members.find_one({"id": member_id}, {"_id": 0})
     
-    # Enhanced audit logging for sensitive HR fields
+    # Enhanced audit logging for sensitive HR fields (NO cleartext values!)
     if changed_sensitive:
         await create_audit_log(
             user, "staff_member_hr", member_id, "update_sensitive_hr_fields",
-            {"fields": changed_sensitive, "values": "***MASKED***"},
-            {"fields": changed_sensitive, "values": "***MASKED***"},
+            {"fields": changed_sensitive, "values": "[ENCRYPTED]"},
+            {"fields": changed_sensitive, "values": "[ENCRYPTED]"},
             metadata={
                 "changed_fields": changed_sensitive,
                 "staff_name": updated.get("full_name"),
-                "note": "Sensitive HR data updated - values masked for privacy"
+                "note": "Encrypted HR data updated - values not logged",
+                "security_level": "HIGH"
             }
         )
     
-    # Standard audit log
-    await create_audit_log(
-        user, "staff_member", member_id, "update_hr_fields",
-        {k: existing.get(k) for k in update_data.keys()},
-        update_data
-    )
+    # Standard audit log (with sensitive fields masked)
+    audit_before = {k: "***MASKED***" if k in HIGH_SECURITY_FIELDS else existing.get(k) for k in update_data.keys()}
+    audit_after = {k: "***MASKED***" if k in HIGH_SECURITY_FIELDS else v for k, v in update_data.items()}
+    await create_audit_log(user, "staff_member", member_id, "update_hr_fields", audit_before, audit_after)
     
-    result = {k: v for k, v in updated.items() if k != "_id"}
+    # Return masked response
+    result = filter_member_for_role(updated, "admin", masked=True)
     result["completeness"] = calculate_completeness(updated)
     return result
+
+
+# NEW: Endpoint to reveal encrypted field (Admin only, with audit)
+class RevealFieldRequest(BaseModel):
+    field: str = Field(..., description="Field to reveal: tax_id, social_security_number, or bank_iban")
+    password: Optional[str] = None  # Optional re-authentication
+
+
+@staff_router.post("/members/{member_id}/reveal-field")
+async def reveal_sensitive_field(
+    member_id: str,
+    data: RevealFieldRequest,
+    user: dict = Depends(require_admin)
+):
+    """
+    Reveal a single encrypted field for Admin view.
+    Logged for security audit trail.
+    """
+    if data.field not in HIGH_SECURITY_FIELDS:
+        raise ValidationException(f"Feld '{data.field}' ist kein geschütztes Feld")
+    
+    member = await db.staff_members.find_one({"id": member_id, "archived": False}, {"_id": 0})
+    if not member:
+        raise NotFoundException("Mitarbeiter")
+    
+    encrypted_value = member.get(data.field)
+    if not encrypted_value:
+        return {"field": data.field, "value": None, "revealed": False}
+    
+    # Decrypt the field
+    decrypted_value = decrypt_field(encrypted_value)
+    
+    # Audit log this reveal action (IMPORTANT for security compliance)
+    await create_audit_log(
+        user, "staff_member_hr", member_id, "reveal_sensitive_field",
+        {"field": data.field},
+        {"field": data.field, "revealed": True},
+        metadata={
+            "revealed_field": data.field,
+            "staff_name": member.get("full_name"),
+            "note": "Admin viewed encrypted field in cleartext",
+            "security_level": "HIGH"
+        }
+    )
+    
+    return {
+        "field": data.field,
+        "value": decrypted_value,
+        "revealed": True,
+        "audit_logged": True
+    }
 
 
 @staff_router.get("/members/{member_id}/completeness")
