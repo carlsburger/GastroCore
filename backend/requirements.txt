@@ -71,3 +71,4 @@ urllib3==2.6.1
 uvicorn==0.25.0
 watchfiles==1.1.1
 reportlab
+qrcode[pil]
