@@ -10,6 +10,9 @@ import Areas from "./pages/Areas";
 import Users from "./pages/Users";
 import AuditLog from "./pages/AuditLog";
 import CancelReservation from "./pages/CancelReservation";
+import BookingWidget from "./pages/BookingWidget";
+import Waitlist from "./pages/Waitlist";
+import Guests from "./pages/Guests";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
