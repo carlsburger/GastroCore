@@ -1761,8 +1761,14 @@ async def init_default_reminder_rules():
 
 
 # ============== APP CONFIG ==============
+
+# Import Events Module (Sprint 4 - ADDITIV)
+from events_module import events_router, public_events_router, seed_events
+
 app.include_router(api_router)
 app.include_router(public_router)
+app.include_router(events_router)
+app.include_router(public_events_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1772,12 +1778,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add seed events endpoint
+@api_router.post("/seed-events", tags=["Admin"])
+async def seed_events_endpoint(user: dict = Depends(require_admin)):
+    """Seed sample events (Kabarett + Gänseabend)"""
+    return await seed_events()
+
 @app.on_event("startup")
 async def startup():
     """Initialize default settings and rules on startup"""
     await init_default_settings()
     await init_default_reminder_rules()
-    logger.info("GastroCore v3.0.0 started - Sprint 3 features enabled")
+    logger.info("GastroCore v4.0.0 started - Events Module enabled")
 
 @app.on_event("shutdown")
 async def shutdown():
