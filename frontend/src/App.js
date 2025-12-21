@@ -23,6 +23,10 @@ import EventBookings from "./pages/EventBookings";
 import PublicEventsList from "./pages/PublicEventsList";
 import PublicEventDetail from "./pages/PublicEventDetail";
 import PublicEventBooking from "./pages/PublicEventBooking";
+// Payment Module (Sprint 4)
+import PaymentRules from "./pages/PaymentRules";
+import PaymentTransactions from "./pages/PaymentTransactions";
+import { PaymentSuccess, PaymentCancel } from "./pages/PaymentPages";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
