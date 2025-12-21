@@ -4933,8 +4933,8 @@ class GastroCoreAPITester:
         
         if test_reservation_id:
             # Test status change: neu -> bestaetigt
-            result = self.make_request("PATCH", f"reservations/{test_reservation_id}/status", 
-                                     {"new_status": "bestaetigt"}, self.tokens.get("schichtleiter"), 
+            result = self.make_request("PATCH", f"reservations/{test_reservation_id}/status?new_status=bestaetigt", 
+                                     {}, self.tokens.get("schichtleiter"), 
                                      expected_status=200)
             if result["success"]:
                 self.log_test("PATCH /api/reservations/{id}/status?new_status=bestaetigt", True, 
