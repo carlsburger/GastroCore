@@ -22,6 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../components/ui/tooltip";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
@@ -42,6 +48,10 @@ import {
   Footprints,
   FileText,
   Download,
+  MessageCircle,
+  AlertTriangle,
+  Ban,
+  Bell,
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
