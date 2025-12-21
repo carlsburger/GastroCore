@@ -15,6 +15,7 @@ import {
   X,
   Clock,
   UserX,
+  Mail,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +25,8 @@ const navItems = [
   { path: "/areas", icon: MapPin, label: "nav.areas", roles: ["admin"] },
   { path: "/users", icon: Users, label: "nav.users", roles: ["admin"] },
   { path: "/audit", icon: FileText, label: "nav.auditLog", roles: ["admin"] },
+  { path: "/settings", icon: Settings, label: "nav.settings", roles: ["admin"] },
+  { path: "/message-logs", icon: Mail, label: "nav.messageLogs", roles: ["admin"] },
 ];
 
 export const Layout = ({ children }) => {
