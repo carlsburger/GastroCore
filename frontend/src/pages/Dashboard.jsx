@@ -691,6 +691,7 @@ export const Dashboard = () => {
                         <PaymentBadge 
                           paymentStatus={reservation.payment_status} 
                           amount={reservation.payment_amount || 0}
+                          paymentRequired={reservation.payment_transaction_id ? true : false}
                         />
                         
                         {/* Quick Actions - 1 Click */}
