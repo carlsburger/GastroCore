@@ -13,6 +13,9 @@ import CancelReservation from "./pages/CancelReservation";
 import BookingWidget from "./pages/BookingWidget";
 import Waitlist from "./pages/Waitlist";
 import Guests from "./pages/Guests";
+import Settings from "./pages/Settings";
+import ConfirmReservation from "./pages/ConfirmReservation";
+import MessageLogs from "./pages/MessageLogs";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
