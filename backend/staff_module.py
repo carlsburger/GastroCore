@@ -490,6 +490,113 @@ async def archive_staff_member(member_id: str, user: dict = Depends(require_admi
     return {"message": "Mitarbeiter archiviert", "success": True}
 
 
+# ============== HR FIELDS ENDPOINTS (Sprint 7.1 - Additive) ==============
+@staff_router.patch("/members/{member_id}/hr-fields")
+async def update_hr_fields(
+    member_id: str, 
+    data: StaffHRFieldsUpdate, 
+    user: dict = Depends(require_admin)
+):
+    """Update HR fields for a staff member - Admin only with enhanced audit logging"""
+    existing = await db.staff_members.find_one({"id": member_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Mitarbeiter")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        return existing
+    
+    update_data["updated_at"] = now_iso()
+    
+    # Track which sensitive fields are being changed
+    changed_sensitive = []
+    for field in AUDIT_SENSITIVE_FIELDS:
+        if field in update_data and update_data[field] != existing.get(field):
+            changed_sensitive.append(field)
+    
+    await db.staff_members.update_one({"id": member_id}, {"$set": update_data})
+    updated = await db.staff_members.find_one({"id": member_id}, {"_id": 0})
+    
+    # Enhanced audit logging for sensitive HR fields
+    if changed_sensitive:
+        await create_audit_log(
+            user, "staff_member_hr", member_id, "update_sensitive_hr_fields",
+            {"fields": changed_sensitive, "values": "***MASKED***"},
+            {"fields": changed_sensitive, "values": "***MASKED***"},
+            extra={
+                "changed_fields": changed_sensitive,
+                "staff_name": updated.get("full_name"),
+                "note": "Sensitive HR data updated - values masked for privacy"
+            }
+        )
+    
+    # Standard audit log
+    await create_audit_log(
+        user, "staff_member", member_id, "update_hr_fields",
+        {k: existing.get(k) for k in update_data.keys()},
+        update_data
+    )
+    
+    result = {k: v for k, v in updated.items() if k != "_id"}
+    result["completeness"] = calculate_completeness(updated)
+    return result
+
+
+@staff_router.get("/members/{member_id}/completeness")
+async def get_member_completeness(member_id: str, user: dict = Depends(require_admin)):
+    """Get completeness status for a staff member - Admin only"""
+    member = await db.staff_members.find_one({"id": member_id, "archived": False}, {"_id": 0})
+    if not member:
+        raise NotFoundException("Mitarbeiter")
+    
+    completeness = calculate_completeness(member)
+    return {
+        "member_id": member_id,
+        "member_name": member.get("full_name"),
+        "status": member.get("status"),
+        **completeness
+    }
+
+
+@staff_router.get("/completeness-overview")
+async def get_completeness_overview(user: dict = Depends(require_admin)):
+    """Get completeness overview for all active staff members - Admin only"""
+    members = await db.staff_members.find(
+        {"archived": False, "status": "aktiv"}, 
+        {"_id": 0, "id": 1, "full_name": 1, "email": 1, "mobile_phone": 1, "phone": 1, 
+         "tax_id": 1, "social_security_number": 1, "bank_iban": 1, "health_insurance": 1,
+         "emergency_contact_name": 1, "emergency_contact_phone": 1, "street": 1, "zip_code": 1, "city": 1}
+    ).to_list(500)
+    
+    overview = []
+    incomplete_count = 0
+    total_score = 0
+    
+    for member in members:
+        completeness = calculate_completeness(member)
+        total_score += completeness["score"]
+        if completeness["missing_for_active"]:
+            incomplete_count += 1
+        
+        overview.append({
+            "id": member["id"],
+            "name": member.get("full_name", ""),
+            "score": completeness["score"],
+            "missing_for_active": completeness["missing_for_active"],
+            "is_complete": completeness["is_complete"]
+        })
+    
+    avg_score = total_score / len(members) if members else 0
+    
+    return {
+        "total_active": len(members),
+        "incomplete_count": incomplete_count,
+        "complete_count": len(members) - incomplete_count,
+        "average_score": round(avg_score, 1),
+        "members": sorted(overview, key=lambda x: x["score"])
+    }
+
+
 # ============== STAFF DOCUMENTS ENDPOINTS ==============
 @staff_router.get("/members/{member_id}/documents")
 async def list_staff_documents(member_id: str, user: dict = Depends(require_manager)):
