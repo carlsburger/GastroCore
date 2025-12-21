@@ -499,3 +499,104 @@ async def send_email_template(to_email: str, subject: str, body: str) -> bool:
         logger.error(f"Failed to send template email to {to_email}: {str(e)}")
         await log_email(to_email, subject, "template", "failed", str(e))
         raise e
+
+
+
+async def send_email_with_attachments(
+    to_emails: list,
+    subject: str,
+    body: str,
+    attachments: list = None,
+    cc_emails: list = None,
+    bcc_emails: list = None
+) -> bool:
+    """Send email with attachments (for tax office exports)
+    
+    Args:
+        to_emails: List of recipient emails
+        subject: Email subject
+        body: Email body text
+        attachments: List of dicts with 'filename', 'content' (bytes), 'content_type'
+        cc_emails: List of CC recipients
+        bcc_emails: List of BCC recipients
+    """
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("SMTP credentials not configured, skipping email")
+        return False
+    
+    try:
+        from email.mime.base import MIMEBase
+        from email import encoders
+        
+        msg = MIMEMultipart('mixed')
+        msg['Subject'] = subject
+        msg['From'] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+        msg['To'] = ", ".join(to_emails)
+        
+        if cc_emails:
+            msg['Cc'] = ", ".join(cc_emails)
+        
+        # Add body
+        body_part = MIMEMultipart('alternative')
+        
+        # Plain text
+        body_part.attach(MIMEText(body, 'plain', 'utf-8'))
+        
+        # HTML wrapper
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #00280b; margin: 0;">GastroCore</h2>
+                </div>
+                <div style="background-color: #f5f5f5; border-radius: 8px; padding: 20px;">
+                    <p style="white-space: pre-line;">{body}</p>
+                </div>
+                <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+                    <p>&copy; {datetime.now().year} GastroCore. Automatisch generierte Nachricht.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        body_part.attach(MIMEText(html_body, 'html', 'utf-8'))
+        msg.attach(body_part)
+        
+        # Add attachments
+        if attachments:
+            for attachment in attachments:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(attachment['content'])
+                encoders.encode_base64(part)
+                part.add_header(
+                    'Content-Disposition',
+                    f"attachment; filename=\"{attachment['filename']}\""
+                )
+                if attachment.get('content_type'):
+                    part.replace_header('Content-Type', attachment['content_type'])
+                msg.attach(part)
+        
+        # Collect all recipients
+        all_recipients = list(to_emails)
+        if cc_emails:
+            all_recipients.extend(cc_emails)
+        if bcc_emails:
+            all_recipients.extend(bcc_emails)
+        
+        context = ssl.create_default_context()
+        
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_FROM_EMAIL, all_recipients, msg.as_string())
+        
+        logger.info(f"Email with attachments sent to {', '.join(to_emails)}")
+        await log_email(", ".join(to_emails), subject, "taxoffice_export", "sent")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send email with attachments: {str(e)}")
+        await log_email(", ".join(to_emails), subject, "taxoffice_export", "failed", str(e))
+        raise e
