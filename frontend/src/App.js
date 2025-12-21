@@ -27,6 +27,10 @@ import PublicEventBooking from "./pages/PublicEventBooking";
 import PaymentRules from "./pages/PaymentRules";
 import PaymentTransactions from "./pages/PaymentTransactions";
 import { PaymentSuccess, PaymentCancel } from "./pages/PaymentPages";
+// Staff Module (Sprint 5)
+import Staff from "./pages/Staff";
+import StaffDetail from "./pages/StaffDetail";
+import Schedule from "./pages/Schedule";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
