@@ -34,7 +34,12 @@ async def create_audit_log(
         "id": str(uuid.uuid4()),
         "actor_id": actor.get("id", "unknown"),
         "actor_email": actor.get("email", "unknown"),
+        "actor": {
+            "id": actor.get("id", "unknown"),
+            "email": actor.get("email", "unknown")
+        },
         "entity": entity,
+        "entity_type": entity,  # Alias for compatibility
         "entity_id": entity_id,
         "action": action,
         "before": safe_dict_for_audit(before),
