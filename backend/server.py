@@ -1768,6 +1768,9 @@ from events_module import events_router, public_events_router, seed_events
 # Import Payment Module (Sprint 4 - Zahlungen)
 from payment_module import payment_router, payment_webhook_router, seed_payment_rules
 
+# Import Staff Module (Sprint 5 - Mitarbeiter & Dienstplan)
+from staff_module import staff_router, seed_work_areas, seed_sample_staff
+
 # Add seed events endpoint BEFORE including routers
 @api_router.post("/seed-events", tags=["Admin"])
 async def seed_events_endpoint(user: dict = Depends(require_admin)):
@@ -1779,12 +1782,23 @@ async def seed_payment_rules_endpoint(user: dict = Depends(require_admin)):
     """Seed default payment rules"""
     return await seed_payment_rules()
 
+@api_router.post("/seed-staff", tags=["Admin"])
+async def seed_staff_endpoint(user: dict = Depends(require_admin)):
+    """Seed work areas and sample staff"""
+    areas_result = await seed_work_areas()
+    staff_result = await seed_sample_staff()
+    return {
+        "work_areas": areas_result,
+        "staff": staff_result
+    }
+
 app.include_router(api_router)
 app.include_router(public_router)
 app.include_router(events_router)
 app.include_router(public_events_router)
 app.include_router(payment_router)
 app.include_router(payment_webhook_router)
+app.include_router(staff_router)
 
 app.add_middleware(
     CORSMiddleware,
