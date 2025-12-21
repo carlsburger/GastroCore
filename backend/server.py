@@ -537,7 +537,7 @@ async def get_audit_logs(
 @api_router.post("/seed")
 async def seed_data():
     """Seed initial test data - only works if no users exist"""
-    existing_users = await db.users.count_documents({})
+    existing_users = await db.users.count_documents({"archived": False})
     if existing_users > 0:
         return {"message": "Daten bereits vorhanden", "seeded": False}
     
