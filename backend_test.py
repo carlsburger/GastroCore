@@ -4628,34 +4628,26 @@ class GastroCoreAPITester:
         return cleanup_success
 
     def run_all_tests(self):
-        """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests - Sprint 6 Tax Office Export Module Focus")
+        """Run all test suites - Focus on HR Fields Extension (Sprint 7.1)"""
+        print("🚀 Starting GastroCore Backend API Tests - HR Fields Extension (Sprint 7.1) Focus")
         print("=" * 80)
         
-        # Test sequence - focused on Sprint 6 Tax Office Module
+        # Test sequence - focused on HR Fields Extension
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # Sprint 6 Tax Office Export Module tests - PRIMARY FOCUS
-        print("\n🏛️ SPRINT 6 TAX OFFICE EXPORT MODULE TESTING:")
-        test_results.append(self.test_sprint6_taxoffice_settings())
-        test_results.append(self.test_sprint6_taxoffice_export_jobs())
-        test_results.append(self.test_sprint6_taxoffice_downloads())
-        test_results.append(self.test_sprint6_staff_registration())
-        test_results.append(self.test_sprint6_staff_tax_fields())
-        test_results.append(self.test_sprint6_audit_logs())
+        # HR Fields Extension (Sprint 7.1) tests - PRIMARY FOCUS
+        print("\n🏢 HR FIELDS EXTENSION (SPRINT 7.1) TESTING:")
+        test_results.append(self.test_hr_fields_extension_sprint71())
         
         # Core functionality tests (reduced for focus)
         print("\n🏗️ CORE FUNCTIONALITY TESTING:")
         test_results.append(self.test_rbac_access_control())
         test_results.append(self.test_health_endpoint())
         test_results.append(self.test_error_handling())
-        
-        # Cleanup
-        self.cleanup_test_data()
         
         # Summary
         print("\n" + "=" * 80)
