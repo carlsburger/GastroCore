@@ -1813,6 +1813,8 @@ app.include_router(payment_router)
 app.include_router(payment_webhook_router)
 app.include_router(staff_router)
 app.include_router(taxoffice_router)
+app.include_router(loyalty_router)
+app.include_router(customer_router)
 
 app.add_middleware(
     CORSMiddleware,
