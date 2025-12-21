@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     
     # App
     APP_URL: str = "http://localhost:3000"
-    APP_NAME: str = "GastroCore"
+    APP_NAME: str = "Carlsburg Cockpit"
     
     # Reservation Limits (configurable)
     MAX_PARTY_SIZE: int = 20
