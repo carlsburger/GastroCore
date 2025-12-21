@@ -419,7 +419,7 @@ async def create_marketing_content(
     await db.marketing_content.insert_one(content)
     
     await create_audit_log(
-        db, user, "marketing_content", content["id"], "create",
+        user, "marketing_content", content["id"], "create",
         None, {"title": content["title"], "type": content["content_type"]}
     )
     
@@ -445,7 +445,7 @@ async def update_marketing_content(
     await db.marketing_content.update_one({"id": content_id}, {"$set": updates})
     
     await create_audit_log(
-        db, user, "marketing_content", content_id, "update",
+        user, "marketing_content", content_id, "update",
         {"status": content["status"]}, updates
     )
     
