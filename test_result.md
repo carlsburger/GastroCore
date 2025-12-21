@@ -376,63 +376,78 @@ backend:
 
   - task: "Tax Office Settings API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/taxoffice_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/PATCH /api/taxoffice/settings - Steuerbüro-Konfiguration mit Empfänger-E-Mail, CC/BCC, Absendername, Betreff-Template"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Tax Office Settings API working perfectly. GET /api/taxoffice/settings returns default settings with all expected fields (recipient_emails, sender_name, subject_template, filename_prefix). PATCH /api/taxoffice/settings successfully updates settings including recipient emails, CC emails, sender name, and filename prefix."
 
   - task: "Tax Office Export Jobs API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/taxoffice_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/POST /api/taxoffice/jobs - Export-Jobs mit Status (pending/generating/ready/sent/failed), CSV + PDF Generation"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Export Jobs API fully functional. GET /api/taxoffice/jobs lists jobs correctly. POST /api/taxoffice/jobs creates both monthly_hours and shift_list export jobs with 'pending' status. Background job generation works - jobs transition to 'ready' status with generated files. GET /api/taxoffice/jobs/{job_id} retrieves job details successfully."
 
   - task: "Tax Office Export Downloads API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/taxoffice_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/taxoffice/jobs/{job_id}/download/{file_index} - Download CSV und PDF Dateien"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Export Downloads working perfectly. Background job generation completes successfully (status: ready, 2 files generated). GET /api/taxoffice/jobs/{job_id}/download/0 downloads CSV file (431 bytes) with correct content-type. GET /api/taxoffice/jobs/{job_id}/download/1 downloads PDF file (2346 bytes) with correct content-type."
 
   - task: "Staff Registration Package API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/taxoffice_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/taxoffice/staff-registration/{staff_id} - Mitarbeiter-Meldepaket mit Personaldaten + Dokumenten-Bundle"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Staff Registration Package working correctly. POST /api/taxoffice/staff-registration/{staff_id} creates registration package with export_type 'staff_registration'. PDF generation works - creates properly named PDF file (mitarbeiter_anmeldung_koch_20251221.pdf) with staff member data."
 
   - task: "Staff Tax Fields API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/taxoffice_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "PATCH /api/taxoffice/staff/{staff_id}/tax-fields - Update tax_id, iban, Steuerklasse, etc."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Staff Tax Fields API working perfectly. PATCH /api/taxoffice/staff/{staff_id}/tax-fields successfully updates all tax-related fields (tax_id, tax_class, social_security_number, health_insurance, bank details, wages, vacation_days, etc.). Verification confirms tax fields are properly saved and retrievable."
 
 frontend:
   - task: "Payment Rules Page"
