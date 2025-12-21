@@ -804,7 +804,7 @@ class GastroCoreAPITester:
             "guest_phone": "+49 170 8888888",
             "guest_email": "waitlist@example.de",
             "party_size": 6,
-            "date": "2025-12-22",
+            "date": "2025-12-23",
             "preferred_time": "19:00",
             "priority": 3,
             "notes": "Test waitlist entry",
