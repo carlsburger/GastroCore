@@ -813,6 +813,12 @@ async def archive_waitlist_entry(entry_id: str, user: dict = Depends(require_man
 
 
 # ============== GUEST MANAGEMENT (Grey/Blacklist) ==============
+import re
+
+def escape_regex(pattern: str) -> str:
+    """Escape special regex characters for safe MongoDB regex search"""
+    return re.escape(pattern)
+
 @api_router.get("/guests", tags=["Guests"])
 async def get_guests(
     flag: Optional[str] = None,
@@ -823,10 +829,12 @@ async def get_guests(
     if flag:
         query["flag"] = flag
     if search:
+        # Escape special regex characters to prevent MongoDB regex errors
+        safe_search = escape_regex(search)
         query["$or"] = [
-            {"phone": {"$regex": search, "$options": "i"}},
-            {"name": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}}
+            {"phone": {"$regex": safe_search, "$options": "i"}},
+            {"name": {"$regex": safe_search, "$options": "i"}},
+            {"email": {"$regex": safe_search, "$options": "i"}}
         ]
     
     guests = await db.guests.find(query, {"_id": 0}).to_list(500)
