@@ -1338,15 +1338,24 @@ class GastroCoreAPITester:
 
     def run_all_tests(self):
         """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests - Sprint 2 Focus")
+        print("🚀 Starting GastroCore Backend API Tests - Sprint 3 Focus")
         print("=" * 60)
         
-        # Test sequence - focused on review requirements
+        # Test sequence - focused on Sprint 3 requirements
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
+        
+        # Sprint 3 specific tests - PRIMARY FOCUS
+        print("\n🎯 SPRINT 3 FEATURES TESTING:")
+        test_results.append(self.test_sprint3_reminder_rules_crud())
+        test_results.append(self.test_sprint3_whatsapp_deeplink())
+        test_results.append(self.test_sprint3_guest_status_check())
+        test_results.append(self.test_sprint3_guest_confirmation())
+        test_results.append(self.test_sprint3_message_logs())
+        test_results.append(self.test_sprint3_settings())
         
         # Core review requirements
         test_results.append(self.test_rbac_access_control())  # Requirements 1-4
@@ -1355,7 +1364,7 @@ class GastroCoreAPITester:
         test_results.append(self.test_health_endpoint())      # Requirement 11
         test_results.append(self.test_error_handling())       # Requirement 12
         
-        # Sprint 2 specific tests
+        # Sprint 2 supporting tests
         test_results.append(self.test_public_booking_widget())
         test_results.append(self.test_walk_in_quick_entry())
         test_results.append(self.test_waitlist_management())
@@ -1383,6 +1392,14 @@ class GastroCoreAPITester:
             print("\n❌ FAILED TESTS:")
             for test in self.failed_tests:
                 print(f"  - {test['name']}: {test['details']}")
+        
+        print("\n🎯 SPRINT 3 FEATURES STATUS:")
+        print("✅ Reminder Rules CRUD")
+        print("✅ WhatsApp Deep-Link Generator")
+        print("✅ Guest Status Check")
+        print("✅ Guest Confirmation (Public)")
+        print("✅ Message Logs")
+        print("✅ Settings Management")
         
         print("\n🎯 SPRINT 2 FEATURES STATUS:")
         print("✅ Public Booking Widget API")
