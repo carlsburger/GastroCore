@@ -1,29 +1,20 @@
 """
-GastroCore API v1.1.0 - Production-Ready
-Modular Gastro Management System
-
-Architecture:
-- Core: Auth, Audit, Config, Validators
-- Modules: Reservations, Areas, Users, Settings
-
-Security:
-- RBAC on all endpoints
-- Audit logging for all mutations
-- Input validation
-- Status transition enforcement
+GastroCore API v2.0.0 - Sprint 2: End-to-End Reservations
+Features: Online Booking, Widget, Walk-ins, Waitlist, No-show Management, PDF Export
 """
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks, Request, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from typing import List, Optional, Any, Dict
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import io
 
 # Load environment
 ROOT_DIR = Path(__file__).parent
@@ -37,67 +28,56 @@ from core.auth import (
     hash_password, verify_password, create_token, decode_token
 )
 from core.audit import create_audit_log, safe_dict_for_audit, SYSTEM_ACTOR
-from core.models import UserRole, ReservationStatus, serialize_for_db
+from core.models import UserRole, ReservationStatus, WaitlistStatus, GuestFlag, ReservationSource
 from core.validators import (
     validate_status_transition, validate_reservation_data,
-    validate_area_data, validate_user_data, validate_password_strength
+    validate_area_data, validate_user_data, validate_password_strength,
+    validate_opening_hours, validate_capacity
 )
 from core.exceptions import (
     GastroCoreException, UnauthorizedException, ForbiddenException,
     NotFoundException, ValidationException, ConflictException,
-    InvalidStatusTransitionException
+    InvalidStatusTransitionException, CapacityExceededException
 )
 from email_service import (
     send_confirmation_email, send_reminder_email, send_cancellation_email,
-    verify_cancel_token
+    send_waitlist_notification, verify_cancel_token, get_email_templates
 )
+from pdf_service import generate_table_plan_pdf
 
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
-    version="1.1.0",
-    description="Production-Ready Restaurant Management System"
+    version="2.0.0",
+    description="End-to-End Restaurant Reservation System"
 )
 
 api_router = APIRouter(prefix="/api")
+public_router = APIRouter(prefix="/api/public")  # No auth required
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-# ============== GLOBAL EXCEPTION HANDLER ==============
+# ============== EXCEPTION HANDLERS ==============
 @app.exception_handler(GastroCoreException)
 async def gastrocore_exception_handler(request: Request, exc: GastroCoreException):
-    """Handle all custom exceptions with consistent format"""
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "detail": exc.detail,
-            "error_code": exc.error_code,
-            "success": False
-        }
+        content={"detail": exc.detail, "error_code": exc.error_code, "success": False}
     )
-
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Handle unexpected exceptions"""
     logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": "Ein unerwarteter Fehler ist aufgetreten",
-            "error_code": "INTERNAL_ERROR",
-            "success": False
-        }
+        content={"detail": "Ein unerwarteter Fehler ist aufgetreten", "error_code": "INTERNAL_ERROR", "success": False}
     )
 
 
 # ============== PYDANTIC MODELS ==============
+# Auth Models
 class UserCreate(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=2, max_length=100)
@@ -126,19 +106,14 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
 
+# Area Models
 class AreaCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     capacity: Optional[int] = Field(None, ge=1, le=500)
+    table_count: Optional[int] = Field(None, ge=1, le=100)
 
-class AreaResponse(BaseModel):
-    id: str
-    name: str
-    description: Optional[str]
-    capacity: Optional[int]
-    created_at: str
-    archived: bool
-
+# Reservation Models - Extended for Sprint 2
 class ReservationCreate(BaseModel):
     guest_name: str = Field(..., min_length=2, max_length=100)
     guest_phone: str = Field(..., min_length=6, max_length=30)
@@ -147,7 +122,11 @@ class ReservationCreate(BaseModel):
     date: str  # YYYY-MM-DD
     time: str  # HH:MM
     area_id: Optional[str] = None
+    table_number: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=1000)
+    occasion: Optional[str] = Field(None, max_length=100)  # Anlass: Geburtstag, Hochzeit, etc.
+    source: Optional[str] = "intern"  # widget, intern, walk-in
+    language: Optional[str] = "de"  # de, en, pl
     
     @field_validator('date')
     @classmethod
@@ -175,72 +154,223 @@ class ReservationUpdate(BaseModel):
     date: Optional[str] = None
     time: Optional[str] = None
     area_id: Optional[str] = None
+    table_number: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=1000)
+    occasion: Optional[str] = None
 
-class StatusUpdate(BaseModel):
-    status: ReservationStatus
+# Walk-in Quick Entry
+class WalkInCreate(BaseModel):
+    guest_name: str = Field(..., min_length=2, max_length=100)
+    guest_phone: Optional[str] = Field(None, max_length=30)
+    party_size: int = Field(..., ge=1, le=20)
+    area_id: Optional[str] = None
+    table_number: Optional[str] = None
+    notes: Optional[str] = None
 
+# Public Booking (Widget)
+class PublicBookingCreate(BaseModel):
+    guest_name: str = Field(..., min_length=2, max_length=100)
+    guest_phone: str = Field(..., min_length=6, max_length=30)
+    guest_email: EmailStr
+    party_size: int = Field(..., ge=1, le=20)
+    date: str
+    time: str
+    occasion: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=500)
+    language: Optional[str] = "de"
+    
+    @field_validator('date')
+    @classmethod
+    def validate_date(cls, v):
+        try:
+            d = datetime.strptime(v, "%Y-%m-%d").date()
+            if d < date.today():
+                raise ValueError("Datum liegt in der Vergangenheit")
+        except ValueError as e:
+            if "Datum liegt" in str(e):
+                raise e
+            raise ValueError("Ungültiges Datumsformat")
+        return v
+
+# Waitlist Models
+class WaitlistCreate(BaseModel):
+    guest_name: str = Field(..., min_length=2, max_length=100)
+    guest_phone: str = Field(..., min_length=6, max_length=30)
+    guest_email: Optional[EmailStr] = None
+    party_size: int = Field(..., ge=1, le=20)
+    date: str
+    preferred_time: Optional[str] = None
+    priority: Optional[int] = Field(1, ge=1, le=5)  # 1=niedrig, 5=hoch
+    notes: Optional[str] = None
+    language: Optional[str] = "de"
+
+class WaitlistUpdate(BaseModel):
+    status: Optional[str] = None  # offen, informiert, eingeloest, erledigt
+    priority: Optional[int] = Field(None, ge=1, le=5)
+    notes: Optional[str] = None
+
+# Guest Models (for Grey/Blacklist)
+class GuestCreate(BaseModel):
+    phone: str = Field(..., min_length=6, max_length=30)
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    flag: Optional[str] = None  # none, greylist, blacklist
+    no_show_count: Optional[int] = 0
+    notes: Optional[str] = None
+
+class GuestUpdate(BaseModel):
+    flag: Optional[str] = None
+    notes: Optional[str] = None
+
+# Settings Models
 class SettingCreate(BaseModel):
     key: str = Field(..., min_length=1, max_length=100)
     value: str
     description: Optional[str] = None
 
+# Opening Hours
+class OpeningHoursCreate(BaseModel):
+    day_of_week: int = Field(..., ge=0, le=6)  # 0=Monday, 6=Sunday
+    open_time: str  # HH:MM
+    close_time: str  # HH:MM
+    is_closed: bool = False
+
+# Email Template
+class EmailTemplateUpdate(BaseModel):
+    template_type: str  # confirmation, reminder, cancellation, waitlist
+    language: str  # de, en, pl
+    subject: str
+    body_html: str
+    body_text: str
+
 
 # ============== HELPER FUNCTIONS ==============
-def create_user_entity(email: str, name: str, role: str, password_hash: str, must_change: bool = True) -> dict:
-    """Create a new user document"""
-    now = datetime.now(timezone.utc).isoformat()
-    return {
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+def create_entity(data: dict, extra_fields: dict = None) -> dict:
+    """Create a new entity with standard fields"""
+    entity = {
         "id": str(uuid.uuid4()),
-        "email": email,
-        "name": name,
-        "role": role,
-        "password_hash": password_hash,
-        "is_active": True,
-        "must_change_password": must_change,
-        "created_at": now,
-        "updated_at": now,
+        **data,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
         "archived": False
     }
+    if extra_fields:
+        entity.update(extra_fields)
+    return entity
 
-def create_reservation_entity(data: dict) -> dict:
-    """Create a new reservation document"""
-    now = datetime.now(timezone.utc).isoformat()
-    return {
-        "id": str(uuid.uuid4()),
-        "guest_name": data.get("guest_name"),
-        "guest_phone": data.get("guest_phone"),
-        "guest_email": data.get("guest_email"),
-        "party_size": data.get("party_size"),
-        "date": data.get("date"),
-        "time": data.get("time"),
-        "area_id": data.get("area_id"),
-        "notes": data.get("notes"),
-        "status": ReservationStatus.NEU.value,
-        "created_at": now,
-        "updated_at": now,
-        "archived": False,
-        "reminder_sent": False
-    }
+async def get_guest_by_phone(phone: str) -> Optional[dict]:
+    """Get guest record by phone number"""
+    return await db.guests.find_one({"phone": phone, "archived": False}, {"_id": 0})
 
-def create_area_entity(data: dict) -> dict:
-    """Create a new area document"""
-    now = datetime.now(timezone.utc).isoformat()
-    return {
-        "id": str(uuid.uuid4()),
-        "name": data.get("name"),
-        "description": data.get("description"),
-        "capacity": data.get("capacity"),
-        "created_at": now,
-        "updated_at": now,
+async def update_guest_no_show(phone: str, increment: int = 1):
+    """Update guest no-show count and flag if threshold reached"""
+    guest = await get_guest_by_phone(phone)
+    
+    # Get thresholds from settings
+    greylist_threshold = 2
+    blacklist_threshold = 4
+    
+    threshold_setting = await db.settings.find_one({"key": "no_show_greylist_threshold"})
+    if threshold_setting:
+        greylist_threshold = int(threshold_setting.get("value", 2))
+    
+    blacklist_setting = await db.settings.find_one({"key": "no_show_blacklist_threshold"})
+    if blacklist_setting:
+        blacklist_threshold = int(blacklist_setting.get("value", 4))
+    
+    if guest:
+        new_count = guest.get("no_show_count", 0) + increment
+        new_flag = guest.get("flag", "none")
+        
+        if new_count >= blacklist_threshold:
+            new_flag = "blacklist"
+        elif new_count >= greylist_threshold:
+            new_flag = "greylist"
+        
+        await db.guests.update_one(
+            {"phone": phone},
+            {"$set": {"no_show_count": new_count, "flag": new_flag, "updated_at": now_iso()}}
+        )
+    else:
+        # Create new guest record
+        new_guest = {
+            "id": str(uuid.uuid4()),
+            "phone": phone,
+            "no_show_count": increment,
+            "flag": "greylist" if increment >= greylist_threshold else "none",
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+            "archived": False
+        }
+        await db.guests.insert_one(new_guest)
+
+async def check_capacity(date_str: str, time_str: str, party_size: int, area_id: str = None) -> dict:
+    """Check if there's capacity for the reservation"""
+    # Get all reservations for that time slot
+    query = {
+        "date": date_str,
+        "time": time_str,
+        "status": {"$in": ["neu", "bestaetigt", "angekommen"]},
         "archived": False
     }
+    if area_id:
+        query["area_id"] = area_id
+    
+    existing = await db.reservations.find(query, {"_id": 0}).to_list(1000)
+    total_guests = sum(r.get("party_size", 0) for r in existing)
+    
+    # Get capacity from settings or area
+    max_capacity = 100  # Default
+    if area_id:
+        area = await db.areas.find_one({"id": area_id, "archived": False}, {"_id": 0})
+        if area and area.get("capacity"):
+            max_capacity = area["capacity"]
+    else:
+        cap_setting = await db.settings.find_one({"key": "max_total_capacity"})
+        if cap_setting:
+            max_capacity = int(cap_setting.get("value", 100))
+    
+    available = max_capacity - total_guests
+    
+    return {
+        "available": available >= party_size,
+        "current_guests": total_guests,
+        "max_capacity": max_capacity,
+        "available_seats": available
+    }
+
+async def check_opening_hours(date_str: str, time_str: str) -> dict:
+    """Check if restaurant is open at the given time"""
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        day_of_week = dt.weekday()  # 0=Monday
+        
+        hours = await db.opening_hours.find_one({"day_of_week": day_of_week}, {"_id": 0})
+        
+        if not hours:
+            # Default: open 11:00-22:00
+            return {"open": True, "message": "Standard-Öffnungszeiten"}
+        
+        if hours.get("is_closed"):
+            return {"open": False, "message": "Geschlossen an diesem Tag"}
+        
+        open_time = hours.get("open_time", "11:00")
+        close_time = hours.get("close_time", "22:00")
+        
+        if open_time <= time_str <= close_time:
+            return {"open": True, "open_time": open_time, "close_time": close_time}
+        else:
+            return {"open": False, "message": f"Öffnungszeiten: {open_time} - {close_time}"}
+    except Exception:
+        return {"open": True}  # Default to open on error
 
 
 # ============== AUTH ENDPOINTS ==============
 @api_router.post("/auth/login", response_model=TokenResponse, tags=["Auth"])
 async def login(data: UserLogin):
-    """Authenticate user and return JWT token"""
     user = await db.users.find_one({"email": data.email, "archived": False}, {"_id": 0})
     
     if not user or not verify_password(data.password, user["password_hash"]):
@@ -250,83 +380,59 @@ async def login(data: UserLogin):
         raise UnauthorizedException("Konto deaktiviert")
     
     token = create_token(user["id"], user["email"], user["role"])
-    
-    # Audit login
     await create_audit_log(user, "user", user["id"], "login")
     
     return TokenResponse(
         access_token=token,
         user=UserResponse(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            role=user["role"],
-            is_active=user["is_active"],
-            must_change_password=user.get("must_change_password", False),
+            id=user["id"], email=user["email"], name=user["name"], role=user["role"],
+            is_active=user["is_active"], must_change_password=user.get("must_change_password", False),
             created_at=user["created_at"]
         )
     )
 
 @api_router.get("/auth/me", response_model=UserResponse, tags=["Auth"])
 async def get_me(user: dict = Depends(get_current_user)):
-    """Get current authenticated user"""
     return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        name=user["name"],
-        role=user["role"],
-        is_active=user["is_active"],
-        must_change_password=user.get("must_change_password", False),
+        id=user["id"], email=user["email"], name=user["name"], role=user["role"],
+        is_active=user["is_active"], must_change_password=user.get("must_change_password", False),
         created_at=user["created_at"]
     )
 
 @api_router.post("/auth/change-password", tags=["Auth"])
 async def change_password(data: PasswordChange, user: dict = Depends(get_current_user)):
-    """Change user password"""
     if not verify_password(data.current_password, user["password_hash"]):
         raise ValidationException("Aktuelles Passwort ist falsch")
     
     validate_password_strength(data.new_password)
-    
     before = safe_dict_for_audit(user)
-    new_hash = hash_password(data.new_password)
     
     await db.users.update_one(
         {"id": user["id"]},
-        {"$set": {
-            "password_hash": new_hash,
-            "must_change_password": False,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }}
+        {"$set": {"password_hash": hash_password(data.new_password), "must_change_password": False, "updated_at": now_iso()}}
     )
     
     await create_audit_log(user, "user", user["id"], "password_change", before, {**before, "must_change_password": False})
-    
     return {"message": "Passwort erfolgreich geändert", "success": True}
 
 
-# ============== USER ENDPOINTS (Admin only) ==============
+# ============== USER ENDPOINTS ==============
 @api_router.get("/users", response_model=List[UserResponse], tags=["Users"])
 async def get_users(user: dict = Depends(require_admin)):
-    """List all users (Admin only)"""
     users = await db.users.find({"archived": False}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return [UserResponse(**u) for u in users]
 
 @api_router.post("/users", response_model=UserResponse, tags=["Users"])
 async def create_user(data: UserCreate, user: dict = Depends(require_admin)):
-    """Create a new user (Admin only)"""
-    # Check for duplicate email
     existing = await db.users.find_one({"email": data.email, "archived": False})
     if existing:
         raise ConflictException("E-Mail bereits registriert")
     
-    new_user = create_user_entity(
-        email=data.email,
-        name=data.name,
-        role=data.role.value,
-        password_hash=hash_password(data.password),
-        must_change=True
-    )
+    new_user = {
+        "id": str(uuid.uuid4()), "email": data.email, "name": data.name, "role": data.role.value,
+        "password_hash": hash_password(data.password), "is_active": True, "must_change_password": True,
+        "created_at": now_iso(), "updated_at": now_iso(), "archived": False
+    }
     
     await db.users.insert_one(new_user)
     await create_audit_log(user, "user", new_user["id"], "create", None, safe_dict_for_audit(new_user))
@@ -335,7 +441,6 @@ async def create_user(data: UserCreate, user: dict = Depends(require_admin)):
 
 @api_router.delete("/users/{user_id}", tags=["Users"])
 async def archive_user(user_id: str, user: dict = Depends(require_admin)):
-    """Archive a user (Admin only)"""
     if user_id == user["id"]:
         raise ValidationException("Eigenes Konto kann nicht archiviert werden")
     
@@ -344,8 +449,7 @@ async def archive_user(user_id: str, user: dict = Depends(require_admin)):
         raise NotFoundException("Benutzer")
     
     before = safe_dict_for_audit(existing)
-    await db.users.update_one({"id": user_id}, {"$set": {"archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}})
-    
+    await db.users.update_one({"id": user_id}, {"$set": {"archived": True, "updated_at": now_iso()}})
     await create_audit_log(user, "user", user_id, "archive", before, {**before, "archived": True})
     
     return {"message": "Benutzer archiviert", "success": True}
@@ -354,50 +458,39 @@ async def archive_user(user_id: str, user: dict = Depends(require_admin)):
 # ============== AREA ENDPOINTS ==============
 @api_router.get("/areas", tags=["Areas"])
 async def get_areas(user: dict = Depends(get_current_user)):
-    """List all areas (requires authentication)"""
     areas = await db.areas.find({"archived": False}, {"_id": 0}).to_list(1000)
     return areas
 
 @api_router.post("/areas", tags=["Areas"])
 async def create_area(data: AreaCreate, user: dict = Depends(require_admin)):
-    """Create a new area (Admin only)"""
-    area = create_area_entity(data.model_dump(exclude_none=True))
-    
+    area = create_entity(data.model_dump(exclude_none=True))
     await db.areas.insert_one(area)
     await create_audit_log(user, "area", area["id"], "create", None, safe_dict_for_audit(area))
-    
-    # Return without _id
     return {k: v for k, v in area.items() if k != "_id"}
 
 @api_router.put("/areas/{area_id}", tags=["Areas"])
 async def update_area(area_id: str, data: AreaCreate, user: dict = Depends(require_admin)):
-    """Update an area (Admin only)"""
     existing = await db.areas.find_one({"id": area_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Bereich")
     
     before = safe_dict_for_audit(existing)
-    update_data = {**data.model_dump(exclude_none=True), "updated_at": datetime.now(timezone.utc).isoformat()}
-    
+    update_data = {**data.model_dump(exclude_none=True), "updated_at": now_iso()}
     await db.areas.update_one({"id": area_id}, {"$set": update_data})
     
     updated = await db.areas.find_one({"id": area_id}, {"_id": 0})
     await create_audit_log(user, "area", area_id, "update", before, safe_dict_for_audit(updated))
-    
     return updated
 
 @api_router.delete("/areas/{area_id}", tags=["Areas"])
 async def archive_area(area_id: str, user: dict = Depends(require_admin)):
-    """Archive an area (Admin only)"""
     existing = await db.areas.find_one({"id": area_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Bereich")
     
     before = safe_dict_for_audit(existing)
-    await db.areas.update_one({"id": area_id}, {"$set": {"archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}})
-    
+    await db.areas.update_one({"id": area_id}, {"$set": {"archived": True, "updated_at": now_iso()}})
     await create_audit_log(user, "area", area_id, "archive", before, {**before, "archived": True})
-    
     return {"message": "Bereich archiviert", "success": True}
 
 
@@ -405,29 +498,25 @@ async def archive_area(area_id: str, user: dict = Depends(require_admin)):
 @api_router.get("/reservations", tags=["Reservations"])
 async def get_reservations(
     date: Optional[str] = None,
-    status: Optional[ReservationStatus] = None,
+    status: Optional[str] = None,
     area_id: Optional[str] = None,
+    source: Optional[str] = None,
     search: Optional[str] = None,
     limit: int = 200,
     user: dict = Depends(get_current_user)
 ):
-    """
-    List reservations with filters.
-    - Admin/Schichtleiter: Full access
-    - Mitarbeiter: Blocked (no terminal access)
-    """
-    # RBAC: Mitarbeiter cannot access reservations
     if user["role"] == UserRole.MITARBEITER.value:
         raise ForbiddenException("Kein Zugriff auf Reservierungen")
     
     query = {"archived": False}
-    
     if date:
         query["date"] = date
     if status:
-        query["status"] = status.value
+        query["status"] = status
     if area_id:
         query["area_id"] = area_id
+    if source:
+        query["source"] = source
     if search:
         query["$or"] = [
             {"guest_name": {"$regex": search, "$options": "i"}},
@@ -435,11 +524,18 @@ async def get_reservations(
         ]
     
     reservations = await db.reservations.find(query, {"_id": 0}).sort("time", 1).limit(limit).to_list(limit)
+    
+    # Enrich with guest flags
+    for res in reservations:
+        guest = await get_guest_by_phone(res.get("guest_phone", ""))
+        if guest and guest.get("flag") and guest["flag"] != "none":
+            res["guest_flag"] = guest["flag"]
+            res["no_show_count"] = guest.get("no_show_count", 0)
+    
     return reservations
 
 @api_router.get("/reservations/{reservation_id}", tags=["Reservations"])
 async def get_reservation(reservation_id: str, user: dict = Depends(get_current_user)):
-    """Get a single reservation"""
     if user["role"] == UserRole.MITARBEITER.value:
         raise ForbiddenException("Kein Zugriff auf Reservierungen")
     
@@ -454,17 +550,20 @@ async def create_reservation(
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_manager)
 ):
-    """Create a new reservation (Admin/Schichtleiter only)"""
-    # Validate reservation data
-    validate_reservation_data(data.model_dump())
+    # Check guest flag
+    guest = await get_guest_by_phone(data.guest_phone)
+    if guest and guest.get("flag") == "blacklist":
+        raise ValidationException("Gast ist auf der Blacklist")
     
-    # Verify area exists if specified
-    if data.area_id:
-        area = await db.areas.find_one({"id": data.area_id, "archived": False})
-        if not area:
-            raise ValidationException("Ungültiger Bereich")
+    # Check capacity
+    capacity = await check_capacity(data.date, data.time, data.party_size, data.area_id)
+    if not capacity["available"]:
+        raise CapacityExceededException(f"Keine Kapazität verfügbar. Verfügbare Plätze: {capacity['available_seats']}")
     
-    reservation = create_reservation_entity(data.model_dump(exclude_none=True))
+    reservation = create_entity(
+        data.model_dump(exclude_none=True),
+        {"status": "neu", "reminder_sent": False, "source": data.source or "intern"}
+    )
     
     await db.reservations.insert_one(reservation)
     await create_audit_log(user, "reservation", reservation["id"], "create", None, safe_dict_for_audit(reservation))
@@ -475,62 +574,49 @@ async def create_reservation(
         if data.area_id:
             area_doc = await db.areas.find_one({"id": data.area_id}, {"_id": 0})
             area_name = area_doc.get("name") if area_doc else None
-        background_tasks.add_task(send_confirmation_email, reservation, area_name)
+        background_tasks.add_task(send_confirmation_email, reservation, area_name, data.language or "de")
     
-    # Return without _id
     return {k: v for k, v in reservation.items() if k != "_id"}
 
 @api_router.put("/reservations/{reservation_id}", tags=["Reservations"])
-async def update_reservation(
-    reservation_id: str,
-    data: ReservationUpdate,
-    user: dict = Depends(require_manager)
-):
-    """Update a reservation (Admin/Schichtleiter only)"""
+async def update_reservation(reservation_id: str, data: ReservationUpdate, user: dict = Depends(require_manager)):
     existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Reservierung")
     
-    # Cannot update terminal status reservations
     if ReservationStatus.is_terminal(existing.get("status")):
         raise ValidationException("Abgeschlossene Reservierungen können nicht mehr bearbeitet werden")
     
     before = safe_dict_for_audit(existing)
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
-    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_at"] = now_iso()
     
     await db.reservations.update_one({"id": reservation_id}, {"$set": update_data})
     
     updated = await db.reservations.find_one({"id": reservation_id}, {"_id": 0})
     await create_audit_log(user, "reservation", reservation_id, "update", before, safe_dict_for_audit(updated))
-    
     return updated
 
 @api_router.patch("/reservations/{reservation_id}/status", tags=["Reservations"])
 async def update_reservation_status(
     reservation_id: str,
-    new_status: ReservationStatus,
+    new_status: str,
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_manager)
 ):
-    """
-    Change reservation status (Admin/Schichtleiter only).
-    Enforces valid status transitions.
-    """
     existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Reservierung")
     
     current_status = existing.get("status")
-    
-    # Validate status transition
-    validate_status_transition(current_status, new_status.value)
+    validate_status_transition(current_status, new_status)
     
     before = safe_dict_for_audit(existing)
-    update_data = {
-        "status": new_status.value,
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
+    update_data = {"status": new_status, "updated_at": now_iso()}
+    
+    # Handle no-show
+    if new_status == "no_show":
+        await update_guest_no_show(existing.get("guest_phone", ""))
     
     await db.reservations.update_one({"id": reservation_id}, {"$set": update_data})
     
@@ -538,39 +624,354 @@ async def update_reservation_status(
     await create_audit_log(user, "reservation", reservation_id, "status_change", before, safe_dict_for_audit(updated))
     
     # Send confirmation email when confirmed
-    if new_status == ReservationStatus.BESTAETIGT and current_status != "bestaetigt":
+    if new_status == "bestaetigt" and current_status != "bestaetigt":
         if updated.get("guest_email"):
             area_name = None
             if updated.get("area_id"):
                 area_doc = await db.areas.find_one({"id": updated["area_id"]}, {"_id": 0})
                 area_name = area_doc.get("name") if area_doc else None
-            background_tasks.add_task(send_confirmation_email, updated, area_name)
+            background_tasks.add_task(send_confirmation_email, updated, area_name, updated.get("language", "de"))
     
     return updated
 
-@api_router.delete("/reservations/{reservation_id}", tags=["Reservations"])
-async def archive_reservation(reservation_id: str, user: dict = Depends(require_manager)):
-    """Archive a reservation (Admin/Schichtleiter only)"""
+@api_router.patch("/reservations/{reservation_id}/assign", tags=["Reservations"])
+async def assign_table(
+    reservation_id: str,
+    area_id: Optional[str] = None,
+    table_number: Optional[str] = None,
+    user: dict = Depends(require_manager)
+):
+    """Quick table/area assignment for walk-ins and service"""
     existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Reservierung")
     
     before = safe_dict_for_audit(existing)
-    await db.reservations.update_one({"id": reservation_id}, {"$set": {"archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    update_data = {"updated_at": now_iso()}
+    if area_id:
+        update_data["area_id"] = area_id
+    if table_number:
+        update_data["table_number"] = table_number
     
+    await db.reservations.update_one({"id": reservation_id}, {"$set": update_data})
+    
+    updated = await db.reservations.find_one({"id": reservation_id}, {"_id": 0})
+    await create_audit_log(user, "reservation", reservation_id, "update", before, safe_dict_for_audit(updated))
+    return updated
+
+@api_router.delete("/reservations/{reservation_id}", tags=["Reservations"])
+async def archive_reservation(reservation_id: str, user: dict = Depends(require_manager)):
+    existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Reservierung")
+    
+    before = safe_dict_for_audit(existing)
+    await db.reservations.update_one({"id": reservation_id}, {"$set": {"archived": True, "updated_at": now_iso()}})
     await create_audit_log(user, "reservation", reservation_id, "archive", before, {**before, "archived": True})
-    
     return {"message": "Reservierung archiviert", "success": True}
 
 
-# ============== PUBLIC CANCELLATION ==============
-@api_router.post("/reservations/{reservation_id}/cancel", tags=["Public"])
-async def cancel_reservation_public(
-    reservation_id: str,
-    token: str,
-    background_tasks: BackgroundTasks
+# ============== WALK-IN ENDPOINTS ==============
+@api_router.post("/walk-ins", tags=["Walk-ins"])
+async def create_walk_in(data: WalkInCreate, user: dict = Depends(require_manager)):
+    """Quick walk-in entry - immediately set to 'angekommen'"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now_time = datetime.now(timezone.utc).strftime("%H:%M")
+    
+    reservation = create_entity({
+        "guest_name": data.guest_name,
+        "guest_phone": data.guest_phone or "",
+        "party_size": data.party_size,
+        "date": today,
+        "time": now_time,
+        "area_id": data.area_id,
+        "table_number": data.table_number,
+        "notes": data.notes,
+        "source": "walk-in",
+        "status": "angekommen",  # Walk-ins are immediately seated
+        "reminder_sent": True  # No reminder needed
+    })
+    
+    await db.reservations.insert_one(reservation)
+    await create_audit_log(user, "reservation", reservation["id"], "create", None, safe_dict_for_audit(reservation))
+    
+    return {k: v for k, v in reservation.items() if k != "_id"}
+
+
+# ============== WAITLIST ENDPOINTS ==============
+@api_router.get("/waitlist", tags=["Waitlist"])
+async def get_waitlist(
+    date: Optional[str] = None,
+    status: Optional[str] = None,
+    user: dict = Depends(require_manager)
 ):
-    """Public endpoint for guests to cancel via email link"""
+    query = {"archived": False}
+    if date:
+        query["date"] = date
+    if status:
+        query["status"] = status
+    
+    entries = await db.waitlist.find(query, {"_id": 0}).sort([("priority", -1), ("created_at", 1)]).to_list(500)
+    return entries
+
+@api_router.post("/waitlist", tags=["Waitlist"])
+async def create_waitlist_entry(data: WaitlistCreate, user: dict = Depends(require_manager)):
+    entry = create_entity(
+        data.model_dump(exclude_none=True),
+        {"status": "offen"}
+    )
+    
+    await db.waitlist.insert_one(entry)
+    await create_audit_log(user, "waitlist", entry["id"], "create", None, safe_dict_for_audit(entry))
+    
+    return {k: v for k, v in entry.items() if k != "_id"}
+
+@api_router.patch("/waitlist/{entry_id}", tags=["Waitlist"])
+async def update_waitlist_entry(
+    entry_id: str,
+    data: WaitlistUpdate,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_manager)
+):
+    existing = await db.waitlist.find_one({"id": entry_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Wartelisten-Eintrag")
+    
+    before = safe_dict_for_audit(existing)
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    update_data["updated_at"] = now_iso()
+    
+    await db.waitlist.update_one({"id": entry_id}, {"$set": update_data})
+    
+    updated = await db.waitlist.find_one({"id": entry_id}, {"_id": 0})
+    await create_audit_log(user, "waitlist", entry_id, "status_change", before, safe_dict_for_audit(updated))
+    
+    # Send notification when status changes to "informiert"
+    if data.status == "informiert" and existing.get("status") != "informiert":
+        if updated.get("guest_email"):
+            background_tasks.add_task(send_waitlist_notification, updated, updated.get("language", "de"))
+    
+    return updated
+
+@api_router.post("/waitlist/{entry_id}/convert", tags=["Waitlist"])
+async def convert_waitlist_to_reservation(
+    entry_id: str,
+    time: str,
+    area_id: Optional[str] = None,
+    background_tasks: BackgroundTasks = None,
+    user: dict = Depends(require_manager)
+):
+    """Convert waitlist entry to actual reservation"""
+    entry = await db.waitlist.find_one({"id": entry_id, "archived": False}, {"_id": 0})
+    if not entry:
+        raise NotFoundException("Wartelisten-Eintrag")
+    
+    # Create reservation from waitlist
+    reservation = create_entity({
+        "guest_name": entry["guest_name"],
+        "guest_phone": entry.get("guest_phone", ""),
+        "guest_email": entry.get("guest_email"),
+        "party_size": entry["party_size"],
+        "date": entry["date"],
+        "time": time,
+        "area_id": area_id,
+        "notes": entry.get("notes"),
+        "source": "waitlist",
+        "language": entry.get("language", "de")
+    }, {"status": "bestaetigt", "reminder_sent": False})
+    
+    await db.reservations.insert_one(reservation)
+    await create_audit_log(user, "reservation", reservation["id"], "create", None, safe_dict_for_audit(reservation))
+    
+    # Update waitlist entry
+    await db.waitlist.update_one(
+        {"id": entry_id},
+        {"$set": {"status": "eingeloest", "converted_reservation_id": reservation["id"], "updated_at": now_iso()}}
+    )
+    await create_audit_log(user, "waitlist", entry_id, "status_change", safe_dict_for_audit(entry), {"status": "eingeloest"})
+    
+    # Send confirmation
+    if reservation.get("guest_email") and background_tasks:
+        area_name = None
+        if area_id:
+            area_doc = await db.areas.find_one({"id": area_id}, {"_id": 0})
+            area_name = area_doc.get("name") if area_doc else None
+        background_tasks.add_task(send_confirmation_email, reservation, area_name, reservation.get("language", "de"))
+    
+    return {k: v for k, v in reservation.items() if k != "_id"}
+
+@api_router.delete("/waitlist/{entry_id}", tags=["Waitlist"])
+async def archive_waitlist_entry(entry_id: str, user: dict = Depends(require_manager)):
+    existing = await db.waitlist.find_one({"id": entry_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Wartelisten-Eintrag")
+    
+    before = safe_dict_for_audit(existing)
+    await db.waitlist.update_one({"id": entry_id}, {"$set": {"archived": True, "updated_at": now_iso()}})
+    await create_audit_log(user, "waitlist", entry_id, "archive", before, {**before, "archived": True})
+    return {"message": "Wartelisten-Eintrag archiviert", "success": True}
+
+
+# ============== GUEST MANAGEMENT (Grey/Blacklist) ==============
+@api_router.get("/guests", tags=["Guests"])
+async def get_guests(
+    flag: Optional[str] = None,
+    search: Optional[str] = None,
+    user: dict = Depends(require_manager)
+):
+    query = {"archived": False}
+    if flag:
+        query["flag"] = flag
+    if search:
+        query["$or"] = [
+            {"phone": {"$regex": search, "$options": "i"}},
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+    
+    guests = await db.guests.find(query, {"_id": 0}).to_list(500)
+    return guests
+
+@api_router.post("/guests", tags=["Guests"])
+async def create_guest(data: GuestCreate, user: dict = Depends(require_manager)):
+    existing = await db.guests.find_one({"phone": data.phone, "archived": False})
+    if existing:
+        raise ConflictException("Gast mit dieser Telefonnummer existiert bereits")
+    
+    guest = create_entity(data.model_dump(exclude_none=True))
+    await db.guests.insert_one(guest)
+    await create_audit_log(user, "guest", guest["id"], "create", None, safe_dict_for_audit(guest))
+    
+    return {k: v for k, v in guest.items() if k != "_id"}
+
+@api_router.patch("/guests/{guest_id}", tags=["Guests"])
+async def update_guest(guest_id: str, data: GuestUpdate, user: dict = Depends(require_manager)):
+    existing = await db.guests.find_one({"id": guest_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Gast")
+    
+    before = safe_dict_for_audit(existing)
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    update_data["updated_at"] = now_iso()
+    
+    await db.guests.update_one({"id": guest_id}, {"$set": update_data})
+    
+    updated = await db.guests.find_one({"id": guest_id}, {"_id": 0})
+    await create_audit_log(user, "guest", guest_id, "update", before, safe_dict_for_audit(updated))
+    return updated
+
+
+# ============== PUBLIC BOOKING (Widget) ==============
+@public_router.get("/availability", tags=["Public"])
+async def check_availability(
+    date: str,
+    party_size: int = Query(..., ge=1, le=20)
+):
+    """Public endpoint to check availability for widget"""
+    # Check opening hours
+    hours = await check_opening_hours(date, "12:00")
+    if not hours.get("open"):
+        return {"available": False, "message": hours.get("message", "Geschlossen"), "slots": []}
+    
+    # Get available time slots
+    open_time = hours.get("open_time", "11:00")
+    close_time = hours.get("close_time", "22:00")
+    
+    # Generate time slots (every 30 minutes)
+    slots = []
+    current = datetime.strptime(open_time, "%H:%M")
+    end = datetime.strptime(close_time, "%H:%M") - timedelta(hours=1)  # Last booking 1h before close
+    
+    while current <= end:
+        time_str = current.strftime("%H:%M")
+        capacity = await check_capacity(date, time_str, party_size)
+        slots.append({
+            "time": time_str,
+            "available": capacity["available"],
+            "available_seats": capacity["available_seats"]
+        })
+        current += timedelta(minutes=30)
+    
+    available_slots = [s for s in slots if s["available"]]
+    
+    return {
+        "date": date,
+        "party_size": party_size,
+        "available": len(available_slots) > 0,
+        "slots": slots,
+        "open_time": open_time,
+        "close_time": close_time
+    }
+
+@public_router.post("/book", tags=["Public"])
+async def public_booking(data: PublicBookingCreate, background_tasks: BackgroundTasks):
+    """Public endpoint for online reservations (widget)"""
+    # Check opening hours
+    hours = await check_opening_hours(data.date, data.time)
+    if not hours.get("open"):
+        raise ValidationException(hours.get("message", "Geschlossen zu dieser Zeit"))
+    
+    # Check capacity
+    capacity = await check_capacity(data.date, data.time, data.party_size)
+    if not capacity["available"]:
+        # Create waitlist entry instead
+        waitlist_entry = create_entity({
+            "guest_name": data.guest_name,
+            "guest_phone": data.guest_phone,
+            "guest_email": data.guest_email,
+            "party_size": data.party_size,
+            "date": data.date,
+            "preferred_time": data.time,
+            "notes": data.notes,
+            "language": data.language or "de",
+            "priority": 1
+        }, {"status": "offen"})
+        
+        await db.waitlist.insert_one(waitlist_entry)
+        await create_audit_log(SYSTEM_ACTOR, "waitlist", waitlist_entry["id"], "create", None, safe_dict_for_audit(waitlist_entry))
+        
+        return {
+            "success": True,
+            "waitlist": True,
+            "message": "Leider ausgebucht. Sie wurden auf die Warteliste gesetzt.",
+            "waitlist_id": waitlist_entry["id"]
+        }
+    
+    # Check guest blacklist
+    guest = await get_guest_by_phone(data.guest_phone)
+    if guest and guest.get("flag") == "blacklist":
+        raise ValidationException("Reservierung nicht möglich. Bitte kontaktieren Sie uns telefonisch.")
+    
+    # Create reservation
+    reservation = create_entity({
+        "guest_name": data.guest_name,
+        "guest_phone": data.guest_phone,
+        "guest_email": data.guest_email,
+        "party_size": data.party_size,
+        "date": data.date,
+        "time": data.time,
+        "occasion": data.occasion,
+        "notes": data.notes,
+        "source": "widget",
+        "language": data.language or "de"
+    }, {"status": "neu", "reminder_sent": False})
+    
+    await db.reservations.insert_one(reservation)
+    await create_audit_log(SYSTEM_ACTOR, "reservation", reservation["id"], "create", None, safe_dict_for_audit(reservation))
+    
+    # Send confirmation email
+    background_tasks.add_task(send_confirmation_email, reservation, None, data.language or "de")
+    
+    return {
+        "success": True,
+        "waitlist": False,
+        "message": "Reservierung erfolgreich",
+        "reservation_id": reservation["id"]
+    }
+
+@public_router.post("/reservations/{reservation_id}/cancel", tags=["Public"])
+async def cancel_reservation_public(reservation_id: str, token: str, background_tasks: BackgroundTasks):
+    """Public cancellation via email link"""
     if not verify_cancel_token(reservation_id, token):
         raise ForbiddenException("Ungültiger Stornierungslink")
     
@@ -578,31 +979,185 @@ async def cancel_reservation_public(
     if not existing:
         raise NotFoundException("Reservierung")
     
-    current_status = existing.get("status")
-    
-    # Validate cancellation is allowed
-    if not ReservationStatus.can_cancel(current_status):
+    if not ReservationStatus.can_cancel(existing.get("status")):
         raise ValidationException("Diese Reservierung kann nicht mehr storniert werden")
     
     before = safe_dict_for_audit(existing)
-    update_data = {
-        "status": ReservationStatus.STORNIERT.value,
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.reservations.update_one({"id": reservation_id}, {"$set": update_data})
+    await db.reservations.update_one({"id": reservation_id}, {"$set": {"status": "storniert", "updated_at": now_iso()}})
     await create_audit_log(SYSTEM_ACTOR, "reservation", reservation_id, "cancel_by_guest", before, {**before, "status": "storniert"})
     
     if existing.get("guest_email"):
-        background_tasks.add_task(send_cancellation_email, existing)
+        background_tasks.add_task(send_cancellation_email, existing, existing.get("language", "de"))
     
     return {"message": "Reservierung erfolgreich storniert", "success": True}
 
 
-# ============== REMINDER ENDPOINT ==============
+# ============== OPENING HOURS ==============
+@api_router.get("/opening-hours", tags=["Settings"])
+async def get_opening_hours(user: dict = Depends(get_current_user)):
+    hours = await db.opening_hours.find({}, {"_id": 0}).sort("day_of_week", 1).to_list(7)
+    return hours
+
+@api_router.post("/opening-hours", tags=["Settings"])
+async def set_opening_hours(data: OpeningHoursCreate, user: dict = Depends(require_admin)):
+    existing = await db.opening_hours.find_one({"day_of_week": data.day_of_week}, {"_id": 0})
+    
+    if existing:
+        before = safe_dict_for_audit(existing)
+        await db.opening_hours.update_one(
+            {"day_of_week": data.day_of_week},
+            {"$set": {**data.model_dump(), "updated_at": now_iso()}}
+        )
+        updated = await db.opening_hours.find_one({"day_of_week": data.day_of_week}, {"_id": 0})
+        await create_audit_log(user, "opening_hours", str(data.day_of_week), "update", before, safe_dict_for_audit(updated))
+        return updated
+    else:
+        hours = create_entity(data.model_dump())
+        await db.opening_hours.insert_one(hours)
+        await create_audit_log(user, "opening_hours", str(data.day_of_week), "create", None, safe_dict_for_audit(hours))
+        return {k: v for k, v in hours.items() if k != "_id"}
+
+
+# ============== EMAIL TEMPLATES ==============
+@api_router.get("/email-templates", tags=["Settings"])
+async def get_email_templates_endpoint(user: dict = Depends(require_admin)):
+    templates = await db.email_templates.find({}, {"_id": 0}).to_list(100)
+    if not templates:
+        # Return default templates
+        return get_email_templates()
+    return templates
+
+@api_router.post("/email-templates", tags=["Settings"])
+async def update_email_template(data: EmailTemplateUpdate, user: dict = Depends(require_admin)):
+    key = f"{data.template_type}_{data.language}"
+    existing = await db.email_templates.find_one({"key": key}, {"_id": 0})
+    
+    template_data = {
+        "key": key,
+        "template_type": data.template_type,
+        "language": data.language,
+        "subject": data.subject,
+        "body_html": data.body_html,
+        "body_text": data.body_text,
+        "updated_at": now_iso()
+    }
+    
+    if existing:
+        before = safe_dict_for_audit(existing)
+        await db.email_templates.update_one({"key": key}, {"$set": template_data})
+        await create_audit_log(user, "email_template", key, "update", before, safe_dict_for_audit(template_data))
+    else:
+        template_data["id"] = str(uuid.uuid4())
+        template_data["created_at"] = now_iso()
+        await db.email_templates.insert_one(template_data)
+        await create_audit_log(user, "email_template", key, "create", None, safe_dict_for_audit(template_data))
+    
+    return template_data
+
+
+# ============== EMAIL LOG ==============
+@api_router.get("/email-logs", tags=["Admin"])
+async def get_email_logs(
+    limit: int = 100,
+    status: Optional[str] = None,
+    user: dict = Depends(require_admin)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    
+    logs = await db.email_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return logs
+
+
+# ============== PDF EXPORT ==============
+@api_router.get("/export/table-plan", tags=["Export"])
+async def export_table_plan(
+    date: str,
+    area_id: Optional[str] = None,
+    user: dict = Depends(require_manager)
+):
+    """Generate PDF table plan for a specific date"""
+    # Get reservations
+    query = {"date": date, "archived": False, "status": {"$in": ["neu", "bestaetigt", "angekommen"]}}
+    if area_id:
+        query["area_id"] = area_id
+    
+    reservations = await db.reservations.find(query, {"_id": 0}).sort("time", 1).to_list(500)
+    
+    # Get areas
+    areas = await db.areas.find({"archived": False}, {"_id": 0}).to_list(100)
+    area_map = {a["id"]: a["name"] for a in areas}
+    
+    # Get restaurant name from settings
+    restaurant_name = "Carlsburg Restaurant"
+    name_setting = await db.settings.find_one({"key": "restaurant_name"})
+    if name_setting:
+        restaurant_name = name_setting.get("value", restaurant_name)
+    
+    # Generate PDF
+    pdf_buffer = generate_table_plan_pdf(reservations, area_map, date, restaurant_name, area_id)
+    
+    filename = f"tischplan_{date}"
+    if area_id and area_id in area_map:
+        filename += f"_{area_map[area_id].replace(' ', '_')}"
+    filename += ".pdf"
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ============== SETTINGS ENDPOINTS ==============
+@api_router.get("/settings", tags=["Settings"])
+async def get_settings_endpoint(user: dict = Depends(require_admin)):
+    settings_list = await db.settings.find({}, {"_id": 0}).to_list(1000)
+    return settings_list
+
+@api_router.post("/settings", tags=["Settings"])
+async def create_or_update_setting(data: SettingCreate, user: dict = Depends(require_admin)):
+    existing = await db.settings.find_one({"key": data.key}, {"_id": 0})
+    
+    if existing:
+        before = safe_dict_for_audit(existing)
+        await db.settings.update_one({"key": data.key}, {"$set": {"value": data.value, "description": data.description, "updated_at": now_iso()}})
+        updated = await db.settings.find_one({"key": data.key}, {"_id": 0})
+        await create_audit_log(user, "setting", data.key, "update", before, safe_dict_for_audit(updated))
+        return updated
+    else:
+        setting = create_entity(data.model_dump())
+        setting["key"] = data.key  # Ensure key is set
+        await db.settings.insert_one(setting)
+        await create_audit_log(user, "setting", data.key, "create", None, safe_dict_for_audit(setting))
+        return {k: v for k, v in setting.items() if k != "_id"}
+
+
+# ============== AUDIT LOG ==============
+@api_router.get("/audit-logs", tags=["Audit"])
+async def get_audit_logs(
+    entity: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    actor_id: Optional[str] = None,
+    limit: int = 100,
+    user: dict = Depends(require_admin)
+):
+    query = {}
+    if entity:
+        query["entity"] = entity
+    if entity_id:
+        query["entity_id"] = entity_id
+    if actor_id:
+        query["actor_id"] = actor_id
+    
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return logs
+
+
+# ============== REMINDERS ==============
 @api_router.post("/reservations/send-reminders", tags=["Admin"])
 async def send_reservation_reminders(background_tasks: BackgroundTasks, user: dict = Depends(require_admin)):
-    """Send reminder emails for tomorrow's reservations (Admin only)"""
     tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
     
     reservations = await db.reservations.find({
@@ -620,77 +1175,21 @@ async def send_reservation_reminders(background_tasks: BackgroundTasks, user: di
                 area_doc = await db.areas.find_one({"id": res["area_id"]}, {"_id": 0})
                 area_name = area_doc.get("name") if area_doc else None
             
-            background_tasks.add_task(send_reminder_email, res, area_name)
+            background_tasks.add_task(send_reminder_email, res, area_name, res.get("language", "de"))
             await db.reservations.update_one({"id": res["id"]}, {"$set": {"reminder_sent": True}})
             sent_count += 1
     
     return {"message": f"Erinnerungen gesendet: {sent_count}", "count": sent_count, "success": True}
 
 
-# ============== SETTINGS ENDPOINTS ==============
-@api_router.get("/settings", tags=["Settings"])
-async def get_settings_endpoint(user: dict = Depends(require_admin)):
-    """Get all settings (Admin only)"""
-    settings_list = await db.settings.find({}, {"_id": 0}).to_list(1000)
-    return settings_list
-
-@api_router.post("/settings", tags=["Settings"])
-async def create_or_update_setting(data: SettingCreate, user: dict = Depends(require_admin)):
-    """Create or update a setting (Admin only)"""
-    existing = await db.settings.find_one({"key": data.key}, {"_id": 0})
-    now = datetime.now(timezone.utc).isoformat()
-    
-    if existing:
-        before = safe_dict_for_audit(existing)
-        update_data = {"value": data.value, "description": data.description, "updated_at": now}
-        await db.settings.update_one({"key": data.key}, {"$set": update_data})
-        updated = await db.settings.find_one({"key": data.key}, {"_id": 0})
-        await create_audit_log(user, "setting", data.key, "update", before, safe_dict_for_audit(updated))
-        return updated
-    else:
-        setting = {
-            "id": str(uuid.uuid4()),
-            "key": data.key,
-            "value": data.value,
-            "description": data.description,
-            "created_at": now,
-            "updated_at": now
-        }
-        await db.settings.insert_one(setting)
-        await create_audit_log(user, "setting", data.key, "create", None, safe_dict_for_audit(setting))
-        return setting
-
-
-# ============== AUDIT LOG ENDPOINTS ==============
-@api_router.get("/audit-logs", tags=["Audit"])
-async def get_audit_logs(
-    entity: Optional[str] = None,
-    entity_id: Optional[str] = None,
-    actor_id: Optional[str] = None,
-    limit: int = 100,
-    user: dict = Depends(require_admin)
-):
-    """Get audit logs (Admin only)"""
-    query = {}
-    if entity:
-        query["entity"] = entity
-    if entity_id:
-        query["entity_id"] = entity_id
-    if actor_id:
-        query["actor_id"] = actor_id
-    
-    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
-    return logs
-
-
 # ============== SEED DATA ==============
 @api_router.post("/seed", tags=["Admin"])
 async def seed_data():
-    """Seed initial test data (only if no users exist)"""
     existing_users = await db.users.count_documents({"archived": False})
     if existing_users > 0:
         return {"message": "Daten bereits vorhanden", "seeded": False}
     
+    # Create users
     test_users = [
         {"email": "admin@gastrocore.de", "name": "Admin User", "role": "admin", "password": "Admin123!"},
         {"email": "schichtleiter@gastrocore.de", "name": "Schicht Leiter", "role": "schichtleiter", "password": "Schicht123!"},
@@ -698,33 +1197,66 @@ async def seed_data():
     ]
     
     for u in test_users:
-        user_doc = create_user_entity(u["email"], u["name"], u["role"], hash_password(u["password"]))
+        user_doc = {
+            "id": str(uuid.uuid4()), "email": u["email"], "name": u["name"], "role": u["role"],
+            "password_hash": hash_password(u["password"]), "is_active": True, "must_change_password": True,
+            "created_at": now_iso(), "updated_at": now_iso(), "archived": False
+        }
         await db.users.insert_one(user_doc)
     
+    # Create areas
     test_areas = [
-        {"name": "Terrasse", "description": "Außenbereich mit Sonnenschirmen", "capacity": 40},
-        {"name": "Saal", "description": "Hauptspeiseraum", "capacity": 80},
-        {"name": "Wintergarten", "description": "Verglaster Bereich", "capacity": 30},
-        {"name": "Bar", "description": "Barhocker und Stehtische", "capacity": 20},
+        {"name": "Terrasse", "description": "Außenbereich mit Sonnenschirmen", "capacity": 40, "table_count": 10},
+        {"name": "Saal", "description": "Hauptspeiseraum", "capacity": 80, "table_count": 20},
+        {"name": "Wintergarten", "description": "Verglaster Bereich", "capacity": 30, "table_count": 8},
+        {"name": "Bar", "description": "Barhocker und Stehtische", "capacity": 20, "table_count": 5},
     ]
     
     area_ids = []
     for a in test_areas:
-        area_doc = create_area_entity(a)
+        area_doc = create_entity(a)
         await db.areas.insert_one(area_doc)
         area_ids.append(area_doc["id"])
     
+    # Create opening hours
+    for day in range(7):
+        is_closed = day == 0  # Closed on Monday
+        hours = {
+            "id": str(uuid.uuid4()),
+            "day_of_week": day,
+            "open_time": "11:00",
+            "close_time": "22:00",
+            "is_closed": is_closed,
+            "created_at": now_iso(),
+            "updated_at": now_iso()
+        }
+        await db.opening_hours.insert_one(hours)
+    
+    # Create settings
+    default_settings = [
+        {"key": "restaurant_name", "value": "Carlsburg Restaurant", "description": "Restaurant name"},
+        {"key": "max_total_capacity", "value": "150", "description": "Maximum total guests"},
+        {"key": "no_show_greylist_threshold", "value": "2", "description": "No-shows before greylist"},
+        {"key": "no_show_blacklist_threshold", "value": "4", "description": "No-shows before blacklist"},
+    ]
+    
+    for s in default_settings:
+        setting_doc = create_entity(s)
+        setting_doc["key"] = s["key"]
+        await db.settings.insert_one(setting_doc)
+    
+    # Create sample reservations
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     test_reservations = [
-        {"guest_name": "Familie Müller", "guest_phone": "+49 170 1234567", "party_size": 4, "date": today, "time": "12:00", "area_id": area_ids[1]},
-        {"guest_name": "Hans Schmidt", "guest_phone": "+49 171 2345678", "party_size": 2, "date": today, "time": "13:00", "area_id": area_ids[0]},
-        {"guest_name": "Lisa Weber", "guest_phone": "+49 172 3456789", "party_size": 6, "date": today, "time": "18:30", "area_id": area_ids[2]},
-        {"guest_name": "Peter Braun", "guest_phone": "+49 173 4567890", "party_size": 3, "date": today, "time": "19:00", "area_id": area_ids[1]},
-        {"guest_name": "Maria Schwarz", "guest_phone": "+49 174 5678901", "party_size": 8, "date": today, "time": "20:00", "area_id": area_ids[1]},
+        {"guest_name": "Familie Müller", "guest_phone": "+49 170 1234567", "guest_email": "mueller@example.de", "party_size": 4, "date": today, "time": "12:00", "area_id": area_ids[1], "source": "widget", "occasion": "Geburtstag"},
+        {"guest_name": "Hans Schmidt", "guest_phone": "+49 171 2345678", "party_size": 2, "date": today, "time": "13:00", "area_id": area_ids[0], "source": "intern"},
+        {"guest_name": "Lisa Weber", "guest_phone": "+49 172 3456789", "guest_email": "lisa@example.de", "party_size": 6, "date": today, "time": "18:30", "area_id": area_ids[2], "source": "widget"},
+        {"guest_name": "Peter Braun", "guest_phone": "+49 173 4567890", "party_size": 3, "date": today, "time": "19:00", "area_id": area_ids[1], "source": "walk-in", "table_number": "T5"},
+        {"guest_name": "Maria Schwarz", "guest_phone": "+49 174 5678901", "guest_email": "maria@example.de", "party_size": 8, "date": today, "time": "20:00", "area_id": area_ids[1], "source": "intern", "occasion": "Hochzeitstag"},
     ]
     
     for r in test_reservations:
-        res_doc = create_reservation_entity(r)
+        res_doc = create_entity(r, {"status": "neu", "reminder_sent": False, "language": "de"})
         await db.reservations.insert_one(res_doc)
     
     return {
@@ -737,27 +1269,22 @@ async def seed_data():
 # ============== HEALTH CHECK ==============
 @api_router.get("/", tags=["Health"])
 async def root():
-    """API health check"""
-    return {"message": "GastroCore API v1.1.0", "status": "running", "success": True}
+    return {"message": "GastroCore API v2.0.0", "status": "running", "success": True}
 
 @api_router.get("/health", tags=["Health"])
 async def health_check():
-    """Detailed health check"""
     try:
         await client.admin.command('ping')
         db_status = "connected"
     except Exception:
         db_status = "disconnected"
     
-    return {
-        "status": "healthy" if db_status == "connected" else "degraded",
-        "database": db_status,
-        "version": "1.1.0"
-    }
+    return {"status": "healthy" if db_status == "connected" else "degraded", "database": db_status, "version": "2.0.0"}
 
 
 # ============== APP CONFIG ==============
 app.include_router(api_router)
+app.include_router(public_router)
 
 app.add_middleware(
     CORSMiddleware,
