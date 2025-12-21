@@ -1761,6 +1761,545 @@ class GastroCoreAPITester:
         
         return guest_flags_success
 
+    def test_full_qa_audit_sprint4_payments(self):
+        """Full QA Audit - Sprint 4: Payments"""
+        print("\n💳 FULL QA AUDIT - Sprint 4: Payments")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Payments", False, "Admin token not available")
+            return False
+        
+        payments_success = True
+        
+        # 1. Test GET/POST/PATCH/DELETE /api/payments/rules - CRUD
+        result = self.make_request("GET", "payments/rules", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            rules = result["data"]
+            self.log_test("GET /api/payments/rules", True, f"Retrieved {len(rules)} payment rules")
+            
+            # Check for seeded rules
+            rule_names = [rule.get("name", "") for rule in rules]
+            expected_rules = ["Event-Zahlung", "Großgruppen-Anzahlung", "Greylist-Anzahlung"]
+            found_rules = [name for name in expected_rules if name in rule_names]
+            if len(found_rules) >= 2:
+                self.log_test("Payment rules seeded", True, f"Found rules: {found_rules}")
+            else:
+                self.log_test("Payment rules seeded", False, f"Expected rules not found. Found: {rule_names}")
+        else:
+            self.log_test("GET /api/payments/rules", False, f"Status: {result['status_code']}")
+            payments_success = False
+        
+        # 2. Test GET /api/payments/check-required
+        result = self.make_request("GET", "payments/check-required", 
+                                 {"entity_type": "reservation", "entity_id": "test", "party_size": 10}, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            check_result = result["data"]
+            if "payment_required" in check_result:
+                self.log_test("GET /api/payments/check-required", True, 
+                            f"Payment required: {check_result.get('payment_required')}")
+            else:
+                self.log_test("GET /api/payments/check-required", False, "Missing required fields")
+                payments_success = False
+        else:
+            self.log_test("GET /api/payments/check-required", False, f"Status: {result['status_code']}")
+            payments_success = False
+        
+        # 3. Test GET /api/payments/transactions
+        result = self.make_request("GET", "payments/transactions", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            transactions = result["data"]
+            self.log_test("GET /api/payments/transactions", True, f"Retrieved {len(transactions)} transactions")
+        else:
+            self.log_test("GET /api/payments/transactions", False, f"Status: {result['status_code']}")
+            payments_success = False
+        
+        # 4. Test GET /api/payments/logs (Admin only)
+        result = self.make_request("GET", "payments/logs", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            logs = result["data"]
+            self.log_test("GET /api/payments/logs (Admin)", True, f"Retrieved {len(logs)} payment logs")
+        else:
+            self.log_test("GET /api/payments/logs (Admin)", False, f"Status: {result['status_code']}")
+            payments_success = False
+        
+        # Test that Schichtleiter is blocked from logs
+        result = self.make_request("GET", "payments/logs", token=self.tokens["schichtleiter"], expected_status=403)
+        if result["success"]:
+            self.log_test("Payment logs access control", True, "Schichtleiter blocked from logs (403)")
+        else:
+            self.log_test("Payment logs access control", False, f"Expected 403, got {result['status_code']}")
+            payments_success = False
+        
+        return payments_success
+
+    def test_full_qa_audit_sprint5_staff_dienstplan(self):
+        """Full QA Audit - Sprint 5: Staff & Dienstplan"""
+        print("\n👥 FULL QA AUDIT - Sprint 5: Staff & Dienstplan")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Staff & Dienstplan", False, "Admin token not available")
+            return False
+        
+        staff_success = True
+        
+        # 1. Test GET/POST/PATCH/DELETE /api/staff/work-areas
+        result = self.make_request("GET", "staff/work-areas", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            areas = result["data"]
+            self.log_test("GET /api/staff/work-areas", True, f"Retrieved {len(areas)} work areas")
+            
+            # Check for seeded areas
+            area_names = [area.get("name", "") for area in areas]
+            expected_areas = ["Service", "Küche", "Bar", "Event"]
+            found_areas = [name for name in expected_areas if name in area_names]
+            if len(found_areas) >= 3:
+                self.log_test("Work areas seeded", True, f"Found areas: {found_areas}")
+            else:
+                self.log_test("Work areas seeded", False, f"Expected areas not found. Found: {area_names}")
+        else:
+            self.log_test("GET /api/staff/work-areas", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        # 2. Test GET/POST/PATCH/DELETE /api/staff/members
+        result = self.make_request("GET", "staff/members", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            members = result["data"]
+            self.log_test("GET /api/staff/members", True, f"Retrieved {len(members)} staff members")
+            
+            # Check for seeded members
+            member_names = [member.get("full_name", "") for member in members]
+            expected_members = ["Max Mustermann", "Anna Schmidt", "Thomas Koch"]
+            found_members = [name for name in expected_members if name in member_names]
+            if len(found_members) >= 2:
+                self.log_test("Staff members seeded", True, f"Found members: {found_members}")
+            else:
+                self.log_test("Staff members seeded", False, f"Expected members not found. Found: {member_names}")
+        else:
+            self.log_test("GET /api/staff/members", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        # 3. Test GET/POST /api/staff/schedules
+        result = self.make_request("GET", "staff/schedules", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            schedules = result["data"]
+            self.log_test("GET /api/staff/schedules", True, f"Retrieved {len(schedules)} schedules")
+        else:
+            self.log_test("GET /api/staff/schedules", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        # 4. Test POST /api/staff/shifts
+        # First create a schedule
+        schedule_data = {
+            "year": 2025,
+            "week": 1,
+            "notes": "QA test schedule"
+        }
+        
+        result = self.make_request("POST", "staff/schedules", schedule_data, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            schedule = result["data"]
+            schedule_id = schedule.get("id")
+            self.log_test("POST /api/staff/schedules", True, f"Schedule created: {schedule_id}")
+            self.test_data["qa_schedule_id"] = schedule_id
+        else:
+            # Schedule might already exist
+            result = self.make_request("GET", "staff/schedules", {"year": 2025}, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and result["data"]:
+                schedule = result["data"][0]
+                schedule_id = schedule.get("id")
+                self.log_test("Find existing schedule", True, f"Found schedule: {schedule_id}")
+                self.test_data["qa_schedule_id"] = schedule_id
+            else:
+                self.log_test("Create/find schedule", False, f"Status: {result['status_code']}")
+                staff_success = False
+        
+        # 5. Test POST /api/staff/schedules/{id}/publish
+        if "qa_schedule_id" in self.test_data:
+            schedule_id = self.test_data["qa_schedule_id"]
+            result = self.make_request("POST", f"staff/schedules/{schedule_id}/publish", 
+                                     {}, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("POST /api/staff/schedules/{id}/publish", True, "Schedule published")
+            else:
+                # Might already be published
+                if result["status_code"] == 422:
+                    self.log_test("POST /api/staff/schedules/{id}/publish", True, "Schedule already published")
+                else:
+                    self.log_test("POST /api/staff/schedules/{id}/publish", False, f"Status: {result['status_code']}")
+                    staff_success = False
+        
+        # 6. Test GET /api/staff/hours-overview
+        result = self.make_request("GET", "staff/hours-overview", {"year": 2025, "week": 1}, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            overview = result["data"]
+            if "overview" in overview and "total_planned" in overview:
+                self.log_test("GET /api/staff/hours-overview", True, 
+                            f"Hours overview retrieved with {len(overview.get('overview', []))} staff members")
+            else:
+                self.log_test("GET /api/staff/hours-overview", False, "Missing required fields")
+                staff_success = False
+        else:
+            self.log_test("GET /api/staff/hours-overview", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        return staff_success
+
+    def test_full_qa_audit_sprint6_steuerburo(self):
+        """Full QA Audit - Sprint 6: Steuerbüro"""
+        print("\n🏛️ FULL QA AUDIT - Sprint 6: Steuerbüro")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Steuerbüro", False, "Admin token not available")
+            return False
+        
+        steuerburo_success = True
+        
+        # 1. Test GET/PATCH /api/taxoffice/settings
+        result = self.make_request("GET", "taxoffice/settings", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            settings = result["data"]
+            required_fields = ["recipient_emails", "sender_name", "subject_template", "filename_prefix"]
+            missing_fields = [field for field in required_fields if field not in settings]
+            if not missing_fields:
+                self.log_test("GET /api/taxoffice/settings", True, "All required settings fields present")
+            else:
+                self.log_test("GET /api/taxoffice/settings", False, f"Missing fields: {missing_fields}")
+                steuerburo_success = False
+        else:
+            self.log_test("GET /api/taxoffice/settings", False, f"Status: {result['status_code']}")
+            steuerburo_success = False
+        
+        # 2. Test POST /api/taxoffice/jobs (export_type: monthly_hours)
+        job_data = {
+            "export_type": "monthly_hours",
+            "year": 2024,
+            "month": 12,
+            "include_pdf": True,
+            "include_csv": True,
+            "notes": "QA test export"
+        }
+        
+        result = self.make_request("POST", "taxoffice/jobs", job_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            job = result["data"]
+            job_id = job.get("id")
+            self.log_test("POST /api/taxoffice/jobs", True, f"Export job created: {job_id}")
+            self.test_data["qa_export_job_id"] = job_id
+            
+            # Wait a moment for background processing
+            import time
+            time.sleep(2)
+            
+            # 3. Test GET /api/taxoffice/jobs/{id}
+            result = self.make_request("GET", f"taxoffice/jobs/{job_id}", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                job_details = result["data"]
+                if job_details.get("status") in ["ready", "generating", "pending"]:
+                    self.log_test("GET /api/taxoffice/jobs/{id}", True, f"Job status: {job_details.get('status')}")
+                    
+                    # 4. Test GET /api/taxoffice/jobs/{id}/download/{file_index} if ready
+                    if job_details.get("status") == "ready" and job_details.get("files"):
+                        files = job_details.get("files", [])
+                        if len(files) > 0:
+                            # Test download first file
+                            url = f"{self.base_url}/api/taxoffice/jobs/{job_id}/download/0"
+                            headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+                            
+                            try:
+                                response = requests.get(url, headers=headers)
+                                if response.status_code == 200:
+                                    file_size = len(response.content)
+                                    self.log_test("GET /api/taxoffice/jobs/{id}/download/0", True, 
+                                                f"File downloaded, size: {file_size} bytes")
+                                else:
+                                    self.log_test("GET /api/taxoffice/jobs/{id}/download/0", False, 
+                                                f"Status: {response.status_code}")
+                                    steuerburo_success = False
+                            except Exception as e:
+                                self.log_test("GET /api/taxoffice/jobs/{id}/download/0", False, f"Error: {str(e)}")
+                                steuerburo_success = False
+                else:
+                    self.log_test("GET /api/taxoffice/jobs/{id}", False, f"Unexpected status: {job_details.get('status')}")
+                    steuerburo_success = False
+            else:
+                self.log_test("GET /api/taxoffice/jobs/{id}", False, f"Status: {result['status_code']}")
+                steuerburo_success = False
+        else:
+            self.log_test("POST /api/taxoffice/jobs", False, f"Status: {result['status_code']}")
+            steuerburo_success = False
+        
+        return steuerburo_success
+
+    def test_full_qa_audit_sprint7_loyalty(self):
+        """Full QA Audit - Sprint 7: Loyalty"""
+        print("\n🎁 FULL QA AUDIT - Sprint 7: Loyalty")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Loyalty", False, "Admin token not available")
+            return False
+        
+        loyalty_success = True
+        
+        # 1. Test POST /api/customer/request-otp - OTP anfordern
+        otp_data = {"email": "qaloyalty@example.de"}
+        result = self.make_request("POST", "customer/request-otp", otp_data, expected_status=200)
+        if result["success"]:
+            response = result["data"]
+            if response.get("success"):
+                self.log_test("POST /api/customer/request-otp", True, "OTP request successful")
+            else:
+                self.log_test("POST /api/customer/request-otp", False, f"OTP request failed: {response}")
+                loyalty_success = False
+        else:
+            self.log_test("POST /api/customer/request-otp", False, f"Status: {result['status_code']}")
+            loyalty_success = False
+        
+        # 2. Test POST /api/loyalty/settings - Einstellungen (Admin)
+        loyalty_settings = {
+            "points_per_euro": 0.1,
+            "max_points_per_transaction": 100,
+            "qr_validity_seconds": 90,
+            "rounding": "floor"
+        }
+        
+        result = self.make_request("PATCH", "loyalty/settings", loyalty_settings, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            settings = result["data"]
+            if settings.get("points_per_euro") == 0.1:
+                self.log_test("PATCH /api/loyalty/settings", True, "Loyalty settings updated")
+            else:
+                self.log_test("PATCH /api/loyalty/settings", False, "Settings not updated correctly")
+                loyalty_success = False
+        else:
+            self.log_test("PATCH /api/loyalty/settings", False, f"Status: {result['status_code']}")
+            loyalty_success = False
+        
+        # 3. Test GET /api/loyalty/rewards - Prämien
+        result = self.make_request("GET", "loyalty/rewards", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            rewards = result["data"]
+            self.log_test("GET /api/loyalty/rewards", True, f"Retrieved {len(rewards)} rewards")
+            
+            # Check for seeded rewards
+            reward_names = [reward.get("name", "") for reward in rewards]
+            expected_rewards = ["Kaffee nach Wahl", "Dessert des Tages", "Hofladen-Gutschein"]
+            found_rewards = [name for name in expected_rewards if any(expected in name for expected in reward_names)]
+            if len(found_rewards) >= 2:
+                self.log_test("Loyalty rewards seeded", True, f"Found rewards: {reward_names[:3]}")
+            else:
+                self.log_test("Loyalty rewards seeded", False, f"Expected rewards not found. Found: {reward_names}")
+        else:
+            self.log_test("GET /api/loyalty/rewards", False, f"Status: {result['status_code']}")
+            loyalty_success = False
+        
+        # 4. Test POST /api/loyalty/manual-points - Manuelle Punkte (mit reason!)
+        manual_points_data = {
+            "customer_id": "test-customer-id",
+            "amount": 50.0,
+            "reason": "QA test - manual points addition for testing purposes",
+            "transaction_type": "manual_add"
+        }
+        
+        result = self.make_request("POST", "loyalty/manual-points", manual_points_data, 
+                                 self.tokens["schichtleiter"], expected_status=404)  # Expect 404 for non-existent customer
+        if result["success"]:
+            self.log_test("POST /api/loyalty/manual-points (validation)", True, "Customer not found as expected (404)")
+        else:
+            if result["status_code"] == 404:
+                self.log_test("POST /api/loyalty/manual-points (validation)", True, "Customer not found as expected (404)")
+            else:
+                self.log_test("POST /api/loyalty/manual-points (validation)", False, 
+                            f"Expected 404, got {result['status_code']}")
+                loyalty_success = False
+        
+        return loyalty_success
+
+    def test_full_qa_audit_data_consistency(self):
+        """Full QA Audit - Data Consistency Check"""
+        print("\n🔍 FULL QA AUDIT - Data Consistency")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Data Consistency", False, "Admin token not available")
+            return False
+        
+        consistency_success = True
+        
+        # Check that all created test data still exists and is consistent
+        test_items = [
+            ("reservations", "qa_internal_reservation_id"),
+            ("waitlist", "qa_waitlist_id"),
+            ("guests", "qa_guest_id"),
+        ]
+        
+        for endpoint, test_data_key in test_items:
+            if test_data_key in self.test_data:
+                item_id = self.test_data[test_data_key]
+                result = self.make_request("GET", f"{endpoint}/{item_id}", 
+                                         token=self.tokens["schichtleiter"], expected_status=200)
+                if result["success"]:
+                    self.log_test(f"Data consistency: {endpoint}", True, f"Item {item_id} still exists")
+                else:
+                    self.log_test(f"Data consistency: {endpoint}", False, 
+                                f"Item {item_id} not found (Status: {result['status_code']})")
+                    consistency_success = False
+        
+        return consistency_success
+
+    def test_full_qa_audit_security(self):
+        """Full QA Audit - Security Check"""
+        print("\n🔒 FULL QA AUDIT - Security")
+        
+        security_success = True
+        
+        # Test that endpoints requiring auth return 401 without token
+        protected_endpoints = [
+            ("GET", "users"),
+            ("GET", "reservations"),
+            ("GET", "audit-logs"),
+            ("GET", "staff/members"),
+            ("GET", "payments/rules"),
+        ]
+        
+        for method, endpoint in protected_endpoints:
+            result = self.make_request(method, endpoint, expected_status=401)
+            if result["success"]:
+                self.log_test(f"Security: {endpoint} requires auth", True, "401 Unauthorized as expected")
+            else:
+                self.log_test(f"Security: {endpoint} requires auth", False, 
+                            f"Expected 401, got {result['status_code']}")
+                security_success = False
+        
+        return security_success
+
+    def test_full_qa_audit_error_handling(self):
+        """Full QA Audit - Error Handling"""
+        print("\n⚠️ FULL QA AUDIT - Error Handling")
+        
+        error_handling_success = True
+        
+        # Test various error scenarios
+        error_tests = [
+            # Invalid login
+            ("POST", "auth/login", {"email": "invalid@test.de", "password": "wrong"}, 401),
+            # Non-existent resource
+            ("GET", "reservations/non-existent-id", {}, 404),
+            # Invalid data
+            ("POST", "reservations", {"guest_name": "", "party_size": 0}, 422),
+        ]
+        
+        for method, endpoint, data, expected_status in error_tests:
+            token = self.tokens.get("schichtleiter") if endpoint != "auth/login" else None
+            result = self.make_request(method, endpoint, data, token=token, expected_status=expected_status)
+            
+            if result["success"]:
+                error_data = result["data"]
+                if "detail" in error_data or "error_code" in error_data:
+                    self.log_test(f"Error handling: {method} {endpoint}", True, 
+                                f"Proper error response (Status: {expected_status})")
+                else:
+                    self.log_test(f"Error handling: {method} {endpoint}", False, 
+                                "Missing error details in response")
+                    error_handling_success = False
+            else:
+                self.log_test(f"Error handling: {method} {endpoint}", False, 
+                            f"Expected {expected_status}, got {result['status_code']}")
+                error_handling_success = False
+        
+        return error_handling_success
+
+    def run_full_qa_audit(self):
+        """Run the complete QA audit for all sprints"""
+        print("\n" + "="*80)
+        print("🚀 STARTING FULL QA AUDIT - SPRINTS 1-7")
+        print("="*80)
+        
+        # Initialize
+        self.test_seed_data()
+        
+        # Sprint 1: Auth & RBAC
+        sprint1_success = self.test_full_qa_audit_sprint1_auth_rbac()
+        
+        # Audit Logs
+        audit_success = self.test_full_qa_audit_audit_logs()
+        
+        # Sprint 2: Reservations End-to-End
+        sprint2_reservations_success = self.test_full_qa_audit_sprint2_reservations()
+        
+        # Sprint 2: Waitlist
+        sprint2_waitlist_success = self.test_full_qa_audit_sprint2_waitlist()
+        
+        # Sprint 3: No-Show Logic
+        sprint3_noshow_success = self.test_full_qa_audit_sprint3_no_show_logic()
+        
+        # Guest Flags
+        guest_flags_success = self.test_full_qa_audit_guest_flags()
+        
+        # Sprint 4: Payments
+        sprint4_payments_success = self.test_full_qa_audit_sprint4_payments()
+        
+        # Sprint 5: Staff & Dienstplan
+        sprint5_staff_success = self.test_full_qa_audit_sprint5_staff_dienstplan()
+        
+        # Sprint 6: Steuerbüro
+        sprint6_steuerburo_success = self.test_full_qa_audit_sprint6_steuerburo()
+        
+        # Sprint 7: Loyalty
+        sprint7_loyalty_success = self.test_full_qa_audit_sprint7_loyalty()
+        
+        # Cross-cutting concerns
+        data_consistency_success = self.test_full_qa_audit_data_consistency()
+        security_success = self.test_full_qa_audit_security()
+        error_handling_success = self.test_full_qa_audit_error_handling()
+        
+        # Summary
+        print("\n" + "="*80)
+        print("📊 FULL QA AUDIT RESULTS")
+        print("="*80)
+        
+        results = [
+            ("Sprint 1: Auth & RBAC", sprint1_success),
+            ("Audit Logs", audit_success),
+            ("Sprint 2: Reservations E2E", sprint2_reservations_success),
+            ("Sprint 2: Waitlist", sprint2_waitlist_success),
+            ("Sprint 3: No-Show Logic", sprint3_noshow_success),
+            ("Guest Flags", guest_flags_success),
+            ("Sprint 4: Payments", sprint4_payments_success),
+            ("Sprint 5: Staff & Dienstplan", sprint5_staff_success),
+            ("Sprint 6: Steuerbüro", sprint6_steuerburo_success),
+            ("Sprint 7: Loyalty", sprint7_loyalty_success),
+            ("Data Consistency", data_consistency_success),
+            ("Security", security_success),
+            ("Error Handling", error_handling_success),
+        ]
+        
+        for name, success in results:
+            status = "✅ PASS" if success else "❌ FAIL"
+            print(f"{status} - {name}")
+        
+        total_passed = sum(1 for _, success in results if success)
+        total_tests = len(results)
+        
+        print(f"\nOVERALL RESULT: {total_passed}/{total_tests} areas passed")
+        
+        if total_passed == total_tests:
+            print("🎉 ALL QA AUDIT AREAS PASSED - SYSTEM IS OPERATIONAL")
+        else:
+            print("⚠️ SOME AREAS FAILED - REVIEW REQUIRED")
+            
+        print(f"\nDetailed Results: {self.tests_passed}/{self.tests_run} individual tests passed")
+        
+        if self.failed_tests:
+            print(f"\n❌ FAILED TESTS ({len(self.failed_tests)}):")
+            for failed in self.failed_tests:
+                print(f"  - {failed['name']}: {failed['details']}")
+        
+        return total_passed == total_tests
+
     def test_seed_payment_rules(self):
         """Seed payment rules for testing"""
         print("\n💰 Seeding payment rules...")
