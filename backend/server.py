@@ -1078,6 +1078,34 @@ async def get_email_logs(
     return logs
 
 
+# ============== SMTP CONFIGURATION ==============
+@api_router.get("/smtp/status", tags=["Admin"])
+async def get_smtp_status_endpoint(user: dict = Depends(require_admin)):
+    """Get SMTP configuration status (without exposing secrets)"""
+    return get_smtp_status()
+
+
+@api_router.post("/smtp/test", tags=["Admin"])
+async def send_test_email_endpoint(
+    to_email: EmailStr,
+    user: dict = Depends(require_admin)
+):
+    """Send a test email to verify SMTP configuration"""
+    result = await send_test_email(to_email)
+    
+    # Audit log
+    await create_audit_log(
+        actor=user,
+        entity="smtp",
+        entity_id="test",
+        action="test_email",
+        after={"recipient": to_email, "success": result["success"]}
+    )
+    
+    return result
+    return logs
+
+
 # ============== PDF EXPORT ==============
 @api_router.get("/export/table-plan", tags=["Export"])
 async def export_table_plan(
