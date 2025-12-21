@@ -5,7 +5,7 @@ import { t } from "../lib/i18n";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
   Select,
@@ -33,31 +33,101 @@ import {
   Clock,
   Phone,
   MapPin,
-  ChevronRight,
   Calendar,
   Loader2,
+  CheckCircle,
+  XCircle,
+  UserCheck,
+  LogOut,
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
-const STATUS_OPTIONS = [
-  { value: "neu", label: "Neu", next: "bestaetigt" },
-  { value: "bestaetigt", label: "Bestätigt", next: "angekommen" },
-  { value: "angekommen", label: "Angekommen", next: "abgeschlossen" },
-  { value: "abgeschlossen", label: "Abgeschlossen", next: null },
-  { value: "no_show", label: "No-Show", next: null },
-  { value: "storniert", label: "Storniert", next: null },
-];
+// Status configuration - single source of truth
+const STATUS_CONFIG = {
+  neu: { 
+    label: "Neu", 
+    next: "bestaetigt", 
+    nextLabel: "Bestätigen",
+    icon: Clock,
+    className: "status-neu"
+  },
+  bestaetigt: { 
+    label: "Bestätigt", 
+    next: "angekommen", 
+    nextLabel: "Angekommen",
+    icon: CheckCircle,
+    className: "status-bestaetigt"
+  },
+  angekommen: { 
+    label: "Angekommen", 
+    next: "abgeschlossen", 
+    nextLabel: "Abschließen",
+    icon: UserCheck,
+    className: "status-angekommen"
+  },
+  abgeschlossen: { 
+    label: "Abgeschlossen", 
+    next: null,
+    icon: LogOut,
+    className: "status-abgeschlossen"
+  },
+  no_show: { 
+    label: "No-Show", 
+    next: null,
+    icon: XCircle,
+    className: "status-no_show"
+  },
+  storniert: { 
+    label: "Storniert", 
+    next: null,
+    icon: XCircle,
+    className: "status-storniert"
+  },
+};
 
-const getStatusBadgeClass = (status) => {
-  const classes = {
-    neu: "status-neu",
-    bestaetigt: "status-bestaetigt",
-    angekommen: "status-angekommen",
-    abgeschlossen: "status-abgeschlossen",
-    no_show: "status-no_show",
-  };
-  return classes[status] || "";
+// Quick action button component for 1-click status changes
+const QuickActionButton = ({ reservation, onStatusChange, disabled }) => {
+  const config = STATUS_CONFIG[reservation.status];
+  if (!config?.next) return null;
+  
+  return (
+    <Button
+      size="lg"
+      className="rounded-full min-w-[140px] h-12 font-bold text-base"
+      onClick={(e) => {
+        e.stopPropagation();
+        onStatusChange(reservation.id, config.next);
+      }}
+      disabled={disabled}
+      data-testid={`quick-action-${reservation.id}`}
+    >
+      → {config.nextLabel}
+    </Button>
+  );
+};
+
+// No-Show button component
+const NoShowButton = ({ reservation, onStatusChange, disabled }) => {
+  const status = reservation.status;
+  // Can only mark as no-show if not terminal
+  if (["abgeschlossen", "no_show", "storniert"].includes(status)) return null;
+  
+  return (
+    <Button
+      size="lg"
+      variant="destructive"
+      className="rounded-full h-12 px-6 font-bold"
+      onClick={(e) => {
+        e.stopPropagation();
+        onStatusChange(reservation.id, "no_show");
+      }}
+      disabled={disabled}
+      data-testid={`no-show-${reservation.id}`}
+    >
+      No-Show
+    </Button>
+  );
 };
 
 export const Dashboard = () => {
@@ -65,6 +135,7 @@ export const Dashboard = () => {
   const [reservations, setReservations] = useState([]);
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null); // Track which reservation is loading
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
@@ -99,7 +170,7 @@ export const Dashboard = () => {
       setReservations(resRes.data);
       setAreas(areasRes.data);
     } catch (err) {
-      toast.error("Fehler beim Laden der Daten");
+      toast.error(err.response?.data?.detail || "Fehler beim Laden der Daten");
     } finally {
       setLoading(false);
     }
@@ -115,14 +186,18 @@ export const Dashboard = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const handleStatusChange = async (reservation, newStatus) => {
+  // Quick status change - optimized for 1-click
+  const handleQuickStatusChange = async (reservationId, newStatus) => {
+    setActionLoading(reservationId);
     try {
-      await reservationsApi.updateStatus(reservation.id, newStatus);
-      toast.success(`Status geändert zu "${t(`status.${newStatus}`)}"`);
+      await reservationsApi.updateStatus(reservationId, newStatus);
+      toast.success(`Status: ${STATUS_CONFIG[newStatus]?.label || newStatus}`);
       fetchData();
       setShowDetailDialog(false);
     } catch (err) {
-      toast.error("Fehler beim Ändern des Status");
+      toast.error(err.response?.data?.detail || "Fehler beim Ändern des Status");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -130,7 +205,12 @@ export const Dashboard = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await reservationsApi.create(formData);
+      const dataToSend = { ...formData };
+      if (!dataToSend.area_id) delete dataToSend.area_id;
+      if (!dataToSend.guest_email) delete dataToSend.guest_email;
+      if (!dataToSend.notes) delete dataToSend.notes;
+      
+      await reservationsApi.create(dataToSend);
       toast.success("Reservierung erstellt");
       setShowCreateDialog(false);
       setFormData({
@@ -145,7 +225,7 @@ export const Dashboard = () => {
       });
       fetchData();
     } catch (err) {
-      toast.error("Fehler beim Erstellen der Reservierung");
+      toast.error(err.response?.data?.detail || "Fehler beim Erstellen");
     } finally {
       setSubmitting(false);
     }
@@ -156,6 +236,7 @@ export const Dashboard = () => {
     return area?.name || "-";
   };
 
+  // Calculate stats
   const stats = {
     total: reservations.length,
     neu: reservations.filter((r) => r.status === "neu").length,
@@ -180,142 +261,98 @@ export const Dashboard = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size="lg"
               onClick={fetchData}
               data-testid="refresh-button"
-              className="rounded-full"
+              className="rounded-full h-12 w-12"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
             </Button>
             {isSchichtleiter() && (
               <Button
-                onClick={() => setShowCreateDialog(true)}
+                size="lg"
+                onClick={() => {
+                  setFormData({ ...formData, date: selectedDate });
+                  setShowCreateDialog(true);
+                }}
                 data-testid="new-reservation-button"
-                className="rounded-full"
+                className="rounded-full h-12 px-6 font-bold"
               >
-                <Plus size={16} className="mr-2" />
-                {t("reservations.newReservation")}
+                <Plus size={20} className="mr-2" />
+                Neue Reservierung
               </Button>
             )}
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Larger touch targets */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card className="bg-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Calendar size={20} className="text-primary" />
+          {[
+            { label: "Gesamt", value: stats.total, icon: Calendar, color: "primary" },
+            { label: "Neu", value: stats.neu, icon: Clock, color: "yellow" },
+            { label: "Bestätigt", value: stats.bestaetigt, icon: CheckCircle, color: "blue" },
+            { label: "Angekommen", value: stats.angekommen, icon: UserCheck, color: "green" },
+            { label: "Gäste", value: stats.guests, icon: Users, color: "muted" },
+          ].map((stat) => (
+            <Card key={stat.label} className="bg-card hover:shadow-md transition-shadow cursor-default">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-full bg-${stat.color}/10`}>
+                    <stat.icon size={24} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">Gesamt</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-[#ffed00]/20">
-                  <Clock size={20} className="text-[#00280b]" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.neu}</p>
-                  <p className="text-xs text-muted-foreground">Neu</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-[#a2d2ff]/30">
-                  <Clock size={20} className="text-[#00280b]" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.bestaetigt}</p>
-                  <p className="text-xs text-muted-foreground">Bestätigt</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Users size={20} className="text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.angekommen}</p>
-                  <p className="text-xs text-muted-foreground">Angekommen</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-muted">
-                  <Users size={20} className="text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.guests}</p>
-                  <p className="text-xs text-muted-foreground">Gäste</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Filters */}
+        {/* Filters - Larger inputs */}
         <Card className="bg-card">
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
                   <Input
-                    placeholder={t("reservations.search")}
+                    placeholder="Suche nach Name oder Telefon..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 h-12 text-base"
                     data-testid="search-input"
                   />
                 </div>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-3 flex-wrap">
                 <Input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-auto"
+                  className="w-auto h-12"
                   data-testid="date-filter"
                 />
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]" data-testid="status-filter">
+                  <SelectTrigger className="w-[160px] h-12" data-testid="status-filter">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("common.all")}</SelectItem>
-                    {STATUS_OPTIONS.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
+                    <SelectItem value="all">Alle Status</SelectItem>
+                    {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key} value={key}>{config.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Select value={areaFilter} onValueChange={setAreaFilter}>
-                  <SelectTrigger className="w-[140px]" data-testid="area-filter">
+                  <SelectTrigger className="w-[160px] h-12" data-testid="area-filter">
                     <SelectValue placeholder="Bereich" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("common.all")}</SelectItem>
+                    <SelectItem value="all">Alle Bereiche</SelectItem>
                     {areas.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
-                      </SelectItem>
+                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -324,71 +361,97 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Reservations List */}
+        {/* Reservations List - Optimized for touch */}
         <div className="space-y-3">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : reservations.length === 0 ? (
             <Card className="bg-card">
-              <CardContent className="py-12 text-center">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">{t("reservations.noReservations")}</p>
+              <CardContent className="py-16 text-center">
+                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-lg text-muted-foreground">Keine Reservierungen für diesen Tag</p>
               </CardContent>
             </Card>
           ) : (
-            reservations.map((reservation) => (
-              <Card
-                key={reservation.id}
-                className="bg-card hover:shadow-md transition-all cursor-pointer group"
-                onClick={() => {
-                  setSelectedReservation(reservation);
-                  setShowDetailDialog(true);
-                }}
-                data-testid={`reservation-${reservation.id}`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-16 text-center">
-                        <p className="text-lg font-bold">{reservation.time}</p>
-                        <p className="text-xs text-muted-foreground">Uhr</p>
-                      </div>
-                      <div className="h-12 w-px bg-border" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{reservation.guest_name}</p>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Users size={14} />
-                            {reservation.party_size} {t("common.persons")}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Phone size={14} />
-                            {reservation.guest_phone}
-                          </span>
-                          {reservation.area_id && (
+            reservations.map((reservation) => {
+              const statusConfig = STATUS_CONFIG[reservation.status];
+              const isLoading = actionLoading === reservation.id;
+              
+              return (
+                <Card
+                  key={reservation.id}
+                  className="bg-card hover:shadow-lg transition-all cursor-pointer group"
+                  onClick={() => {
+                    setSelectedReservation(reservation);
+                    setShowDetailDialog(true);
+                  }}
+                  data-testid={`reservation-${reservation.id}`}
+                >
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      {/* Main Info */}
+                      <div className="flex items-center gap-4 flex-1">
+                        {/* Time - Large & prominent */}
+                        <div className="w-20 text-center flex-shrink-0">
+                          <p className="text-2xl font-bold">{reservation.time}</p>
+                          <p className="text-xs text-muted-foreground">Uhr</p>
+                        </div>
+                        
+                        <div className="h-14 w-px bg-border hidden sm:block" />
+                        
+                        {/* Guest Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-lg truncate">{reservation.guest_name}</p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                             <span className="flex items-center gap-1">
-                              <MapPin size={14} />
-                              {getAreaName(reservation.area_id)}
+                              <Users size={16} />
+                              <span className="font-medium">{reservation.party_size}</span> Pers.
                             </span>
-                          )}
+                            <span className="flex items-center gap-1">
+                              <Phone size={16} />
+                              {reservation.guest_phone}
+                            </span>
+                            {reservation.area_id && (
+                              <span className="flex items-center gap-1">
+                                <MapPin size={16} />
+                                {getAreaName(reservation.area_id)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Status & Actions */}
+                      <div className="flex items-center gap-3 flex-wrap justify-end">
+                        <Badge className={`${statusConfig?.className} border text-sm px-4 py-2`}>
+                          {statusConfig?.label || reservation.status}
+                        </Badge>
+                        
+                        {/* Quick Actions - 1 Click */}
+                        {isSchichtleiter() && (
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            <QuickActionButton
+                              reservation={reservation}
+                              onStatusChange={handleQuickStatusChange}
+                              disabled={isLoading}
+                            />
+                            <NoShowButton
+                              reservation={reservation}
+                              onStatusChange={handleQuickStatusChange}
+                              disabled={isLoading}
+                            />
+                          </div>
+                        )}
+                        
+                        {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className={`${getStatusBadgeClass(reservation.status)} border`}>
-                        {t(`status.${reservation.status}`)}
-                      </Badge>
-                      <ChevronRight
-                        size={20}
-                        className="text-muted-foreground group-hover:text-foreground transition-colors"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>
@@ -397,230 +460,206 @@ export const Dashboard = () => {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">
-              {t("reservations.newReservation")}
-            </DialogTitle>
-            <DialogDescription>
-              Erstellen Sie eine neue Reservierung
-            </DialogDescription>
+            <DialogTitle className="font-serif text-2xl">Neue Reservierung</DialogTitle>
+            <DialogDescription>Erfassen Sie eine neue Reservierung</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="guest_name">{t("reservations.guestName")} *</Label>
+                  <Label htmlFor="guest_name">Gastname *</Label>
                   <Input
                     id="guest_name"
                     value={formData.guest_name}
                     onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                     required
+                    className="h-11"
                     data-testid="form-guest-name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="guest_phone">{t("reservations.phone")} *</Label>
+                  <Label htmlFor="guest_phone">Telefon *</Label>
                   <Input
                     id="guest_phone"
                     value={formData.guest_phone}
                     onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                     required
+                    className="h-11"
                     data-testid="form-guest-phone"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="guest_email">{t("reservations.email")}</Label>
+                <Label htmlFor="guest_email">E-Mail (optional)</Label>
                 <Input
                   id="guest_email"
                   type="email"
                   value={formData.guest_email}
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
+                  className="h-11"
                   data-testid="form-guest-email"
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">{t("reservations.date")} *</Label>
+                  <Label htmlFor="date">Datum *</Label>
                   <Input
                     id="date"
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     required
+                    className="h-11"
                     data-testid="form-date"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time">{t("reservations.time")} *</Label>
+                  <Label htmlFor="time">Uhrzeit *</Label>
                   <Input
                     id="time"
                     type="time"
                     value={formData.time}
                     onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                     required
+                    className="h-11"
                     data-testid="form-time"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="party_size">{t("reservations.partySize")} *</Label>
+                  <Label htmlFor="party_size">Personen *</Label>
                   <Input
                     id="party_size"
                     type="number"
                     min="1"
+                    max="20"
                     value={formData.party_size}
-                    onChange={(e) =>
-                      setFormData({ ...formData, party_size: parseInt(e.target.value) || 1 })
-                    }
+                    onChange={(e) => setFormData({ ...formData, party_size: parseInt(e.target.value) || 1 })}
                     required
+                    className="h-11"
                     data-testid="form-party-size"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="area">{t("reservations.area")}</Label>
+                <Label htmlFor="area">Bereich</Label>
                 <Select
                   value={formData.area_id}
                   onValueChange={(v) => setFormData({ ...formData, area_id: v })}
                 >
-                  <SelectTrigger data-testid="form-area">
+                  <SelectTrigger className="h-11" data-testid="form-area">
                     <SelectValue placeholder="Bereich wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     {areas.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
-                      </SelectItem>
+                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes">{t("reservations.notes")}</Label>
+                <Label htmlFor="notes">Notizen</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="min-h-[80px]"
                   data-testid="form-notes"
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowCreateDialog(false)}
-                className="rounded-full"
-              >
-                {t("common.cancel")}
+              <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)} className="rounded-full">
+                Abbrechen
               </Button>
               <Button type="submit" disabled={submitting} className="rounded-full" data-testid="form-submit">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {t("common.create")}
+                Erstellen
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Detail Dialog */}
+      {/* Detail Dialog - Optimized for quick actions */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="sm:max-w-[500px]">
           {selectedReservation && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-serif text-2xl">
-                  {selectedReservation.guest_name}
-                </DialogTitle>
-                <DialogDescription>
-                  Reservierung #{selectedReservation.id.slice(0, 8)}
-                </DialogDescription>
+                <DialogTitle className="font-serif text-2xl">{selectedReservation.guest_name}</DialogTitle>
+                <DialogDescription>Reservierung #{selectedReservation.id.slice(0, 8)}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                {/* Status with Actions */}
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge className={`${getStatusBadgeClass(selectedReservation.status)} border mt-1`}>
-                      {t(`status.${selectedReservation.status}`)}
+                    <Badge className={`${STATUS_CONFIG[selectedReservation.status]?.className} border mt-1`}>
+                      {STATUS_CONFIG[selectedReservation.status]?.label}
                     </Badge>
                   </div>
                   {isSchichtleiter() && (
                     <div className="flex gap-2">
-                      {STATUS_OPTIONS.find((s) => s.value === selectedReservation.status)?.next && (
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            handleStatusChange(
-                              selectedReservation,
-                              STATUS_OPTIONS.find((s) => s.value === selectedReservation.status)?.next
-                            )
-                          }
-                          className="rounded-full"
-                          data-testid="next-status-button"
-                        >
-                          → {t(`status.${STATUS_OPTIONS.find((s) => s.value === selectedReservation.status)?.next}`)}
-                        </Button>
-                      )}
-                      {selectedReservation.status !== "no_show" &&
-                        selectedReservation.status !== "abgeschlossen" && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleStatusChange(selectedReservation, "no_show")}
-                            className="rounded-full"
-                            data-testid="no-show-button"
-                          >
-                            No-Show
-                          </Button>
-                        )}
+                      <QuickActionButton
+                        reservation={selectedReservation}
+                        onStatusChange={handleQuickStatusChange}
+                        disabled={actionLoading === selectedReservation.id}
+                      />
+                      <NoShowButton
+                        reservation={selectedReservation}
+                        onStatusChange={handleQuickStatusChange}
+                        disabled={actionLoading === selectedReservation.id}
+                      />
                     </div>
                   )}
                 </div>
 
+                {/* Details Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">{t("reservations.date")}</p>
-                    <p className="font-medium">{selectedReservation.date}</p>
+                    <p className="text-sm text-muted-foreground">Datum</p>
+                    <p className="font-medium text-lg">{selectedReservation.date}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{t("reservations.time")}</p>
-                    <p className="font-medium">{selectedReservation.time} Uhr</p>
+                    <p className="text-sm text-muted-foreground">Uhrzeit</p>
+                    <p className="font-medium text-lg">{selectedReservation.time} Uhr</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{t("reservations.partySize")}</p>
-                    <p className="font-medium">{selectedReservation.party_size} {t("common.persons")}</p>
+                    <p className="text-sm text-muted-foreground">Personen</p>
+                    <p className="font-medium text-lg">{selectedReservation.party_size}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{t("reservations.area")}</p>
-                    <p className="font-medium">{getAreaName(selectedReservation.area_id) || "-"}</p>
+                    <p className="text-sm text-muted-foreground">Bereich</p>
+                    <p className="font-medium text-lg">{getAreaName(selectedReservation.area_id) || "-"}</p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground">{t("reservations.phone")}</p>
-                  <p className="font-medium">{selectedReservation.guest_phone}</p>
+                  <p className="text-sm text-muted-foreground">Telefon</p>
+                  <a href={`tel:${selectedReservation.guest_phone}`} className="font-medium text-lg text-primary hover:underline">
+                    {selectedReservation.guest_phone}
+                  </a>
                 </div>
 
                 {selectedReservation.guest_email && (
                   <div>
-                    <p className="text-sm text-muted-foreground">{t("reservations.email")}</p>
-                    <p className="font-medium">{selectedReservation.guest_email}</p>
+                    <p className="text-sm text-muted-foreground">E-Mail</p>
+                    <a href={`mailto:${selectedReservation.guest_email}`} className="font-medium text-primary hover:underline">
+                      {selectedReservation.guest_email}
+                    </a>
                   </div>
                 )}
 
                 {selectedReservation.notes && (
                   <div>
-                    <p className="text-sm text-muted-foreground">{t("reservations.notes")}</p>
-                    <p className="font-medium">{selectedReservation.notes}</p>
+                    <p className="text-sm text-muted-foreground">Notizen</p>
+                    <p className="font-medium bg-muted p-3 rounded-lg">{selectedReservation.notes}</p>
                   </div>
                 )}
               </div>
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDetailDialog(false)}
-                  className="rounded-full"
-                >
-                  {t("common.cancel")}
+                <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="rounded-full">
+                  Schließen
                 </Button>
               </DialogFooter>
             </>
