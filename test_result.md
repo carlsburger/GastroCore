@@ -548,11 +548,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Work Areas CRUD API"
-    - "Staff Members CRUD API"
-    - "Schedules & Shifts CRUD API"
-    - "Hours Overview API"
-    - "PDF/CSV Export"
+    - "Tax Office Settings API"
+    - "Tax Office Export Jobs API"
+    - "Tax Office Export Downloads API"
+    - "Staff Registration Package API"
+    - "Staff Tax Fields API"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
