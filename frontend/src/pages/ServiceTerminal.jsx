@@ -76,7 +76,7 @@ import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 // Status configuration
 const STATUS_CONFIG = {

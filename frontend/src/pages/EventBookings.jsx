@@ -38,7 +38,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const STATUS_CONFIG = {
   pending: { label: "Ausstehend", color: "bg-yellow-100 text-yellow-800", icon: Clock },

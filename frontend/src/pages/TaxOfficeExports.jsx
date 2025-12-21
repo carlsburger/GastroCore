@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const STATUS_CONFIG = {
   pending: { label: "Wartend", color: "bg-gray-100 text-gray-700", icon: Clock },

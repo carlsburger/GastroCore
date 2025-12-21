@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Loader2, CheckCircle, XCircle, Calendar, Clock, Users } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 export const CancelReservation = () => {
   const { reservationId } = useParams();

@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { Badge } from "../components/ui/badge";
 import { Loader2, Calendar, Clock, Users, CheckCircle, AlertCircle, CalendarClock } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 // Occasion options
 const OCCASIONS = [

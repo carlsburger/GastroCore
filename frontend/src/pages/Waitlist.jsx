@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const WAITLIST_STATUS = {
   offen: { label: "Offen", className: "bg-yellow-100 text-yellow-800" },

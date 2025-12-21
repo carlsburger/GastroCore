@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const FULL_DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];

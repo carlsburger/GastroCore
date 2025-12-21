@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const FLAG_CONFIG = {
   none: { label: "Normal", className: "bg-green-100 text-green-800", icon: CheckCircle },
