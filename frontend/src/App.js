@@ -16,6 +16,13 @@ import Guests from "./pages/Guests";
 import Settings from "./pages/Settings";
 import ConfirmReservation from "./pages/ConfirmReservation";
 import MessageLogs from "./pages/MessageLogs";
+// Events Module (Sprint 4)
+import Events from "./pages/Events";
+import EventProducts from "./pages/EventProducts";
+import EventBookings from "./pages/EventBookings";
+import PublicEventsList from "./pages/PublicEventsList";
+import PublicEventDetail from "./pages/PublicEventDetail";
+import PublicEventBooking from "./pages/PublicEventBooking";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
