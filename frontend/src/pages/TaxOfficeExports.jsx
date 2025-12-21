@@ -85,7 +85,7 @@ export const TaxOfficeExports = () => {
   const [settingsData, setSettingsData] = useState({
     recipient_emails: [],
     cc_emails: [],
-    sender_name: "GastroCore HR",
+    sender_name: "Carlsburg HR",
     subject_template: "{company} - Steuerbüro Export {period}",
     default_text_de: "Anbei finden Sie die Unterlagen für den Zeitraum {period}.",
     filename_prefix: "carlsburg",
