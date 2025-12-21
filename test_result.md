@@ -69,7 +69,7 @@ backend:
 frontend:
   - task: "Service-Terminal UI"
     implemented: true
-    working: "NA"
+    working: true
     file: "App.js"
     stuck_count: 0
     priority: "high"
@@ -78,6 +78,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Frontend testing not performed as per system limitations. Backend APIs are fully functional."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE FRONTEND TESTING COMPLETED - All 5 test scenarios PASSED: 1) Login & Navigation: Successfully logged in as admin@gastrocore.de and navigated to /service-terminal, 2) Daily List Components: Stats bar (6 cards), filters (date, search), reservation list (22 reservations) all working, 3) Status Changes: Successfully changed status from 'Neu' to 'Bestätigt' with toast confirmation, 4) Walk-in Creation: Dialog opens, form submission works, success toast appears, 5) Detail Sheet: Opens with guest info, details, WhatsApp links, and audit logs. No console errors detected. UI is fully functional and responsive."
 
 metadata:
   created_by: "main_agent"
