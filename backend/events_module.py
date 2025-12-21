@@ -565,8 +565,8 @@ async def update_event_booking(
     if data.status == EventBookingStatus.CANCELLED:
         event = await db.events.find_one({"id": event_id})
         if event and event.get("status") == "sold_out":
-            # Check if capacity is available again
-            booked = await get_event_booked_count(event_id)
+            # Check if capacity is available again (use strict count for capacity check)
+            booked = await get_event_booked_count(event_id, include_pending=False)
             if booked < event.get("capacity_total", 0):
                 await db.events.update_one({"id": event_id}, {"$set": {"status": "published", "updated_at": now_iso()}})
     
@@ -585,7 +585,8 @@ async def list_public_events():
     
     result = []
     for event in events:
-        booked = await get_event_booked_count(event["id"])
+        # For public display: show actual available capacity (only confirmed/paid bookings count)
+        booked = await get_event_booked_count(event["id"], include_pending=False)
         available = event.get("capacity_total", 0) - booked
         
         result.append({
@@ -616,7 +617,8 @@ async def get_public_event(event_id: str):
     if not event:
         raise NotFoundException("Event nicht gefunden oder nicht verfügbar")
     
-    booked = await get_event_booked_count(event_id)
+    # For public display: show actual available capacity (only confirmed/paid bookings count)
+    booked = await get_event_booked_count(event_id, include_pending=False)
     available = event.get("capacity_total", 0) - booked
     
     result = {
