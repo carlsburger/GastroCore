@@ -368,7 +368,7 @@ async def list_staff_members(
     work_area_id: Optional[str] = None,
     user: dict = Depends(require_manager)
 ):
-    """List all staff members"""
+    """List all staff members (filtered by user role)"""
     query = {"archived": False}
     if status:
         query["status"] = status
@@ -376,16 +376,34 @@ async def list_staff_members(
         query["work_area_ids"] = work_area_id
     
     members = await db.staff_members.find(query, {"_id": 0}).sort("last_name", 1).to_list(500)
-    return members
+    
+    # Filter based on user role
+    user_role = user.get("role", "")
+    filtered_members = [filter_member_for_role(m, user_role) for m in members]
+    
+    # Add completeness score for Admin
+    if user_role == "admin":
+        for member in filtered_members:
+            member["completeness"] = calculate_completeness(member)
+    
+    return filtered_members
 
 
 @staff_router.get("/members/{member_id}")
 async def get_staff_member(member_id: str, user: dict = Depends(require_manager)):
-    """Get a single staff member"""
+    """Get a single staff member (filtered by user role)"""
     member = await db.staff_members.find_one({"id": member_id, "archived": False}, {"_id": 0})
     if not member:
         raise NotFoundException("Mitarbeiter")
-    return member
+    
+    user_role = user.get("role", "")
+    filtered = filter_member_for_role(member, user_role)
+    
+    # Add completeness for Admin
+    if user_role == "admin":
+        filtered["completeness"] = calculate_completeness(member)
+    
+    return filtered
 
 
 @staff_router.post("/members")
