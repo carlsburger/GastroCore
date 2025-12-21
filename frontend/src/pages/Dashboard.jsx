@@ -250,6 +250,59 @@ export const Dashboard = () => {
     }
   };
 
+  // Walk-In: Sofortige Erfassung
+  const handleWalkIn = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await axios.post(`${BACKEND_URL}/api/reservations/walk-in`, walkInData, { headers });
+      toast.success("Walk-In erfasst und als 'Angekommen' markiert");
+      setShowWalkInDialog(false);
+      setWalkInData({
+        guest_name: "",
+        guest_phone: "",
+        party_size: 2,
+        area_id: "",
+        table_number: "",
+        notes: "",
+      });
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Walk-In");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // PDF Export
+  const handleExportPDF = async () => {
+    setExportLoading(true);
+    try {
+      const params = new URLSearchParams({ date: selectedDate });
+      if (areaFilter !== "all") params.append("area_id", areaFilter);
+      
+      const response = await axios.get(`${BACKEND_URL}/api/export/table-plan?${params}`, {
+        headers,
+        responseType: "blob",
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `tischplan_${selectedDate}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("PDF heruntergeladen");
+    } catch (err) {
+      toast.error("Fehler beim PDF-Export");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const getAreaName = (areaId) => {
     const area = areas.find((a) => a.id === areaId);
     return area?.name || "-";
