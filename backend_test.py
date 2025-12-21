@@ -634,11 +634,11 @@ class GastroCoreAPITester:
                                 f"error_code: {error_data.get('error_code')}")
                 else:
                     self.log_test("Error handling: Invalid reservation returns proper error", False, 
-                                "Missing error_code or detail in response")
+                                f"Missing error_code or detail in response. Got: {error_data}")
                     error_success = False
             else:
                 self.log_test("Error handling: Invalid reservation returns proper error", False, 
-                            f"Expected 422, got {result['status_code']}")
+                            f"Expected 422, got {result['status_code']}. Response: {result.get('data', {})}")
                 error_success = False
         
         # Test accessing non-existent resource
