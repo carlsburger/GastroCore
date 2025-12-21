@@ -67,17 +67,17 @@ backend:
         comment: "✅ Status warning system working correctly. When setting staff member status to 'aktiv' with missing required fields (email, mobile_phone, tax_id, social_security_number, bank_iban), response includes warnings array with missing_fields details and descriptive message."
 
 frontend:
-  - task: "Frontend Integration"
-    implemented: false
-    working: "NA"
-    file: "N/A"
+  - task: "HR Fields Extension Frontend"
+    implemented: true
+    working: true
+    file: "StaffDetail.jsx"
     stuck_count: 0
-    priority: "low"
+    priority: "high"
     needs_retesting: false
     status_history:
-      - working: "NA"
+      - working: true
         agent: "testing"
-        comment: "Frontend testing not performed as per system limitations. Backend APIs are fully functional and ready for frontend integration."
+        comment: "✅ HR Fields Extension frontend FULLY FUNCTIONAL. All test scenarios PASSED: 1) Admin login successful with access to all 4 tabs (Kontakt, Personal/Steuer, Notfall, Dokumente), 2) Completeness score displayed (100%), 3) HR fields (Steuer-ID, SV-Nummer, IBAN) visible and editable for Admin, 4) Save functionality working with toast notifications, 5) RBAC correctly implemented - Schichtleiter sees only 3 tabs (Personal/Steuer tab hidden), 6) Staff navigation and detail pages working perfectly. Frontend integration complete and production-ready."
 
 metadata:
   created_by: "main_agent"
