@@ -103,187 +103,151 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Sprint 2 für GastroCore - End-to-End Reservierungen:
-  1) Online-Reservierung (Widget)
-  2) Walk-ins Schnellerfassung
-  3) Warteliste Management
-  4) No-show Management (Greylist/Blacklist)
-  5) E-Mail Kommunikation (DE/EN/PL)
-  6) PDF Tischplan Export
+  Sprint 3 für GastroCore - Reminder & No-Show System:
+  1) Reminder-System (E-Mail + WhatsApp Deep-Link)
+  2) Storno & Bestätigung durch Gast
+  3) No-Show-Logik (Greylist/Blacklist)
+  4) Service-Terminal Erweiterungen
+  5) Message-Log
 
 backend:
-  - task: "Online Booking Widget API"
+  - task: "Reminder Rules CRUD"
     implemented: true
     working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Public endpoints /api/public/availability and /api/public/book implemented"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: GET /api/public/availability returns 21 available slots for 2025-12-23. POST /api/public/book successfully creates reservations. Both endpoints working correctly."
+        comment: "GET/POST/PATCH/DELETE /api/reminder-rules implemented"
 
-  - task: "Walk-In Quick Entry"
+  - task: "WhatsApp Deep-Link Generator"
     implemented: true
     working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "POST /api/walk-ins creates reservation with status 'angekommen'"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: POST /api/walk-ins correctly creates walk-in reservations with status 'angekommen'. Quick entry functionality working as expected."
+        comment: "POST /api/reservations/{id}/whatsapp-reminder generates wa.me link"
 
-  - task: "Waitlist Management"
+  - task: "Guest Confirmation by Link"
     implemented: true
     working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "CRUD endpoints for waitlist with status transitions"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: All waitlist endpoints working - POST /api/waitlist creates entries, GET /api/waitlist retrieves entries, PATCH /api/waitlist/{id} updates status correctly. Status transitions working properly."
+        comment: "GET/POST /api/public/reservations/{id}/confirm-info and confirm"
 
-  - task: "Guest Management (Greylist/Blacklist)"
+  - task: "Cancellation Deadline Check"
     implemented: true
     working: true
     file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Guest records with no_show_count and flag (none/greylist/blacklist)"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Guest management fully functional - GET /api/guests retrieves guests, POST /api/guests creates guests, PATCH /api/guests/{id} updates flags. Filtering by flag works correctly."
-
-  - task: "PDF Table Plan Export"
-    implemented: true
-    working: true
-    file: "/app/backend/pdf_service.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "GET /api/export/table-plan generates A4 PDF"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: GET /api/export/table-plan?date=2025-12-21 successfully generates PDF (4644 bytes). PDF export working correctly."
+        comment: "GET /api/public/reservations/{id}/cancel-info with deadline check"
 
-  - task: "Email Service Multi-Language"
+  - task: "Message Log"
     implemented: true
     working: true
-    file: "/app/backend/email_service.py"
+    file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "DE/EN/PL templates for confirmation, reminder, cancellation"
+        comment: "GET /api/message-logs - logs all sent messages"
+
+  - task: "Guest Status Check"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
       - working: true
-        agent: "testing"
-        comment: "Minor: Email sending fails due to SMTP authentication (535 Authentication credentials invalid), but email service structure and templates are correctly implemented. This is a configuration issue, not a code issue."
+        agent: "main"
+        comment: "GET /api/guests/check/{phone} returns flag and no_show_count"
 
 frontend:
-  - task: "Dashboard with Walk-In Button"
+  - task: "Settings Page (Reminder & No-Show Config)"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Settings.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Tabs for Reminders, No-Show Rules, Cancellation settings"
+
+  - task: "Confirm Reservation Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/ConfirmReservation.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Public /confirm/:id page for guest confirmation"
+
+  - task: "Message Logs Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/MessageLogs.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Admin view for all sent messages"
+
+  - task: "Dashboard - WhatsApp Button & Guest Flags"
     implemented: true
     working: true
     file: "/app/frontend/src/pages/Dashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Added Walk-In button and PDF export button"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Dashboard loads successfully with Service-Terminal title. Walk-In button found and functional - dialog opens and form can be submitted. PDF Export button found and clickable. Navigation to Warteliste and Gäste working properly. All dashboard features working as expected."
-
-  - task: "Online Booking Widget"
-    implemented: true
-    working: true
-    file: "/app/frontend/src/pages/BookingWidget.jsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Public /book route with multi-step form"
-      - working: false
-        agent: "testing"
-        comment: "❌ TESTED: Public booking widget route /book is not accessible. Route appears to redirect to login page instead of showing the booking widget."
-      - working: true
-        agent: "main"
-        comment: "✅ FIXED: Moved /book route to top of routing order in App.js. Public booking widget now accessible without login."
-
-  - task: "Waitlist Page"
-    implemented: true
-    working: true
-    file: "/app/frontend/src/pages/Waitlist.jsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Full CRUD with status transitions and conversion to reservation"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Waitlist page loads correctly with title 'Warteliste'. Navigation from dashboard works. 'Neuer Eintrag' button found and functional - dialog opens for creating new waitlist entries. Form can be filled and submitted. All waitlist functionality working as expected."
-
-  - task: "Guests Page (No-Show Management)"
-    implemented: true
-    working: true
-    file: "/app/frontend/src/pages/Guests.jsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Filter by flag (all/greylist/blacklist), edit guest flags"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Guests page loads correctly with title 'Gäste'. Navigation from dashboard works. All filter buttons (Alle/Greylist/Blacklist) are visible and functional. Guest management interface working as expected for no-show management."
+        comment: "WhatsApp button, Greylist/Blacklist markers, unconfirmed warning"
 
 metadata:
   created_by: "main_agent"
-  version: "2.0"
-  test_sequence: 2
+  version: "3.0"
+  test_sequence: 1
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Online Booking Widget"
-  stuck_tasks:
-    - "Online Booking Widget"
+    - "Reminder Rules CRUD"
+    - "WhatsApp Deep-Link Generator"
+    - "Guest Confirmation"
+    - "Guest Status Check"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Sprint 2 features implemented. Please test the following backend endpoints: 1) POST /api/public/book (public booking), 2) POST /api/walk-ins (walk-in entry), 3) GET/POST/PATCH /api/waitlist (waitlist CRUD), 4) GET /api/export/table-plan?date=2025-12-21 (PDF export). Test users: admin@gastrocore.de / NewAdmin123!"
-  - agent: "testing"
-    message: "✅ BACKEND TESTING COMPLETE: All Sprint 2 backend APIs tested successfully with 98% success rate (48/49 tests passed). Key findings: 1) Authentication working with admin@gastrocore.de / NewAdmin123!, 2) Public booking widget API fully functional, 3) Walk-in quick entry creates reservations with 'angekommen' status, 4) Waitlist management CRUD operations working, 5) Guest management with greylist/blacklist flags working, 6) PDF export generates valid PDFs. Minor issue: SMTP email authentication needs configuration but email service code is correct. All core Sprint 2 functionality is working correctly."
-  - agent: "testing"
-    message: "✅ FRONTEND TESTING COMPLETE: Sprint 2 frontend features tested with 75% success rate (3/4 major features working). WORKING: 1) Dashboard with Walk-In button and PDF export, 2) Navigation to Warteliste and Gäste pages, 3) Waitlist management with 'Neuer Eintrag' functionality, 4) Guests page with filter buttons. ISSUE: Public booking widget route /book is not accessible - redirects to login instead of showing public booking form. This is a routing/authentication configuration issue, not a component issue."
+    message: "Sprint 3 features implemented. Please test: 1) GET/POST /api/reminder-rules, 2) POST /api/reservations/{id}/whatsapp-reminder, 3) GET/POST /api/public/reservations/{id}/confirm-info and confirm?token=..., 4) GET /api/guests/check/{phone}, 5) GET /api/message-logs. Test users: admin@gastrocore.de / NewAdmin123!"
