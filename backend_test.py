@@ -343,8 +343,9 @@ class GastroCoreAPITester:
         status_transitions = ["bestaetigt", "angekommen", "abgeschlossen"]
         
         for new_status in status_transitions:
-            result = self.make_request("PATCH", f"reservations/{reservation_id}/status", 
-                                     {"status": new_status}, self.tokens["schichtleiter"], 
+            # The status change endpoint expects the status as a query parameter
+            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status={new_status}", 
+                                     {}, self.tokens["schichtleiter"], 
                                      expected_status=200)
             if result["success"]:
                 self.log_test(f"Status change to {new_status}", True)
