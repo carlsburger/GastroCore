@@ -1,27 +1,16 @@
 """
-Validators - Centralized validation logic
+Extended Validators for Sprint 2
 """
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from .config import settings
-from .models import ReservationStatus
+from .models import ReservationStatus, WaitlistStatus
 from .exceptions import ValidationException, InvalidStatusTransitionException
 
 
 def validate_status_transition(current_status: str, new_status: str) -> bool:
-    """
-    Validate that a status transition is allowed.
-    Raises InvalidStatusTransitionException if not allowed.
-    
-    Status workflow:
-        neu → bestaetigt, storniert, no_show
-        bestaetigt → angekommen, storniert, no_show
-        angekommen → abgeschlossen, no_show
-        abgeschlossen → (terminal)
-        no_show → (terminal)
-        storniert → (terminal)
-    """
+    """Validate reservation status transition"""
     allowed_transitions = settings.STATUS_TRANSITIONS.get(current_status, [])
     
     if new_status not in allowed_transitions:
@@ -30,11 +19,23 @@ def validate_status_transition(current_status: str, new_status: str) -> bool:
     return True
 
 
+def validate_waitlist_status_transition(current: str, new: str) -> bool:
+    """Validate waitlist status transition"""
+    allowed = {
+        "offen": ["informiert", "erledigt"],
+        "informiert": ["eingeloest", "erledigt"],
+        "eingeloest": ["erledigt"],
+        "erledigt": []
+    }
+    
+    if new not in allowed.get(current, []):
+        raise InvalidStatusTransitionException(current, new)
+    
+    return True
+
+
 def validate_reservation_data(data: dict, is_update: bool = False) -> dict:
-    """
-    Validate reservation data.
-    Returns cleaned/validated data or raises ValidationException.
-    """
+    """Validate reservation data"""
     errors = []
     
     # Party size validation
@@ -86,14 +87,13 @@ def validate_reservation_data(data: dict, is_update: bool = False) -> dict:
     # Phone validation
     guest_phone = data.get("guest_phone")
     if guest_phone:
-        # Remove spaces and common separators for validation
         cleaned_phone = guest_phone.replace(" ", "").replace("-", "").replace("/", "")
         if len(cleaned_phone) < 6:
             errors.append("Telefonnummer ist zu kurz")
     elif not is_update:
         errors.append("Telefonnummer ist erforderlich")
     
-    # Email validation (optional field)
+    # Email validation
     guest_email = data.get("guest_email")
     if guest_email and "@" not in guest_email:
         errors.append("Ungültige E-Mail-Adresse")
@@ -102,6 +102,37 @@ def validate_reservation_data(data: dict, is_update: bool = False) -> dict:
         raise ValidationException("; ".join(errors))
     
     return data
+
+
+def validate_opening_hours(date_str: str, time_str: str, opening_hours: dict) -> dict:
+    """Validate against opening hours"""
+    if not opening_hours:
+        return {"valid": True}
+    
+    if opening_hours.get("is_closed"):
+        return {"valid": False, "message": "Geschlossen an diesem Tag"}
+    
+    open_time = opening_hours.get("open_time", "00:00")
+    close_time = opening_hours.get("close_time", "23:59")
+    
+    if not (open_time <= time_str <= close_time):
+        return {"valid": False, "message": f"Öffnungszeiten: {open_time} - {close_time}"}
+    
+    return {"valid": True}
+
+
+def validate_capacity(current_guests: int, party_size: int, max_capacity: int) -> dict:
+    """Validate capacity"""
+    available = max_capacity - current_guests
+    
+    if party_size > available:
+        return {
+            "valid": False,
+            "available": available,
+            "message": f"Nur {available} Plätze verfügbar"
+        }
+    
+    return {"valid": True, "available": available}
 
 
 def validate_area_data(data: dict, is_update: bool = False) -> dict:
@@ -157,11 +188,7 @@ def validate_user_data(data: dict, is_update: bool = False) -> dict:
 
 
 def validate_password_strength(password: str) -> bool:
-    """
-    Validate password strength.
-    Requirements: At least 8 characters.
-    """
+    """Validate password strength"""
     if len(password) < 8:
         raise ValidationException("Passwort muss mindestens 8 Zeichen lang sein")
-    
     return True
