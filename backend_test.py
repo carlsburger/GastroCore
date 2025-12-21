@@ -5043,17 +5043,16 @@ class GastroCoreAPITester:
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # PRIORITY: Security Enhancement Tests (Sprint 7.2) - CRITICAL
-        print("\n🔒 SECURITY ENHANCEMENT (SPRINT 7.2) TESTING - CRITICAL:")
-        test_results.append(self.test_security_enhancement_sprint72())
+        # PRIORITY: Service-Terminal Tests (Sprint 8) - CRITICAL
+        print("\n🖥️ SERVICE-TERMINAL (SPRINT 8) TESTING - CRITICAL:")
+        test_results.append(self.test_service_terminal_sprint8())
         
-        # HR Fields Extension (Sprint 7.1) tests
-        print("\n🏢 HR FIELDS EXTENSION (SPRINT 7.1) TESTING:")
-        test_results.append(self.test_hr_fields_extension_sprint71())
-        
-        # Core functionality tests (reduced for focus)
-        print("\n🏗️ CORE FUNCTIONALITY TESTING:")
+        # Core RBAC tests (essential for Service-Terminal)
+        print("\n🛡️ RBAC TESTING (Essential for Service-Terminal):")
         test_results.append(self.test_rbac_access_control())
+        
+        # System health
+        print("\n🏥 SYSTEM HEALTH:")
         test_results.append(self.test_health_endpoint())
         test_results.append(self.test_error_handling())
         
