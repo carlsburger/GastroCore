@@ -761,6 +761,108 @@ export const Dashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Walk-In Dialog - Schnellerfassung */}
+      <Dialog open={showWalkInDialog} onOpenChange={setShowWalkInDialog}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl flex items-center gap-2">
+              <Footprints className="h-6 w-6" />
+              Walk-In erfassen
+            </DialogTitle>
+            <DialogDescription>
+              Gast ist bereits da - wird sofort als "Angekommen" markiert
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleWalkIn}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="walkin_name">Name *</Label>
+                  <Input
+                    id="walkin_name"
+                    value={walkInData.guest_name}
+                    onChange={(e) => setWalkInData({ ...walkInData, guest_name: e.target.value })}
+                    required
+                    className="h-11"
+                    placeholder="Gastname"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="walkin_size">Personen *</Label>
+                  <Input
+                    id="walkin_size"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={walkInData.party_size}
+                    onChange={(e) => setWalkInData({ ...walkInData, party_size: parseInt(e.target.value) || 1 })}
+                    required
+                    className="h-11"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="walkin_area">Bereich</Label>
+                  <Select
+                    value={walkInData.area_id}
+                    onValueChange={(v) => setWalkInData({ ...walkInData, area_id: v })}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Wählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {areas.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="walkin_table">Tisch-Nr.</Label>
+                  <Input
+                    id="walkin_table"
+                    value={walkInData.table_number}
+                    onChange={(e) => setWalkInData({ ...walkInData, table_number: e.target.value })}
+                    className="h-11"
+                    placeholder="z.B. T5"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="walkin_phone">Telefon (optional)</Label>
+                <Input
+                  id="walkin_phone"
+                  value={walkInData.guest_phone}
+                  onChange={(e) => setWalkInData({ ...walkInData, guest_phone: e.target.value })}
+                  className="h-11"
+                  placeholder="Für Rückfragen"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="walkin_notes">Notizen</Label>
+                <Textarea
+                  id="walkin_notes"
+                  value={walkInData.notes}
+                  onChange={(e) => setWalkInData({ ...walkInData, notes: e.target.value })}
+                  className="min-h-[60px]"
+                  placeholder="z.B. Kinderstuhl, Allergie..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowWalkInDialog(false)} className="rounded-full">
+                Abbrechen
+              </Button>
+              <Button type="submit" disabled={submitting} className="rounded-full bg-green-600 hover:bg-green-700">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />}
+                Walk-In erfassen
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
