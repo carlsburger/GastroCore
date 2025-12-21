@@ -1,0 +1,106 @@
+diff --git a/backend/server.py b/backend/server.py
+index 326708f..a612b06 100644
+--- a/backend/server.py
++++ b/backend/server.py
+@@ -1289,6 +1289,58 @@ async def health_check():
+     return {"status": "healthy" if db_status == "connected" else "degraded", "database": db_status, "version": "3.0.0"}
+ 
+ 
++@api_router.get("/version", tags=["Health"])
++async def get_version():
++    """
++    Public endpoint for build identification and module status.
++    No authentication required. Does not expose secrets.
++    """
++    import subprocess
++    
++    # Get git info (if available)
++    commit_hash = None
++    branch = None
++    try:
++        commit_hash = subprocess.check_output(
++            ["git", "rev-parse", "HEAD"], 
++            cwd=ROOT_DIR, 
++            stderr=subprocess.DEVNULL
++        ).decode().strip()
++        branch = subprocess.check_output(
++            ["git", "rev-parse", "--abbrev-ref", "HEAD"], 
++            cwd=ROOT_DIR, 
++            stderr=subprocess.DEVNULL
++        ).decode().strip()
++    except Exception:
++        pass
++    
++    # Build ID from env or generate from git hash + timestamp
++    build_id = os.environ.get("BUILD_ID")
++    if not build_id:
++        short_hash = commit_hash[:8] if commit_hash else "unknown"
++        build_id = f"{short_hash}-{datetime.now(timezone.utc).strftime('%Y%m%d')}"
++    
++    return {
++        "build_id": build_id,
++        "commit_hash": commit_hash,
++        "branch": branch,
++        "timestamp": datetime.now(timezone.utc).isoformat(),
++        "health_version": "3.0.0",
++        "modules": {
++            "core": True,
++            "reservations": True,
++            "events": True,
++            "payments": True,
++            "staff": True,
++            "schedules": True,
++            "taxoffice": True,
++            "loyalty": True,
++            "marketing": False,
++            "ai": False
++        }
++    }
++
++
+ # ============== SPRINT 3: REMINDER & NO-SHOW SYSTEM ==============
+ 
+ # --- Pydantic Models for Sprint 3 ---
+diff --git a/frontend/src/components/Layout.jsx b/frontend/src/components/Layout.jsx
+index d2ea6de..68f64ff 100644
+--- a/frontend/src/components/Layout.jsx
++++ b/frontend/src/components/Layout.jsx
+@@ -81,6 +81,18 @@ export const Layout = ({ children }) => {
+   const location = useLocation();
+   const navigate = useNavigate();
+   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
++  const [buildId, setBuildId] = React.useState(null);
++
++  // Fetch build info for admin/schichtleiter
++  React.useEffect(() => {
++    if (hasRole("admin") || hasRole("schichtleiter")) {
++      const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
++      fetch(`${backendUrl}/api/version`)
++        .then((res) => res.json())
++        .then((data) => setBuildId(data.build_id))
++        .catch(() => setBuildId(null));
++    }
++  }, [hasRole]);
+ 
+   const handleLogout = () => {
+     logout();
+@@ -201,9 +213,16 @@ export const Layout = ({ children }) => {
+                 <span className="text-sm text-[#FAFBE0]/80 ml-2">Cockpit</span>
+               </div>
+             </div>
+-            <p className="text-sm text-[#FAFBE0]/70">
+-              © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant. Alle Rechte vorbehalten.
+-            </p>
++            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
++              {buildId && (hasRole("admin") || hasRole("schichtleiter")) && (
++                <span className="text-xs text-[#FAFBE0]/50 font-mono" title="Build ID">
++                  Build: {buildId}
++                </span>
++              )}
++              <p className="text-sm text-[#FAFBE0]/70">
++                © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant. Alle Rechte vorbehalten.
++              </p>
++            </div>
+           </div>
+         </div>
+       </footer>
