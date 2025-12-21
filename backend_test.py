@@ -828,7 +828,7 @@ class GastroCoreAPITester:
             waitlist_success = False
         
         # Get waitlist entries
-        result = self.make_request("GET", "waitlist", {"date": "2025-12-22"}, 
+        result = self.make_request("GET", "waitlist", {"date": "2025-12-23"}, 
                                  self.tokens["schichtleiter"], expected_status=200)
         if result["success"]:
             waitlist_entries = result["data"]
