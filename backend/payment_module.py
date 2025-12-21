@@ -499,9 +499,12 @@ async def get_checkout_status(session_id: str):
         new_status = PaymentStatus.FAILED.value
     
     if new_status and new_status != transaction.get("payment_status"):
-        # Update transaction
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
+        # ATOMIC UPDATE: Only update if status hasn't changed (prevents race conditions)
+        result = await db.payment_transactions.update_one(
+            {
+                "session_id": session_id,
+                "payment_status": {"$nin": [PaymentStatus.PAID.value, PaymentStatus.REFUNDED.value]}
+            },
             {"$set": {
                 "payment_status": new_status,
                 "provider_status": status.status,
@@ -509,40 +512,44 @@ async def get_checkout_status(session_id: str):
             }}
         )
         
-        # Update entity
-        entity_type = transaction.get("entity_type")
-        entity_id = transaction.get("entity_id")
-        
-        if entity_type == "reservation":
-            update_data = {"payment_status": new_status, "updated_at": now_iso()}
-            if new_status == PaymentStatus.PAID.value:
-                update_data["status"] = "bestaetigt"  # Auto-confirm on payment
-            await db.reservations.update_one({"id": entity_id}, {"$set": update_data})
+        # Only update entity if transaction was actually updated (idempotent)
+        if result.modified_count > 0:
+            entity_type = transaction.get("entity_type")
+            entity_id = transaction.get("entity_id")
             
-        elif entity_type == "event_booking":
-            update_data = {"payment_status": new_status, "updated_at": now_iso()}
-            if new_status == PaymentStatus.PAID.value:
-                update_data["status"] = "confirmed"
-            await db.event_bookings.update_one({"id": entity_id}, {"$set": update_data})
-        
-        # Create payment log
-        await create_payment_log(
-            transaction_id=transaction["id"],
-            action="status_updated",
-            status=new_status,
-            amount=transaction.get("amount"),
-            provider_response={"stripe_status": status.status, "payment_status": status.payment_status}
-        )
-        
-        # Create audit log
-        await create_audit_log(
-            SYSTEM_ACTOR, 
-            "payment_transaction", 
-            transaction["id"], 
-            "payment_completed" if new_status == PaymentStatus.PAID.value else "payment_failed",
-            {"payment_status": transaction.get("payment_status")},
-            {"payment_status": new_status}
-        )
+            if entity_type == "reservation":
+                update_data = {"payment_status": new_status, "updated_at": now_iso()}
+                if new_status == PaymentStatus.PAID.value:
+                    update_data["status"] = "bestaetigt"  # Auto-confirm on payment
+                await db.reservations.update_one({"id": entity_id}, {"$set": update_data})
+                
+            elif entity_type == "event_booking":
+                update_data = {"payment_status": new_status, "updated_at": now_iso()}
+                if new_status == PaymentStatus.PAID.value:
+                    update_data["status"] = "confirmed"
+                await db.event_bookings.update_one({"id": entity_id}, {"$set": update_data})
+            
+            # Create payment log
+            await create_payment_log(
+                transaction_id=transaction["id"],
+                action="status_updated",
+                status=new_status,
+                amount=transaction.get("amount"),
+                provider_response={"stripe_status": status.status, "payment_status": status.payment_status}
+            )
+            
+            # Create audit log
+            await create_audit_log(
+                SYSTEM_ACTOR, 
+                "payment_transaction", 
+                transaction["id"], 
+                "payment_completed" if new_status == PaymentStatus.PAID.value else "payment_failed",
+                {"payment_status": transaction.get("payment_status")},
+                {"payment_status": new_status}
+            )
+        else:
+            # Already processed by webhook or another request
+            new_status = None
     
     return {
         "status": status.status,
