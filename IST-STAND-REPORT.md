@@ -3,6 +3,41 @@
 # Stand: 21. Dezember 2025
 # ============================================================
 
+## 🚀 FIRST-RUN / INITIAL SETUP (Sprint 11)
+
+Nach einem frischen Clone oder Deployment:
+
+### 1. Seed ausführen (einmalig)
+```bash
+curl -X POST http://localhost:8001/internal/seed
+```
+
+### 2. Verify prüfen
+```bash
+curl http://localhost:8001/internal/seed/verify
+# Erwartetes Ergebnis: "status": "READY"
+```
+
+### 3. Login-Daten (Initial)
+| Rolle | Email | Passwort | Hinweis |
+|-------|-------|----------|---------|
+| Admin | admin@carlsburg.de | Carlsburg2025! | Passwort ändern erforderlich |
+| Schichtleiter | schichtleiter@carlsburg.de | Schicht2025! | Passwort ändern erforderlich |
+| Mitarbeiter | mitarbeiter@carlsburg.de | Mitarbeiter2025! | Passwort ändern erforderlich |
+
+### Wann Seed NICHT ausführen
+- Wenn Produktivdaten existieren (Seed prüft automatisch)
+- Zum Überschreiben: `?force=true` Parameter verwenden
+
+### Umgebungsvariablen für Seed
+```bash
+ADMIN_EMAIL=admin@carlsburg.de  # Optional: Custom Admin-Email
+ADMIN_PASSWORD=CustomPassword   # Optional: Custom Admin-Passwort
+FORCE_SEED=true                 # Optional: Seed trotz bestehender Daten
+```
+
+---
+
 ## ⚠️ VOR TAB SCHLIEßEN – BACKUP ERSTELLEN
 
 ```bash
