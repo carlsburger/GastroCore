@@ -548,7 +548,60 @@ export const Dashboard = () => {
                         
                         {/* Guest Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-lg truncate">{reservation.guest_name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-lg truncate">{reservation.guest_name}</p>
+                            {/* Greylist/Blacklist Markers */}
+                            {(() => {
+                              const guestInfo = getGuestFlag(reservation.guest_phone);
+                              if (guestInfo?.flag === "blacklist") {
+                                return (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge className="bg-red-500 text-white text-xs">
+                                          <Ban className="h-3 w-3 mr-1" />
+                                          Blacklist
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{guestInfo.no_show_count} No-Shows - Online blockiert</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              } else if (guestInfo?.flag === "greylist") {
+                                return (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge className="bg-yellow-500 text-white text-xs">
+                                          <AlertTriangle className="h-3 w-3 mr-1" />
+                                          Greylist
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{guestInfo.no_show_count} No-Shows - Achtung</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              }
+                              return null;
+                            })()}
+                            {/* Unconfirmed Warning */}
+                            {reservation.status === "bestaetigt" && !reservation.guest_confirmed && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Bell className="h-4 w-4 text-orange-500" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Gast hat noch nicht bestätigt</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                             <span className="flex items-center gap-1">
                               <Users size={16} />
@@ -577,6 +630,29 @@ export const Dashboard = () => {
                         {/* Quick Actions - 1 Click */}
                         {isSchichtleiter() && (
                           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            {/* WhatsApp Button */}
+                            {reservation.guest_phone && reservation.status === "bestaetigt" && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="rounded-full h-10 w-10 p-0 bg-green-50 border-green-300 hover:bg-green-100"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWhatsAppReminder(reservation);
+                                      }}
+                                    >
+                                      <MessageCircle className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>WhatsApp Erinnerung senden</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                             <QuickActionButton
                               reservation={reservation}
                               onStatusChange={handleQuickStatusChange}
