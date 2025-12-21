@@ -37,16 +37,16 @@ import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
 const NoAccess = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background p-4">
+  <div className="min-h-screen flex items-center justify-center bg-[#FAFBE0] p-4">
     <div className="text-center">
-      <div className="w-16 h-16 rounded-full bg-primary mx-auto flex items-center justify-center mb-4">
-        <span className="text-primary-foreground font-serif text-3xl font-bold">G</span>
+      <div className="w-16 h-16 rounded-full bg-[#005500] mx-auto flex items-center justify-center mb-4">
+        <span className="text-[#FFFF00] font-serif text-3xl font-bold">C</span>
       </div>
-      <h1 className="font-serif text-3xl font-medium text-primary mb-2">GastroCore</h1>
-      <p className="text-muted-foreground mb-4">
+      <h1 className="font-serif text-3xl font-bold text-[#005500] mb-2">Carlsburg Cockpit</h1>
+      <p className="text-[#005500]/70 mb-4">
         Als Mitarbeiter haben Sie keinen Zugriff auf das Backoffice.
       </p>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-[#005500]/50">
         Bitte wenden Sie sich an Ihren Schichtleiter oder Administrator.
       </p>
     </div>
