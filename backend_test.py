@@ -487,11 +487,11 @@ class GastroCoreAPITester:
             self.log_test("No-show functionality", False, "Prerequisites not met")
             return False
         
-        # Create another reservation for no-show test
+        # Create another reservation for no-show test (use a different phone number)
         today = datetime.now().strftime("%Y-%m-%d")
         reservation_data = {
             "guest_name": "No Show Test",
-            "guest_phone": "+49 170 1111111",
+            "guest_phone": "+49 170 2222222",  # Different phone to avoid blacklist
             "party_size": 2,
             "date": today,
             "time": "20:00"
