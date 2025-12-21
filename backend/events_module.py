@@ -77,6 +77,10 @@ class EventCreate(BaseModel):
     ticket_price: Optional[float] = Field(default=None, ge=0)
     currency: str = "EUR"
     requires_payment: bool = False
+    # Menu options (Sprint: Data Onboarding)
+    requires_menu_choice: bool = False
+    menu_options: Optional[List[dict]] = None  # [{option_id, title, description, price_delta}]
+    content_category: Optional[str] = None  # VERANSTALTUNG, AKTION, AKTION_MENUE
 
 
 class EventUpdate(BaseModel):
@@ -94,6 +98,10 @@ class EventUpdate(BaseModel):
     ticket_price: Optional[float] = Field(None, ge=0)
     currency: Optional[str] = None
     requires_payment: Optional[bool] = None
+    # Menu options (Sprint: Data Onboarding)
+    requires_menu_choice: Optional[bool] = None
+    menu_options: Optional[List[dict]] = None
+    content_category: Optional[str] = None
 
 
 # --- EventProduct Models (Vorbestell-Items) ---
