@@ -132,3 +132,7 @@ frontend/node_modules/.cache/default-development/0.pack
 backups/*.zip
 backups/*.patch
 backups/backup_report_*.md
+-e 
+# Environment files
+*.env
+*.env.*
