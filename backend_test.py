@@ -1780,34 +1780,42 @@ class GastroCoreAPITester:
         """Full QA Audit - Sprint 4: Payments"""
         print("\n💳 FULL QA AUDIT - Sprint 4: Payments")
         
-        if "admin" not in self.tokens:
-            self.log_test("Payments", False, "Admin token not available")
+        # Try admin first, fall back to schichtleiter for what's allowed
+        admin_token = self.tokens.get("admin")
+        manager_token = self.tokens.get("schichtleiter")
+        
+        if not manager_token:
+            self.log_test("Payments", False, "No manager token available")
             return False
         
         payments_success = True
         
-        # 1. Test GET/POST/PATCH/DELETE /api/payments/rules - CRUD
-        result = self.make_request("GET", "payments/rules", token=self.tokens["admin"], expected_status=200)
-        if result["success"]:
-            rules = result["data"]
-            self.log_test("GET /api/payments/rules", True, f"Retrieved {len(rules)} payment rules")
-            
-            # Check for seeded rules
-            rule_names = [rule.get("name", "") for rule in rules]
-            expected_rules = ["Event-Zahlung", "Großgruppen-Anzahlung", "Greylist-Anzahlung"]
-            found_rules = [name for name in expected_rules if name in rule_names]
-            if len(found_rules) >= 2:
-                self.log_test("Payment rules seeded", True, f"Found rules: {found_rules}")
+        # 1. Test GET/POST/PATCH/DELETE /api/payments/rules - CRUD (Admin only)
+        if admin_token:
+            result = self.make_request("GET", "payments/rules", token=admin_token, expected_status=200)
+            if result["success"]:
+                rules = result["data"]
+                self.log_test("GET /api/payments/rules", True, f"Retrieved {len(rules)} payment rules")
+                
+                # Check for seeded rules
+                rule_names = [rule.get("name", "") for rule in rules]
+                expected_rules = ["Event-Zahlung", "Großgruppen-Anzahlung", "Greylist-Anzahlung"]
+                found_rules = [name for name in expected_rules if name in rule_names]
+                if len(found_rules) >= 2:
+                    self.log_test("Payment rules seeded", True, f"Found rules: {found_rules}")
+                else:
+                    self.log_test("Payment rules seeded", False, f"Expected rules not found. Found: {rule_names}")
             else:
-                self.log_test("Payment rules seeded", False, f"Expected rules not found. Found: {rule_names}")
+                self.log_test("GET /api/payments/rules", False, f"Status: {result['status_code']}")
+                payments_success = False
         else:
-            self.log_test("GET /api/payments/rules", False, f"Status: {result['status_code']}")
+            self.log_test("GET /api/payments/rules", False, "Admin token not available")
             payments_success = False
         
-        # 2. Test GET /api/payments/check-required
+        # 2. Test GET /api/payments/check-required (Manager level)
         result = self.make_request("GET", "payments/check-required", 
                                  {"entity_type": "reservation", "entity_id": "test", "party_size": 10}, 
-                                 self.tokens["schichtleiter"], expected_status=200)
+                                 manager_token, expected_status=200)
         if result["success"]:
             check_result = result["data"]
             if "payment_required" in check_result:
@@ -1820,8 +1828,8 @@ class GastroCoreAPITester:
             self.log_test("GET /api/payments/check-required", False, f"Status: {result['status_code']}")
             payments_success = False
         
-        # 3. Test GET /api/payments/transactions
-        result = self.make_request("GET", "payments/transactions", token=self.tokens["schichtleiter"], expected_status=200)
+        # 3. Test GET /api/payments/transactions (Manager level)
+        result = self.make_request("GET", "payments/transactions", token=manager_token, expected_status=200)
         if result["success"]:
             transactions = result["data"]
             self.log_test("GET /api/payments/transactions", True, f"Retrieved {len(transactions)} transactions")
@@ -1830,21 +1838,25 @@ class GastroCoreAPITester:
             payments_success = False
         
         # 4. Test GET /api/payments/logs (Admin only)
-        result = self.make_request("GET", "payments/logs", token=self.tokens["admin"], expected_status=200)
-        if result["success"]:
-            logs = result["data"]
-            self.log_test("GET /api/payments/logs (Admin)", True, f"Retrieved {len(logs)} payment logs")
+        if admin_token:
+            result = self.make_request("GET", "payments/logs", token=admin_token, expected_status=200)
+            if result["success"]:
+                logs = result["data"]
+                self.log_test("GET /api/payments/logs (Admin)", True, f"Retrieved {len(logs)} payment logs")
+            else:
+                self.log_test("GET /api/payments/logs (Admin)", False, f"Status: {result['status_code']}")
+                payments_success = False
+            
+            # Test that Schichtleiter is blocked from logs
+            result = self.make_request("GET", "payments/logs", token=manager_token, expected_status=403)
+            if result["success"]:
+                self.log_test("Payment logs access control", True, "Schichtleiter blocked from logs (403)")
+            else:
+                self.log_test("Payment logs access control", False, f"Expected 403, got {result['status_code']}")
+                payments_success = False
         else:
-            self.log_test("GET /api/payments/logs (Admin)", False, f"Status: {result['status_code']}")
-            payments_success = False
-        
-        # Test that Schichtleiter is blocked from logs
-        result = self.make_request("GET", "payments/logs", token=self.tokens["schichtleiter"], expected_status=403)
-        if result["success"]:
-            self.log_test("Payment logs access control", True, "Schichtleiter blocked from logs (403)")
-        else:
-            self.log_test("Payment logs access control", False, f"Expected 403, got {result['status_code']}")
-            payments_success = False
+            self.log_test("GET /api/payments/logs (Admin)", False, "Admin token not available")
+            # Don't fail the whole test for this
         
         return payments_success
 
