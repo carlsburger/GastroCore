@@ -427,9 +427,12 @@ async def suggest_schedule(
     request: ScheduleSuggestionRequest,
     user: dict = Depends(require_manager)
 ):
-    """Generate schedule suggestion (read-only, no data changes)"""
+    """Generate schedule suggestion with configurable rules (read-only, no data changes)"""
     if not await is_feature_enabled("schedule"):
         raise HTTPException(status_code=403, detail="Dienstplan-KI ist deaktiviert")
+    
+    # Load schedule configuration
+    config = await get_schedule_config()
     
     # Gather READ-ONLY data
     staff_query = {"archived": {"$ne": True}}
@@ -438,7 +441,8 @@ async def suggest_schedule(
     
     staff_members = await db.staff_members.find(
         staff_query,
-        {"_id": 0, "id": 1, "name": 1, "role": 1, "soll_hours_week": 1}
+        {"_id": 0, "id": 1, "name": 1, "role": 1, "position": 1, "soll_hours_week": 1, 
+         "employment_type": 1, "contract_start": 1, "contract_end": 1}
     ).to_list(100)
     
     # Get existing schedules for context
@@ -447,26 +451,74 @@ async def suggest_schedule(
         {"_id": 0}
     ).to_list(100)
     
+    # Get events for the week
+    week_start = datetime.strptime(request.week_start, "%Y-%m-%d")
+    week_end = week_start + timedelta(days=6)
+    events = await db.events.find({
+        "date": {
+            "$gte": request.week_start,
+            "$lte": week_end.strftime("%Y-%m-%d")
+        },
+        "status": "published"
+    }, {"_id": 0, "date": 1, "title": 1, "event_type": 1}).to_list(50)
+    
+    # Determine occasion types for each day
+    week_analysis = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        day_str = day.strftime("%Y-%m-%d")
+        occasion, season = determine_occasion_type(day_str, events, config)
+        week_analysis.append({
+            "date": day_str,
+            "weekday": day.strftime("%A"),
+            "occasion_type": occasion,
+            "season": season
+        })
+    
+    # Build dynamic system prompt with current config
+    system_prompt = build_schedule_system_prompt(config)
+    
     # Sanitize input for logging
     input_snapshot = sanitize_input({
         "week_start": request.week_start,
         "staff_count": len(staff_members),
-        "existing_shifts": len(existing_schedules)
+        "existing_shifts": len(existing_schedules),
+        "events_count": len(events),
+        "config_version": config.get("updated_at", "default")
     })
+    
+    # Prepare staff info (without sensitive data)
+    staff_info = []
+    for s in staff_members:
+        staff_info.append({
+            "id": s["id"],
+            "name": s["name"],
+            "role": s.get("role", "service"),
+            "position": s.get("position", "Servicekraft"),
+            "soll_hours": s.get("soll_hours_week", 40),
+            "employment_type": s.get("employment_type", "festangestellt")
+        })
     
     # Build prompt
     user_prompt = f"""Erstelle einen Dienstplan-VORSCHLAG für die Woche ab {request.week_start}.
 
-Verfügbare Mitarbeiter:
-{json.dumps([{"id": s["id"], "name": s["name"], "soll_hours": s.get("soll_hours_week", 40)} for s in staff_members], indent=2, ensure_ascii=False)}
+### WOCHENANALYSE
+{json.dumps(week_analysis, indent=2, ensure_ascii=False)}
 
-Bereits geplante Schichten: {len(existing_schedules)}
+### VERFÜGBARE MITARBEITER
+{json.dumps(staff_info, indent=2, ensure_ascii=False)}
 
-Erstelle einen ausgewogenen Vorschlag mit Begründung."""
+### EVENTS IN DIESER WOCHE
+{json.dumps([{"date": e["date"], "title": e["title"], "type": e.get("event_type", "")} for e in events], indent=2, ensure_ascii=False) if events else "Keine besonderen Events"}
+
+### BEREITS GEPLANTE SCHICHTEN
+{len(existing_schedules)} Einträge existieren bereits.
+
+Erstelle einen ausgewogenen Vorschlag basierend auf den konfigurierten Regeln."""
     
     # Generate suggestion
     result, confidence = await generate_ai_suggestion(
-        SCHEDULE_SYSTEM_PROMPT,
+        system_prompt,
         user_prompt,
         "schedule"
     )
@@ -482,12 +534,71 @@ Erstelle einen ausgewogenen Vorschlag mit Begründung."""
     
     return {
         "log_id": log_id,
+        "week_analysis": week_analysis,
+        "config_used": {
+            "service": config.get("service", {}),
+            "kitchen": config.get("kitchen", {}),
+            "work_rules": config.get("work_rules", {})
+        },
         "suggestion": result.get("suggestion", {}),
         "reasoning": result.get("reasoning", ""),
         "considerations": result.get("considerations", []),
         "confidence_score": confidence,
         "disclaimer": "Dies ist nur ein VORSCHLAG. Änderungen werden erst nach Ihrer Bestätigung gespeichert."
     }
+
+# ============== SCHEDULE CONFIG ENDPOINTS ==============
+@ai_router.get("/schedule/config")
+async def get_schedule_config_endpoint(user: dict = Depends(require_manager)):
+    """Get current schedule configuration"""
+    config = await get_schedule_config()
+    return config
+
+@ai_router.patch("/schedule/config")
+async def update_schedule_config(
+    updates: Dict[str, Any],
+    user: dict = Depends(require_admin)
+):
+    """Update schedule configuration (Admin only)"""
+    config = await get_schedule_config()
+    
+    # Merge updates (only allowed fields)
+    allowed_fields = ["service", "kitchen", "shift_leader_required", "work_rules", "seasons", "holidays", "closed_days", "shift_types"]
+    
+    for field in allowed_fields:
+        if field in updates:
+            if isinstance(updates[field], dict) and isinstance(config.get(field), dict):
+                # Merge nested dicts
+                config[field] = {**config.get(field, {}), **updates[field]}
+            else:
+                config[field] = updates[field]
+    
+    config["updated_at"] = now_iso()
+    config["updated_by"] = user["id"]
+    
+    await db.settings.update_one(
+        {"type": "schedule_rules"},
+        {"$set": config},
+        upsert=True
+    )
+    
+    return config
+
+@ai_router.post("/schedule/config/reset")
+async def reset_schedule_config(user: dict = Depends(require_admin)):
+    """Reset schedule configuration to defaults (Admin only)"""
+    config = DEFAULT_SCHEDULE_CONFIG.copy()
+    config["updated_at"] = now_iso()
+    config["updated_by"] = user["id"]
+    config["reset_at"] = now_iso()
+    
+    await db.settings.update_one(
+        {"type": "schedule_rules"},
+        {"$set": config},
+        upsert=True
+    )
+    
+    return config
 
 # ============== RESERVATION SUGGESTIONS ==============
 RESERVATION_SYSTEM_PROMPT = """Du bist ein Reservierungs-Assistent für ein Restaurant.
