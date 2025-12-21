@@ -158,6 +158,32 @@ function App() {
             }
           />
 
+          {/* Events Management - Admin & Schichtleiter */}
+          <Route
+            path="/events-admin"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Events />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:eventId/products"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <EventProducts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:eventId/bookings"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <EventBookings />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
