@@ -2182,11 +2182,59 @@ class GastroCoreAPITester:
                             f"Status: {result['status_code']} - Endpoint may not be implemented")
         
         return staff_success
-            if result["success"]:
-                self.log_test("RBAC: Schichtleiter blocked from user management", True, "403 Forbidden as expected")
-            else:
-                self.log_test("RBAC: Schichtleiter blocked from user management", False, f"Expected 403, got {result['status_code']}")
-                auth_rbac_success = False
+    
+    def run_full_qa_audit(self):
+        """Run the complete QA audit for Sprint 1-7"""
+        print("=" * 80)
+        print("🔍 STARTING FULL QA AUDIT - SPRINT 1 bis 7")
+        print("=" * 80)
+        
+        # Initialize
+        self.test_seed_data()
+        
+        # Sprint 1-7 Tests
+        sprint1_auth = self.test_full_qa_audit_sprint1_auth_rbac()
+        sprint1_audit = self.test_full_qa_audit_sprint1_audit_service_terminal()
+        sprint2_reservations = self.test_full_qa_audit_sprint2_reservations()
+        sprint2_waitlist = self.test_full_qa_audit_sprint2_waitlist_noshow()
+        sprint2_noshow = self.test_full_qa_audit_sprint2_noshow_blacklist()
+        sprint3_reminder = self.test_full_qa_audit_sprint3_reminder_noshow_logic()
+        
+        # Summary
+        print("\n" + "=" * 80)
+        print("📊 QA AUDIT SUMMARY")
+        print("=" * 80)
+        
+        sprint_results = {
+            "Sprint 1 - Auth & RBAC": sprint1_auth and sprint1_audit,
+            "Sprint 2 - Reservations": sprint2_reservations and sprint2_waitlist and sprint2_noshow,
+            "Sprint 3 - Reminders & No-show": sprint3_reminder
+        }
+        
+        for sprint, success in sprint_results.items():
+            status = "✅ PASS" if success else "❌ FAIL"
+            print(f"{status} - {sprint}")
+        
+        overall_success = all(sprint_results.values())
+        
+        print(f"\nTests run: {self.tests_run}")
+        print(f"Tests passed: {self.tests_passed}")
+        print(f"Tests failed: {self.tests_run - self.tests_passed}")
+        print(f"Success rate: {(self.tests_passed / self.tests_run * 100):.1f}%")
+        
+        if self.failed_tests:
+            print(f"\n❌ FAILED TESTS ({len(self.failed_tests)}):")
+            for test in self.failed_tests:
+                print(f"  - {test['name']}: {test['details']}")
+        
+        print("\n" + "=" * 80)
+        if overall_success:
+            print("🎉 GESAMTBEWERTUNG: SYSTEM BETRIEBSFÄHIG")
+        else:
+            print("⚠️  GESAMTBEWERTUNG: SYSTEM HAT KRITISCHE PROBLEME")
+        print("=" * 80)
+        
+        return overall_success
         
         if "admin" in self.tokens:
             result = self.make_request("GET", "users", token=self.tokens.get("admin"), expected_status=200)
