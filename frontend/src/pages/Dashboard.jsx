@@ -106,7 +106,7 @@ const STATUS_CONFIG = {
 
 // Payment Status configuration
 const PAYMENT_STATUS_CONFIG = {
-  unpaid: { label: "Offen", className: "bg-gray-100 text-gray-700 border-gray-300" },
+  unpaid: { label: "Zahlung offen", className: "bg-amber-100 text-amber-700 border-amber-300" },
   payment_pending: { label: "Ausstehend", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
   paid: { label: "Bezahlt", className: "bg-green-100 text-green-700 border-green-300" },
   partially_paid: { label: "Teilweise", className: "bg-orange-100 text-orange-700 border-orange-300" },
@@ -115,9 +115,20 @@ const PAYMENT_STATUS_CONFIG = {
 };
 
 // Payment Badge component
-const PaymentBadge = ({ paymentStatus, amount }) => {
-  if (!paymentStatus || paymentStatus === "unpaid") return null;
-  const config = PAYMENT_STATUS_CONFIG[paymentStatus];
+const PaymentBadge = ({ paymentStatus, amount, paymentRequired }) => {
+  // Show badge if:
+  // 1. There's a payment status other than null
+  // 2. Payment is required and status is unpaid (to show "Zahlung offen")
+  if (!paymentStatus && !paymentRequired) return null;
+  
+  // If no payment status but payment is required, show as unpaid
+  const effectiveStatus = paymentStatus || (paymentRequired ? "unpaid" : null);
+  if (!effectiveStatus) return null;
+  
+  // Don't show badge for unpaid if no amount is set (no payment required)
+  if (effectiveStatus === "unpaid" && (!amount || amount <= 0)) return null;
+  
+  const config = PAYMENT_STATUS_CONFIG[effectiveStatus];
   if (!config) return null;
   
   return (
