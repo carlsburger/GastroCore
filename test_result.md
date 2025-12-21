@@ -103,24 +103,26 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Sprint 5 für GastroCore - Mitarbeiter & Dienstplan Modul (ADDITIV):
+  Sprint 6 für GastroCore - Steuerbüro Exporte & Mitarbeiter-Meldungen (ADDITIV):
   
-  1) MITARBEITER-MODUL (HR-BASIS):
-  - Stammdaten: Vorname, Nachname, Rolle, Eintrittsdatum, Beschäftigungsart, Sollstunden
-  - Personalakte: HR-Notizen, Dokumenten-Upload (PDF, Bilder) mit Kategorien
-  - Onboarding: Begrüßungs-E-Mail (DE/EN/PL)
+  1) STEUERBÜRO-KONFIGURATION:
+  - Empfänger-E-Mail, CC/BCC, Absendername, Betreff-Template
+  - Standard-Texte (DE/EN/PL), Dateinamen-Konvention
   
-  2) DIENSTPLAN-MODUL:
-  - Wochenbasiert, Status: Entwurf/Veröffentlicht/Archiviert
-  - Schichten mit Datum, Uhrzeit, Bereich, Rolle, Mitarbeiter
-  - Soll/Ist-Stundenübersicht pro Woche
+  2) EXPORTS (CSV + PDF):
+  - Stundenübersicht (Monat): Mitarbeiter, Soll/Geplant/Ist, Differenz
+  - Schichtliste: Datum, Start, Ende, Mitarbeiter, Bereich, Rolle
+  - PDF Monatsbericht mit Deckblatt und Übersicht
   
-  3) EXPORT:
-  - PDF: Wochenübersicht Dienstplan
-  - CSV: Mitarbeiter, Schichten, Stunden
+  3) PROZESS:
+  - Export-Jobs mit Status (pending/generating/ready/sent/failed)
+  - Versand ans Steuerbüro per E-Mail mit Attachments
+  - Retry bei fehlgeschlagenen Jobs
   
-  4) AUDIT:
-  - Alle Änderungen an Mitarbeitern, Dokumenten, Schichten protokolliert
+  4) MITARBEITER-MELDEPAKET:
+  - Personaldaten + optionale Steuerdaten (tax_fields)
+  - Dokumenten-Bundle aus staff_documents
+  - PDF Mitarbeiter-Anmeldung
 
 backend:
   - task: "Payment Rules CRUD API"
