@@ -637,6 +637,19 @@ export const Dashboard = () => {
                                 </Tooltip>
                               </TooltipProvider>
                             )}
+                            {/* Payment Pending Warning */}
+                            {reservation.payment_status === "payment_pending" && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <CreditCard className="h-4 w-4 text-yellow-500" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Zahlung ausstehend: {reservation.payment_amount?.toFixed(2) || 0} €</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                             <span className="flex items-center gap-1">
