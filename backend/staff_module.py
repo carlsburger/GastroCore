@@ -426,7 +426,7 @@ async def create_staff_member(
 
 @staff_router.patch("/members/{member_id}")
 async def update_staff_member(member_id: str, data: StaffMemberUpdate, user: dict = Depends(require_admin)):
-    """Update a staff member"""
+    """Update a staff member (Admin only for all fields)"""
     existing = await db.staff_members.find_one({"id": member_id, "archived": False}, {"_id": 0})
     if not existing:
         raise NotFoundException("Mitarbeiter")
@@ -440,10 +440,39 @@ async def update_staff_member(member_id: str, data: StaffMemberUpdate, user: dic
     last = update_data.get("last_name", existing.get("last_name"))
     update_data["full_name"] = f"{first} {last}"
     
+    # Check for status change to "aktiv" with missing required fields
+    warnings = []
+    if update_data.get("status") == "aktiv" and existing.get("status") != "aktiv":
+        merged = {**existing, **update_data}
+        completeness = calculate_completeness(merged)
+        if completeness["missing_for_active"]:
+            warnings.append({
+                "type": "incomplete_profile",
+                "message": f"Mitarbeiter wird aktiviert, aber folgende Pflichtfelder fehlen: {', '.join(completeness['missing_for_active'])}",
+                "missing_fields": completeness["missing_for_active"]
+            })
+    
     await db.staff_members.update_one({"id": member_id}, {"$set": update_data})
     updated = await db.staff_members.find_one({"id": member_id}, {"_id": 0})
+    
+    # Special audit logging for sensitive fields
+    changed_sensitive = [k for k in AUDIT_SENSITIVE_FIELDS if k in update_data and update_data[k] != existing.get(k)]
+    if changed_sensitive:
+        await create_audit_log(
+            user, "staff_member_hr", member_id, "update_sensitive_fields",
+            {k: "***" for k in changed_sensitive},  # Mask old values
+            {k: "***" for k in changed_sensitive},  # Mask new values
+            extra={"changed_fields": changed_sensitive, "note": "Sensitive HR data updated"}
+        )
+    
     await create_audit_log(user, "staff_member", member_id, "update", before, safe_dict_for_audit(updated))
-    return updated
+    
+    result = {k: v for k, v in updated.items() if k != "_id"}
+    result["completeness"] = calculate_completeness(updated)
+    if warnings:
+        result["warnings"] = warnings
+    
+    return result
 
 
 @staff_router.delete("/members/{member_id}")
