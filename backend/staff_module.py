@@ -462,7 +462,7 @@ async def update_staff_member(member_id: str, data: StaffMemberUpdate, user: dic
             user, "staff_member_hr", member_id, "update_sensitive_fields",
             {k: "***" for k in changed_sensitive},  # Mask old values
             {k: "***" for k in changed_sensitive},  # Mask new values
-            extra={"changed_fields": changed_sensitive, "note": "Sensitive HR data updated"}
+            metadata={"changed_fields": changed_sensitive, "note": "Sensitive HR data updated"}
         )
     
     await create_audit_log(user, "staff_member", member_id, "update", before, safe_dict_for_audit(updated))
