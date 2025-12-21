@@ -213,9 +213,16 @@ export const Layout = ({ children }) => {
                 <span className="text-sm text-[#FAFBE0]/80 ml-2">Cockpit</span>
               </div>
             </div>
-            <p className="text-sm text-[#FAFBE0]/70">
-              © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant. Alle Rechte vorbehalten.
-            </p>
+            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+              {buildId && (hasRole("admin") || hasRole("schichtleiter")) && (
+                <span className="text-xs text-[#FAFBE0]/50 font-mono" title="Build ID">
+                  Build: {buildId}
+                </span>
+              )}
+              <p className="text-sm text-[#FAFBE0]/70">
+                © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant. Alle Rechte vorbehalten.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
