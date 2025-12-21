@@ -102,10 +102,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Encryption at rest"
-    - "Masked field display"
-    - "RBAC field filtering"
-    - "Audit logging for reveal actions"
+    - "Frontend security integration"
   stuck_tasks: []
   test_all: true
   test_priority: "high_first"
