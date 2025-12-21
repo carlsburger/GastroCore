@@ -210,6 +210,33 @@ SENSITIVE_HR_FIELDS = {"tax_id", "social_security_number", "bank_iban", "health_
 AUDIT_SENSITIVE_FIELDS = {"tax_id", "social_security_number", "bank_iban"}
 
 
+def validate_tax_id(tax_id: str) -> bool:
+    """Validate German Steuer-ID (11 digits)"""
+    if not tax_id:
+        return True  # Optional field
+    # Remove spaces and check if 11 digits
+    clean = tax_id.replace(" ", "").replace("-", "")
+    return clean.isdigit() and len(clean) == 11
+
+
+def validate_iban(iban: str) -> bool:
+    """Basic IBAN validation (DE = 22 characters)"""
+    if not iban:
+        return True  # Optional field
+    clean = iban.replace(" ", "").upper()
+    if clean.startswith("DE"):
+        return len(clean) == 22 and clean[2:].replace("X", "0").isalnum()
+    return len(clean) >= 15 and len(clean) <= 34
+
+
+def validate_social_security(ssn: str) -> bool:
+    """Basic German SV-Nummer validation (12 characters)"""
+    if not ssn:
+        return True
+    clean = ssn.replace(" ", "").replace("-", "")
+    return len(clean) >= 10 and len(clean) <= 12
+
+
 def calculate_completeness(member: dict) -> dict:
     """Calculate onboarding completeness score and checklist"""
     checklist = {
