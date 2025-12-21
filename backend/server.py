@@ -1842,7 +1842,54 @@ from marketing_module import marketing_router, marketing_public_router
 # Import AI Assistant Module (Sprint 9 - KI-Assistenz)
 from ai_assistant import ai_router
 
-# Add seed events endpoint BEFORE including routers
+# ============== FIRST-RUN SEED SYSTEM (Sprint 11) ==============
+from seed_system import run_full_seed, verify_seed
+
+# Internal seed endpoint (no auth required for first-run)
+internal_router = APIRouter(prefix="/internal", tags=["Internal"])
+
+@internal_router.post("/seed")
+async def seed_endpoint(force: bool = False):
+    """
+    FIRST-RUN SEED ENDPOINT
+    
+    Initialisiert das System mit Stammdaten für einen frischen Clone.
+    Idempotent: Kann mehrfach ausgeführt werden ohne Duplikate.
+    
+    Query Params:
+    - force: bool (default: false) - Seed auch wenn Daten existieren
+    
+    Sicherheit:
+    - Nur ausführen wenn DB leer ODER force=true
+    - Produktivdaten werden nie überschrieben
+    """
+    force_env = os.environ.get("FORCE_SEED", "false").lower() == "true"
+    return await run_full_seed(force=force or force_env)
+
+@internal_router.get("/seed/verify")
+async def verify_seed_endpoint():
+    """
+    Prüft ob Seed erfolgreich war und System testfähig ist.
+    """
+    return await verify_seed()
+
+@internal_router.get("/seed/status")
+async def seed_status_endpoint():
+    """
+    Zeigt aktuellen Datenbank-Status für Seed-Entscheidung.
+    """
+    return {
+        "users": await db.users.count_documents({"archived": False}),
+        "areas": await db.areas.count_documents({"archived": False}),
+        "opening_hours": await db.opening_hours.count_documents({}),
+        "events": await db.events.count_documents({"archived": False}),
+        "staff_members": await db.staff_members.count_documents({"archived": False}),
+        "rewards": await db.rewards.count_documents({"archived": False}),
+        "payment_rules": await db.payment_rules.count_documents({"archived": False}),
+        "recommendation": "SEED_REQUIRED" if await db.users.count_documents({}) == 0 else "DATA_EXISTS"
+    }
+
+# Legacy seed endpoints (require admin, for partial re-seeding)
 @api_router.post("/seed-events", tags=["Admin"])
 async def seed_events_endpoint(user: dict = Depends(require_admin)):
     """Seed sample events (Kabarett + Gänseabend)"""
