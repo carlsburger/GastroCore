@@ -562,11 +562,29 @@ Aktiv für:
 - ✅ Export Jobs (create, status_change)
 - ✅ Loyalty (manual_points, redemption)
 - ✅ Sensitive HR Field Reveal (reveal_sensitive_field)
+- ✅ SMTP Test (test_email)
 
 ### Message/Email Log
 - ✅ Email-Versuche werden geloggt
 - ✅ Reminder-Versand wird geloggt
-- SMTP nicht konfiguriert (nur Logging)
+- ✅ SMTP-Status abrufbar via `/api/smtp/status`
+- ✅ Testmail via `/api/smtp/test`
+
+### SMTP Konfiguration
+```bash
+# In backend/.env setzen:
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USER=your-user
+SMTP_PASSWORD=your-password
+SMTP_FROM=reservierungen@carlsburg.de
+SMTP_FROM_NAME=Carlsburg Restaurant
+SMTP_USE_TLS=false  # true für Port 587 (STARTTLS)
+```
+
+**Verhalten:**
+- Wenn konfiguriert: Echte Mails werden gesendet
+- Wenn nicht konfiguriert: Log-only Modus, kein Crash
 
 ### RBAC serverseitig
 - ✅ Alle Endpoints mit Depends(require_admin/require_manager)
