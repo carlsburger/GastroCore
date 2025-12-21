@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API_BASE = `${BACKEND_URL}/api`;
+// Use relative URL for API calls - works both locally and externally
+const API_BASE = "/api";
 
 // Create axios instance with default config
 const api = axios.create({
