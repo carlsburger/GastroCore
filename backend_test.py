@@ -2085,26 +2085,27 @@ class GastroCoreAPITester:
 
     def run_all_tests(self):
         """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests - Sprint 4 Events Module Focus")
+        print("🚀 Starting GastroCore Backend API Tests - Sprint 4 Payment Module Focus")
         print("=" * 70)
         
-        # Test sequence - focused on Sprint 4 Events Module
+        # Test sequence - focused on Sprint 4 Payment Module
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # Sprint 4 Events Module tests - PRIMARY FOCUS
+        # Sprint 4 Payment Module tests - PRIMARY FOCUS
+        print("\n💳 SPRINT 4 PAYMENT MODULE TESTING:")
+        test_results.append(self.test_sprint4_payment_rules_crud())
+        test_results.append(self.test_sprint4_payment_check_required())
+        test_results.append(self.test_sprint4_payment_transactions_and_logs())
+        test_results.append(self.test_sprint4_payment_resend_link())
+        test_results.append(self.test_sprint4_payment_access_control())
+        
+        # Sprint 4 Events Module tests (already tested)
         print("\n🎭 SPRINT 4 EVENTS MODULE TESTING:")
-        test_results.append(self.test_sprint4_seed_events())
         test_results.append(self.test_sprint4_events_authentication())
-        test_results.append(self.test_sprint4_events_crud())
-        test_results.append(self.test_sprint4_event_products_crud())
-        test_results.append(self.test_sprint4_public_events_api())
-        test_results.append(self.test_sprint4_public_event_booking())
-        test_results.append(self.test_sprint4_event_bookings_management())
-        test_results.append(self.test_sprint4_capacity_validation())
         
         # Core functionality tests (reduced for focus)
         print("\n🏗️ CORE FUNCTIONALITY TESTING:")
