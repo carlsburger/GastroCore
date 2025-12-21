@@ -1173,8 +1173,8 @@ class GastroCoreAPITester:
             confirmation_success = False
         
         # 2. POST /api/public/reservations/{id}/confirm?token=...
-        result = self.make_request("POST", f"public/reservations/{reservation_id}/confirm", 
-                                 {"token": token}, expected_status=200)
+        confirm_url = f"public/reservations/{reservation_id}/confirm?token={token}"
+        result = self.make_request("POST", confirm_url, {}, expected_status=200)
         
         if result["success"]:
             confirm_response = result["data"]
