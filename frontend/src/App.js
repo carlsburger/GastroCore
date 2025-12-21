@@ -90,6 +90,16 @@ function App() {
             }
           />
 
+          {/* Service Terminal - Admin & Schichtleiter */}
+          <Route
+            path="/service-terminal"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <ServiceTerminal />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Areas - Admin only */}
           <Route
             path="/areas"
