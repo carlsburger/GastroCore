@@ -103,10 +103,6 @@ function App() {
             }
           />
 
-          {/* Public Routes */}
-          <Route path="/cancel/:reservationId" element={<CancelReservation />} />
-          <Route path="/book" element={<BookingWidget />} />
-
           {/* Waitlist - Admin & Schichtleiter */}
           <Route
             path="/waitlist"
