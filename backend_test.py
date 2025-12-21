@@ -5032,8 +5032,8 @@ class GastroCoreAPITester:
         return service_terminal_success
 
     def run_all_tests(self):
-        """Run all test suites - Focus on Security Enhancement (Sprint 7.2)"""
-        print("🚀 Starting GastroCore Backend API Tests - Security Enhancement (Sprint 7.2) Focus")
+        """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
+        print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
         print("=" * 80)
         
         # Test sequence - focused on Security Enhancement
