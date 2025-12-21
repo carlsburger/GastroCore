@@ -16,6 +16,8 @@ import Guests from "./pages/Guests";
 import Settings from "./pages/Settings";
 import ConfirmReservation from "./pages/ConfirmReservation";
 import MessageLogs from "./pages/MessageLogs";
+// Service Terminal (Sprint 8)
+import ServiceTerminal from "./pages/ServiceTerminal";
 // Events Module (Sprint 4)
 import Events from "./pages/Events";
 import EventProducts from "./pages/EventProducts";
