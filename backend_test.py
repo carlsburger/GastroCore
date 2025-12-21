@@ -1305,6 +1305,249 @@ class GastroCoreAPITester:
         
         return settings_success
 
+    def test_sprint4_payment_rules_crud(self):
+        """Test Sprint 4: Payment Rules CRUD (Admin only)"""
+        print("\n💳 Testing Payment Rules CRUD...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Payment Rules CRUD", False, "Admin token not available")
+            return False
+        
+        payment_success = True
+        
+        # 1. GET /api/payments/rules - List all payment rules
+        result = self.make_request("GET", "payments/rules", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            rules = result["data"]
+            self.log_test("GET /api/payments/rules", True, f"Retrieved {len(rules)} payment rules")
+            
+            # Check for seeded rules
+            rule_names = [rule.get("name", "") for rule in rules]
+            expected_rules = ["Event-Zahlung", "Großgruppen-Anzahlung", "Greylist-Anzahlung"]
+            found_rules = [name for name in expected_rules if name in rule_names]
+            if len(found_rules) >= 2:
+                self.log_test("Payment rules seeded", True, f"Found rules: {found_rules}")
+            else:
+                self.log_test("Payment rules seeded", False, f"Expected rules not found. Found: {rule_names}")
+        else:
+            self.log_test("GET /api/payments/rules", False, f"Status: {result['status_code']}")
+            payment_success = False
+        
+        # 2. POST /api/payments/rules - Create new rule
+        rule_data = {
+            "name": "Test Payment Rule",
+            "trigger": "group_size",
+            "trigger_value": 6,
+            "payment_type": "deposit_per_person",
+            "amount": 15.0,
+            "deadline_hours": 12,
+            "is_active": True,
+            "description": "Test rule for automated testing"
+        }
+        
+        result = self.make_request("POST", "payments/rules", rule_data, self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            rule_id = result["data"]["id"]
+            self.test_data["test_payment_rule_id"] = rule_id
+            self.log_test("POST /api/payments/rules (create)", True, f"Rule created with ID: {rule_id}")
+        else:
+            self.log_test("POST /api/payments/rules (create)", False, f"Status: {result['status_code']}")
+            payment_success = False
+            return payment_success
+        
+        # 3. PATCH /api/payments/rules/{rule_id} - Update rule
+        update_data = {
+            "name": "Updated Test Payment Rule",
+            "amount": 20.0,
+            "is_active": False
+        }
+        
+        result = self.make_request("PATCH", f"payments/rules/{rule_id}", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_rule = result["data"]
+            if updated_rule.get("name") == "Updated Test Payment Rule" and updated_rule.get("amount") == 20.0:
+                self.log_test("PATCH /api/payments/rules (update)", True, "Rule updated successfully")
+            else:
+                self.log_test("PATCH /api/payments/rules (update)", False, "Rule not updated correctly")
+                payment_success = False
+        else:
+            self.log_test("PATCH /api/payments/rules (update)", False, f"Status: {result['status_code']}")
+            payment_success = False
+        
+        # 4. DELETE /api/payments/rules/{rule_id} - Archive rule
+        result = self.make_request("DELETE", f"payments/rules/{rule_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("DELETE /api/payments/rules (archive)", True, "Rule archived successfully")
+        else:
+            self.log_test("DELETE /api/payments/rules (archive)", False, f"Status: {result['status_code']}")
+            payment_success = False
+        
+        return payment_success
+
+    def test_sprint4_payment_check_required(self):
+        """Test Sprint 4: Payment Check Required"""
+        print("\n🔍 Testing Payment Check Required...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Payment Check Required", False, "Schichtleiter token not available")
+            return False
+        
+        # Create a test reservation first
+        today = datetime.now().strftime("%Y-%m-%d")
+        reservation_data = {
+            "guest_name": "Payment Test User",
+            "guest_phone": "+491701234567",
+            "guest_email": "payment@example.de",
+            "party_size": 10,  # Large group to trigger payment rule
+            "date": today,
+            "time": "19:00"
+        }
+        
+        result = self.make_request("POST", "reservations", reservation_data, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if not result["success"]:
+            self.log_test("Create payment test reservation", False, f"Status: {result['status_code']}")
+            return False
+        
+        reservation_id = result["data"]["id"]
+        
+        # Test payment check
+        check_params = {
+            "entity_type": "reservation",
+            "entity_id": reservation_id,
+            "party_size": 10
+        }
+        
+        result = self.make_request("GET", "payments/check-required", check_params, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        
+        if result["success"]:
+            check_data = result["data"]
+            if "payment_required" in check_data:
+                payment_required = check_data.get("payment_required")
+                self.log_test("GET /api/payments/check-required", True, 
+                            f"Payment required: {payment_required}")
+                
+                if payment_required:
+                    required_fields = ["rule_name", "payment_type", "amount", "currency"]
+                    missing_fields = [field for field in required_fields if field not in check_data]
+                    if not missing_fields:
+                        self.log_test("Payment check response structure", True, 
+                                    f"Amount: {check_data.get('amount')} {check_data.get('currency')}")
+                    else:
+                        self.log_test("Payment check response structure", False, 
+                                    f"Missing fields: {missing_fields}")
+                        return False
+                
+                return True
+            else:
+                self.log_test("GET /api/payments/check-required", False, "Missing payment_required field")
+                return False
+        else:
+            self.log_test("GET /api/payments/check-required", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_sprint4_payment_transactions_and_logs(self):
+        """Test Sprint 4: Payment Transactions and Logs"""
+        print("\n📊 Testing Payment Transactions and Logs...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Payment Transactions and Logs", False, "Admin token not available")
+            return False
+        
+        transactions_success = True
+        
+        # 1. GET /api/payments/transactions - List transactions
+        result = self.make_request("GET", "payments/transactions", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            transactions = result["data"]
+            self.log_test("GET /api/payments/transactions", True, f"Retrieved {len(transactions)} transactions")
+        else:
+            self.log_test("GET /api/payments/transactions", False, f"Status: {result['status_code']}")
+            transactions_success = False
+        
+        # 2. GET /api/payments/logs - List payment logs (Admin only)
+        result = self.make_request("GET", "payments/logs", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            logs = result["data"]
+            self.log_test("GET /api/payments/logs (Admin)", True, f"Retrieved {len(logs)} payment logs")
+        else:
+            self.log_test("GET /api/payments/logs (Admin)", False, f"Status: {result['status_code']}")
+            transactions_success = False
+        
+        # 3. Test access control: Schichtleiter should NOT access logs
+        if "schichtleiter" in self.tokens:
+            result = self.make_request("GET", "payments/logs", token=self.tokens["schichtleiter"], expected_status=403)
+            if result["success"]:
+                self.log_test("Payment logs access control (403 for Schichtleiter)", True, "403 Forbidden as expected")
+            else:
+                self.log_test("Payment logs access control (403 for Schichtleiter)", False, 
+                            f"Expected 403, got {result['status_code']}")
+                transactions_success = False
+        
+        return transactions_success
+
+    def test_sprint4_payment_resend_link(self):
+        """Test Sprint 4: Resend Payment Link"""
+        print("\n🔗 Testing Resend Payment Link...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Resend Payment Link", False, "Schichtleiter token not available")
+            return False
+        
+        # Create a dummy transaction ID for testing (since we can't create real Stripe sessions without API key)
+        dummy_transaction_id = "test-transaction-id-12345"
+        
+        # Test resend endpoint
+        result = self.make_request("POST", f"payments/resend/{dummy_transaction_id}", 
+                                 {}, self.tokens["schichtleiter"], expected_status=404)
+        
+        # We expect 404 since the transaction doesn't exist, which is correct behavior
+        if result["success"]:
+            self.log_test("POST /api/payments/resend/{transaction_id}", True, 
+                        "404 Not Found for non-existent transaction (expected)")
+            return True
+        else:
+            # Check if it's the expected 404
+            if result["status_code"] == 404:
+                self.log_test("POST /api/payments/resend/{transaction_id}", True, 
+                            "404 Not Found for non-existent transaction (expected)")
+                return True
+            else:
+                self.log_test("POST /api/payments/resend/{transaction_id}", False, 
+                            f"Unexpected status: {result['status_code']}")
+                return False
+
+    def test_sprint4_payment_access_control(self):
+        """Test Sprint 4: Payment Module Access Control"""
+        print("\n🛡️ Testing Payment Module Access Control...")
+        
+        access_success = True
+        
+        # Test that only admin can access payment rules
+        if "schichtleiter" in self.tokens:
+            result = self.make_request("GET", "payments/rules", token=self.tokens["schichtleiter"], expected_status=403)
+            if result["success"]:
+                self.log_test("Payment rules access control (403 for Schichtleiter)", True, "403 Forbidden as expected")
+            else:
+                self.log_test("Payment rules access control (403 for Schichtleiter)", False, 
+                            f"Expected 403, got {result['status_code']}")
+                access_success = False
+        
+        # Test that only admin can access payment logs
+        if "mitarbeiter" in self.tokens:
+            result = self.make_request("GET", "payments/logs", token=self.tokens["mitarbeiter"], expected_status=403)
+            if result["success"]:
+                self.log_test("Payment logs access control (403 for Mitarbeiter)", True, "403 Forbidden as expected")
+            else:
+                self.log_test("Payment logs access control (403 for Mitarbeiter)", False, 
+                            f"Expected 403, got {result['status_code']}")
+                access_success = False
+        
+        return access_success
+
     def test_sprint4_events_authentication(self):
         """Test Sprint 4: Events Module Authentication"""
         print("\n🎭 Testing Events Module Authentication...")
