@@ -894,7 +894,7 @@ class GastroCoreAPITester:
             self.test_data["test_guest_id"] = guest.get("id")
         else:
             # Guest might already exist, try to find it
-            result = self.make_request("GET", "guests", {"search": "+49 170 7777777"}, 
+            result = self.make_request("GET", "guests", {"search": "+49 170 7777778"}, 
                                      self.tokens["schichtleiter"], expected_status=200)
             if result["success"] and result["data"]:
                 guest = result["data"][0]
