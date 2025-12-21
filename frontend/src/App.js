@@ -98,6 +98,9 @@ function App() {
             }
           />
 
+          {/* Public Cancellation Page */}
+          <Route path="/cancel/:reservationId" element={<CancelReservation />} />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
