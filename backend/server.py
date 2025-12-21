@@ -1279,7 +1279,485 @@ async def health_check():
     except Exception:
         db_status = "disconnected"
     
-    return {"status": "healthy" if db_status == "connected" else "degraded", "database": db_status, "version": "2.0.0"}
+    return {"status": "healthy" if db_status == "connected" else "degraded", "database": db_status, "version": "3.0.0"}
+
+
+# ============== SPRINT 3: REMINDER & NO-SHOW SYSTEM ==============
+
+# --- Pydantic Models for Sprint 3 ---
+class ReminderRuleCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    hours_before: int = Field(..., ge=1, le=168)  # 1h to 7 days
+    channel: str = Field(..., pattern="^(email|whatsapp|both)$")
+    is_active: bool = True
+    template_key: Optional[str] = None  # e.g., "reminder_24h"
+
+class GuestConfirmRequest(BaseModel):
+    confirmed: bool = True
+
+class MessageLogCreate(BaseModel):
+    reservation_id: str
+    channel: str  # email, whatsapp
+    message_type: str  # confirmation, reminder, cancellation
+    recipient: str
+    status: str  # sent, failed, pending
+    error_message: Optional[str] = None
+
+
+# --- WhatsApp Deep-Link Generator ---
+def generate_whatsapp_link(phone: str, message: str) -> str:
+    """Generate WhatsApp deep-link with pre-filled message"""
+    import urllib.parse
+    # Clean phone number (remove spaces, dashes, etc.)
+    clean_phone = ''.join(filter(str.isdigit, phone))
+    # Ensure country code (default to Germany +49)
+    if not clean_phone.startswith('49') and not clean_phone.startswith('+'):
+        if clean_phone.startswith('0'):
+            clean_phone = '49' + clean_phone[1:]
+        else:
+            clean_phone = '49' + clean_phone
+    encoded_message = urllib.parse.quote(message)
+    return f"https://wa.me/{clean_phone}?text={encoded_message}"
+
+
+def get_reminder_message(reservation: dict, language: str = "de") -> str:
+    """Generate reminder message text for WhatsApp"""
+    messages = {
+        "de": f"""Erinnerung: Ihre Reservierung
+
+📅 {reservation.get('date', '')}
+⏰ {reservation.get('time', '')} Uhr
+👥 {reservation.get('party_size', '')} Personen
+
+Bei Verhinderung bitten wir um rechtzeitige Absage.
+
+Ihr Restaurant-Team""",
+        "en": f"""Reminder: Your reservation
+
+📅 {reservation.get('date', '')}
+⏰ {reservation.get('time', '')}
+👥 {reservation.get('party_size', '')} guests
+
+Please let us know if you cannot make it.
+
+Your Restaurant Team""",
+        "pl": f"""Przypomnienie: Twoja rezerwacja
+
+📅 {reservation.get('date', '')}
+⏰ {reservation.get('time', '')}
+👥 {reservation.get('party_size', '')} osób
+
+Prosimy o anulowanie w przypadku niemożności przybycia.
+
+Zespół Restauracji"""
+    }
+    return messages.get(language, messages["de"])
+
+
+# --- Message Log Helper ---
+async def log_message(reservation_id: str, channel: str, message_type: str, 
+                       recipient: str, status: str, error_message: str = None):
+    """Log sent messages for audit purposes"""
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "reservation_id": reservation_id,
+        "channel": channel,
+        "message_type": message_type,
+        "recipient": recipient,
+        "status": status,
+        "error_message": error_message,
+        "timestamp": now_iso()
+    }
+    await db.message_logs.insert_one(log_entry)
+    return log_entry
+
+
+# --- Confirmation Token ---
+def generate_confirm_token(reservation_id: str) -> str:
+    """Generate secure confirmation token"""
+    message = f"confirm:{reservation_id}:{CANCEL_SECRET}"
+    return hashlib.sha256(message.encode()).hexdigest()[:32]
+
+
+def verify_confirm_token(reservation_id: str, token: str) -> bool:
+    """Verify confirmation token"""
+    expected = generate_confirm_token(reservation_id)
+    return hmac.compare_digest(expected, token)
+
+
+def get_confirm_url(reservation_id: str) -> str:
+    """Generate confirmation URL"""
+    token = generate_confirm_token(reservation_id)
+    return f"{APP_URL}/confirm/{reservation_id}?token={token}"
+
+
+# Import for token generation
+from email_service import generate_cancel_token, get_cancel_url
+import hashlib
+import hmac
+CANCEL_SECRET = os.environ.get('JWT_SECRET', 'secret-key')
+APP_URL = os.environ.get('APP_URL', 'http://localhost:3000')
+
+
+# --- Reminder Rules Endpoints ---
+@api_router.get("/reminder-rules", tags=["Reminders"])
+async def get_reminder_rules(user: dict = Depends(require_admin)):
+    """Get all reminder rules"""
+    rules = await db.reminder_rules.find({"archived": False}, {"_id": 0}).to_list(100)
+    return rules
+
+
+@api_router.post("/reminder-rules", tags=["Reminders"])
+async def create_reminder_rule(data: ReminderRuleCreate, user: dict = Depends(require_admin)):
+    """Create a new reminder rule"""
+    rule = create_entity(data.model_dump())
+    await db.reminder_rules.insert_one(rule)
+    await create_audit_log(user, "reminder_rule", rule["id"], "create", None, safe_dict_for_audit(rule))
+    return {k: v for k, v in rule.items() if k != "_id"}
+
+
+@api_router.patch("/reminder-rules/{rule_id}", tags=["Reminders"])
+async def update_reminder_rule(rule_id: str, data: ReminderRuleCreate, user: dict = Depends(require_admin)):
+    """Update a reminder rule"""
+    existing = await db.reminder_rules.find_one({"id": rule_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Reminder-Regel")
+    
+    before = safe_dict_for_audit(existing)
+    update_data = {**data.model_dump(), "updated_at": now_iso()}
+    await db.reminder_rules.update_one({"id": rule_id}, {"$set": update_data})
+    
+    updated = await db.reminder_rules.find_one({"id": rule_id}, {"_id": 0})
+    await create_audit_log(user, "reminder_rule", rule_id, "update", before, safe_dict_for_audit(updated))
+    return updated
+
+
+@api_router.delete("/reminder-rules/{rule_id}", tags=["Reminders"])
+async def delete_reminder_rule(rule_id: str, user: dict = Depends(require_admin)):
+    """Archive a reminder rule"""
+    existing = await db.reminder_rules.find_one({"id": rule_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Reminder-Regel")
+    
+    before = safe_dict_for_audit(existing)
+    await db.reminder_rules.update_one({"id": rule_id}, {"$set": {"archived": True, "updated_at": now_iso()}})
+    await create_audit_log(user, "reminder_rule", rule_id, "archive", before, {**before, "archived": True})
+    return {"message": "Reminder-Regel archiviert", "success": True}
+
+
+# --- WhatsApp Reminder Endpoint ---
+@api_router.post("/reservations/{reservation_id}/whatsapp-reminder", tags=["Reminders"])
+async def get_whatsapp_reminder_link(reservation_id: str, user: dict = Depends(require_manager)):
+    """Generate WhatsApp reminder link for a reservation"""
+    reservation = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
+    if not reservation:
+        raise NotFoundException("Reservierung")
+    
+    if not reservation.get("guest_phone"):
+        raise ValidationException("Keine Telefonnummer hinterlegt")
+    
+    language = reservation.get("language", "de")
+    message = get_reminder_message(reservation, language)
+    whatsapp_link = generate_whatsapp_link(reservation["guest_phone"], message)
+    
+    # Log the action
+    await log_message(
+        reservation_id=reservation_id,
+        channel="whatsapp",
+        message_type="reminder",
+        recipient=reservation["guest_phone"],
+        status="link_generated"
+    )
+    
+    return {
+        "whatsapp_link": whatsapp_link,
+        "phone": reservation["guest_phone"],
+        "message": message,
+        "success": True
+    }
+
+
+# --- Smart Reminder Processing ---
+@api_router.post("/reminders/process", tags=["Reminders"])
+async def process_reminders(background_tasks: BackgroundTasks, user: dict = Depends(require_admin)):
+    """Process all due reminders based on configured rules"""
+    now = datetime.now(timezone.utc)
+    
+    # Get active reminder rules
+    rules = await db.reminder_rules.find({"is_active": True, "archived": False}, {"_id": 0}).to_list(100)
+    if not rules:
+        return {"message": "Keine aktiven Reminder-Regeln", "processed": 0}
+    
+    processed = 0
+    for rule in rules:
+        hours_before = rule.get("hours_before", 24)
+        channel = rule.get("channel", "email")
+        
+        # Calculate target datetime
+        target_time = now + timedelta(hours=hours_before)
+        target_date = target_time.strftime("%Y-%m-%d")
+        target_hour = target_time.strftime("%H")
+        
+        # Find reservations that need reminders
+        reminder_key = f"reminder_{hours_before}h_sent"
+        query = {
+            "date": target_date,
+            "status": "bestaetigt",  # Only confirmed reservations
+            "archived": False,
+            reminder_key: {"$ne": True}
+        }
+        
+        reservations = await db.reservations.find(query, {"_id": 0}).to_list(500)
+        
+        for res in reservations:
+            # Check if reservation time matches (within the hour)
+            res_hour = res.get("time", "00:00").split(":")[0]
+            if res_hour == target_hour or hours_before >= 24:  # For 24h+ reminders, send for all
+                
+                if channel in ["email", "both"] and res.get("guest_email"):
+                    area_name = None
+                    if res.get("area_id"):
+                        area_doc = await db.areas.find_one({"id": res["area_id"]}, {"_id": 0})
+                        area_name = area_doc.get("name") if area_doc else None
+                    
+                    background_tasks.add_task(send_reminder_email, res, area_name, res.get("language", "de"))
+                    await log_message(res["id"], "email", "reminder", res["guest_email"], "sent")
+                
+                # Mark as sent
+                await db.reservations.update_one(
+                    {"id": res["id"]}, 
+                    {"$set": {reminder_key: True, "updated_at": now_iso()}}
+                )
+                processed += 1
+    
+    return {"message": f"Reminders verarbeitet: {processed}", "processed": processed, "success": True}
+
+
+# --- Guest Confirmation Endpoints ---
+@public_router.get("/reservations/{reservation_id}/confirm-info", tags=["Public"])
+async def get_confirmation_info(reservation_id: str, token: str):
+    """Get reservation info for confirmation page"""
+    if not verify_confirm_token(reservation_id, token):
+        raise ForbiddenException("Ungültiger Bestätigungslink")
+    
+    reservation = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
+    if not reservation:
+        raise NotFoundException("Reservierung")
+    
+    # Get area name
+    area_name = None
+    if reservation.get("area_id"):
+        area_doc = await db.areas.find_one({"id": reservation["area_id"]}, {"_id": 0})
+        area_name = area_doc.get("name") if area_doc else None
+    
+    return {
+        "id": reservation["id"],
+        "guest_name": reservation.get("guest_name"),
+        "date": reservation.get("date"),
+        "time": reservation.get("time"),
+        "party_size": reservation.get("party_size"),
+        "area_name": area_name,
+        "status": reservation.get("status"),
+        "guest_confirmed": reservation.get("guest_confirmed", False)
+    }
+
+
+@public_router.post("/reservations/{reservation_id}/confirm", tags=["Public"])
+async def confirm_reservation_by_guest(reservation_id: str, token: str):
+    """Guest confirms their reservation via email link"""
+    if not verify_confirm_token(reservation_id, token):
+        raise ForbiddenException("Ungültiger Bestätigungslink")
+    
+    reservation = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
+    if not reservation:
+        raise NotFoundException("Reservierung")
+    
+    if reservation.get("status") not in ["neu", "bestaetigt"]:
+        raise ValidationException("Diese Reservierung kann nicht mehr bestätigt werden")
+    
+    before = safe_dict_for_audit(reservation)
+    await db.reservations.update_one(
+        {"id": reservation_id}, 
+        {"$set": {"guest_confirmed": True, "status": "bestaetigt", "updated_at": now_iso()}}
+    )
+    
+    await create_audit_log(SYSTEM_ACTOR, "reservation", reservation_id, "guest_confirm", before, 
+                           {**before, "guest_confirmed": True, "status": "bestaetigt"})
+    
+    return {"message": "Reservierung erfolgreich bestätigt", "success": True}
+
+
+# --- Cancellation Deadline Check ---
+async def check_cancellation_allowed(reservation: dict) -> dict:
+    """Check if cancellation is still allowed based on configured deadline"""
+    # Get cancellation deadline from settings (default: 24 hours)
+    deadline_setting = await db.settings.find_one({"key": "cancellation_deadline_hours"})
+    deadline_hours = int(deadline_setting.get("value", 24)) if deadline_setting else 24
+    
+    # Parse reservation datetime
+    try:
+        res_date = reservation.get("date", "")
+        res_time = reservation.get("time", "12:00")
+        res_datetime = datetime.strptime(f"{res_date} {res_time}", "%Y-%m-%d %H:%M")
+        res_datetime = res_datetime.replace(tzinfo=timezone.utc)
+        
+        now = datetime.now(timezone.utc)
+        deadline = res_datetime - timedelta(hours=deadline_hours)
+        
+        return {
+            "allowed": now < deadline,
+            "deadline": deadline.isoformat(),
+            "deadline_hours": deadline_hours,
+            "message": f"Stornierung bis {deadline_hours}h vorher möglich" if now < deadline 
+                       else f"Stornierungsfrist ({deadline_hours}h vorher) abgelaufen"
+        }
+    except Exception:
+        return {"allowed": True, "message": "Stornierung möglich"}
+
+
+# --- Enhanced Public Cancellation ---
+@public_router.get("/reservations/{reservation_id}/cancel-info", tags=["Public"])
+async def get_cancellation_info(reservation_id: str, token: str):
+    """Get reservation info and check if cancellation is allowed"""
+    if not verify_cancel_token(reservation_id, token):
+        raise ForbiddenException("Ungültiger Stornierungslink")
+    
+    reservation = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
+    if not reservation:
+        raise NotFoundException("Reservierung")
+    
+    cancellation_check = await check_cancellation_allowed(reservation)
+    
+    return {
+        "id": reservation["id"],
+        "guest_name": reservation.get("guest_name"),
+        "date": reservation.get("date"),
+        "time": reservation.get("time"),
+        "party_size": reservation.get("party_size"),
+        "status": reservation.get("status"),
+        "cancellation_allowed": cancellation_check["allowed"],
+        "cancellation_message": cancellation_check["message"],
+        "deadline_hours": cancellation_check.get("deadline_hours")
+    }
+
+
+# --- Message Log Endpoint ---
+@api_router.get("/message-logs", tags=["Admin"])
+async def get_message_logs(
+    reservation_id: Optional[str] = None,
+    channel: Optional[str] = None,
+    limit: int = 100,
+    user: dict = Depends(require_admin)
+):
+    """Get message log entries"""
+    query = {}
+    if reservation_id:
+        query["reservation_id"] = reservation_id
+    if channel:
+        query["channel"] = channel
+    
+    logs = await db.message_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return logs
+
+
+# --- Guest Info with No-Show History ---
+@api_router.get("/guests/{guest_id}/history", tags=["Guests"])
+async def get_guest_history(guest_id: str, user: dict = Depends(require_manager)):
+    """Get guest with full no-show history"""
+    guest = await db.guests.find_one({"id": guest_id, "archived": False}, {"_id": 0})
+    if not guest:
+        raise NotFoundException("Gast")
+    
+    # Get all reservations for this guest
+    reservations = await db.reservations.find({
+        "guest_phone": guest.get("phone"),
+        "archived": False
+    }, {"_id": 0}).sort("date", -1).to_list(100)
+    
+    # Filter no-shows
+    no_shows = [r for r in reservations if r.get("status") == "no_show"]
+    
+    return {
+        **guest,
+        "reservation_count": len(reservations),
+        "no_show_history": no_shows,
+        "recent_reservations": reservations[:10]
+    }
+
+
+# --- Check Guest Status for New Reservations ---
+@api_router.get("/guests/check/{phone}", tags=["Guests"])
+async def check_guest_status(phone: str, user: dict = Depends(require_manager)):
+    """Check guest status by phone (for reservation creation)"""
+    guest = await get_guest_by_phone(phone)
+    
+    if not guest:
+        return {
+            "found": False,
+            "flag": "none",
+            "no_show_count": 0,
+            "message": "Neuer Gast"
+        }
+    
+    flag = guest.get("flag", "none")
+    no_show_count = guest.get("no_show_count", 0)
+    
+    messages = {
+        "none": "Gast in Ordnung",
+        "greylist": f"⚠️ Greylist: {no_show_count} No-Shows - Bestätigungspflicht empfohlen",
+        "blacklist": f"🚫 Blacklist: {no_show_count} No-Shows - Online-Reservierung blockiert"
+    }
+    
+    return {
+        "found": True,
+        "guest_id": guest.get("id"),
+        "flag": flag,
+        "no_show_count": no_show_count,
+        "message": messages.get(flag, "Unbekannter Status"),
+        "requires_confirmation": flag in ["greylist", "blacklist"]
+    }
+
+
+# --- Default Settings Initializer ---
+async def init_default_settings():
+    """Initialize default settings if not present"""
+    defaults = [
+        {"key": "no_show_greylist_threshold", "value": "2", "description": "No-Shows bis Greylist"},
+        {"key": "no_show_blacklist_threshold", "value": "4", "description": "No-Shows bis Blacklist"},
+        {"key": "cancellation_deadline_hours", "value": "24", "description": "Stornierungsfrist in Stunden"},
+        {"key": "require_guest_confirmation", "value": "false", "description": "Gast-Bestätigung erforderlich"},
+        {"key": "greylist_requires_confirmation", "value": "true", "description": "Greylist-Gäste müssen bestätigen"},
+        {"key": "restaurant_name", "value": "Carlsburg Restaurant", "description": "Restaurant-Name"},
+    ]
+    
+    for setting in defaults:
+        existing = await db.settings.find_one({"key": setting["key"]})
+        if not existing:
+            await db.settings.insert_one({
+                "id": str(uuid.uuid4()),
+                **setting,
+                "created_at": now_iso(),
+                "updated_at": now_iso()
+            })
+
+
+# Initialize default reminder rules
+async def init_default_reminder_rules():
+    """Initialize default reminder rules if not present"""
+    existing = await db.reminder_rules.count_documents({"archived": False})
+    if existing == 0:
+        defaults = [
+            {"name": "24h Erinnerung", "hours_before": 24, "channel": "email", "is_active": True},
+            {"name": "3h Erinnerung", "hours_before": 3, "channel": "whatsapp", "is_active": True},
+        ]
+        for rule in defaults:
+            await db.reminder_rules.insert_one({
+                "id": str(uuid.uuid4()),
+                **rule,
+                "created_at": now_iso(),
+                "updated_at": now_iso(),
+                "archived": False
+            })
 
 
 # ============== APP CONFIG ==============
