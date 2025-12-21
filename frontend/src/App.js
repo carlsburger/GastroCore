@@ -38,8 +38,10 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
+          {/* Public Routes - No Authentication Required */}
           <Route path="/login" element={<Login />} />
+          <Route path="/book" element={<BookingWidget />} />
+          <Route path="/cancel/:reservationId" element={<CancelReservation />} />
           
           {/* Change Password (authenticated but no role check) */}
           <Route
