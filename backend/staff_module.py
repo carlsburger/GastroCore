@@ -533,6 +533,24 @@ async def update_hr_fields(
     if not update_data:
         return existing
     
+    # Validate fields
+    validation_errors = []
+    
+    if "tax_id" in update_data and update_data["tax_id"]:
+        if not validate_tax_id(update_data["tax_id"]):
+            validation_errors.append("Steuer-ID muss 11 Ziffern haben")
+    
+    if "bank_iban" in update_data and update_data["bank_iban"]:
+        if not validate_iban(update_data["bank_iban"]):
+            validation_errors.append("Ungültiges IBAN-Format")
+    
+    if "social_security_number" in update_data and update_data["social_security_number"]:
+        if not validate_social_security(update_data["social_security_number"]):
+            validation_errors.append("SV-Nummer muss 10-12 Zeichen haben")
+    
+    if validation_errors:
+        raise ValidationException("; ".join(validation_errors))
+    
     update_data["updated_at"] = now_iso()
     
     # Track which sensitive fields are being changed
