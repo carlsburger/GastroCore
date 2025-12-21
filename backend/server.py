@@ -1110,11 +1110,15 @@ async def send_test_email_endpoint(
 
 
 # ============== DATA IMPORT (Sprint: Data Onboarding) ==============
+class StaffImportRequest(BaseModel):
+    data: str
+    format: str = "json"
+    override: bool = False
+
+
 @api_router.post("/staff/import", tags=["Admin"])
 async def import_staff_endpoint(
-    data: str = None,
-    format: str = "json",
-    override: bool = False,
+    request: StaffImportRequest,
     user: dict = Depends(require_admin)
 ):
     """
@@ -1124,17 +1128,17 @@ async def import_staff_endpoint(
     - override: If true, update existing fields even if not empty
     - data: JSON array or CSV text
     """
-    if not data:
+    if not request.data:
         raise HTTPException(status_code=400, detail="Keine Daten übermittelt")
     
-    if format.lower() == "csv":
-        result = await import_staff_from_csv(data, override)
+    if request.format.lower() == "csv":
+        result = await import_staff_from_csv(request.data, request.override)
     else:
         try:
-            json_data = json.loads(data)
+            json_data = json.loads(request.data)
             if not isinstance(json_data, list):
                 json_data = [json_data]
-            result = await import_staff_from_json(json_data, override)
+            result = await import_staff_from_json(json_data, request.override)
         except json.JSONDecodeError as e:
             raise HTTPException(status_code=400, detail=f"Ungültiges JSON: {str(e)}")
     
