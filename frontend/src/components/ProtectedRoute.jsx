@@ -25,6 +25,10 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
 
   // Check role access
   if (roles.length > 0 && !roles.some((role) => hasRole(role))) {
+    // If user is mitarbeiter and trying to access restricted area, redirect to no-access
+    if (user?.role === "mitarbeiter") {
+      return <Navigate to="/no-access" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 
