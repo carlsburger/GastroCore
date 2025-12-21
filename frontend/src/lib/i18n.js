@@ -13,6 +13,7 @@ const translations = {
       waitlist: "Warteliste",
       guests: "Gäste",
       messageLogs: "Nachrichten",
+      events: "Veranstaltungen",
     },
     // Auth
     auth: {
