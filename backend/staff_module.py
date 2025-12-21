@@ -523,7 +523,7 @@ async def update_hr_fields(
             user, "staff_member_hr", member_id, "update_sensitive_hr_fields",
             {"fields": changed_sensitive, "values": "***MASKED***"},
             {"fields": changed_sensitive, "values": "***MASKED***"},
-            extra={
+            metadata={
                 "changed_fields": changed_sensitive,
                 "staff_name": updated.get("full_name"),
                 "note": "Sensitive HR data updated - values masked for privacy"
