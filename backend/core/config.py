@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
-    SMTP_FROM_NAME: str = "GastroCore"
+    SMTP_FROM_NAME: str = "Carlsburg Cockpit"
     
     # App
     APP_URL: str = "http://localhost:3000"
