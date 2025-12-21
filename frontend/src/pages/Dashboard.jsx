@@ -147,8 +147,10 @@ export const Dashboard = () => {
   const [areaFilter, setAreaFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showWalkInDialog, setShowWalkInDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
+  const [exportLoading, setExportLoading] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_phone: "",
@@ -159,7 +161,18 @@ export const Dashboard = () => {
     area_id: "",
     notes: "",
   });
+  const [walkInData, setWalkInData] = useState({
+    guest_name: "",
+    guest_phone: "",
+    party_size: 2,
+    area_id: "",
+    table_number: "",
+    notes: "",
+  });
   const [submitting, setSubmitting] = useState(false);
+
+  const token = localStorage.getItem("token");
+  const headers = { Authorization: `Bearer ${token}` };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
