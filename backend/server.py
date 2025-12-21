@@ -208,7 +208,14 @@ def create_reservation_entity(data: dict) -> dict:
     now = datetime.now(timezone.utc).isoformat()
     return {
         "id": str(uuid.uuid4()),
-        **data,
+        "guest_name": data.get("guest_name"),
+        "guest_phone": data.get("guest_phone"),
+        "guest_email": data.get("guest_email"),
+        "party_size": data.get("party_size"),
+        "date": data.get("date"),
+        "time": data.get("time"),
+        "area_id": data.get("area_id"),
+        "notes": data.get("notes"),
         "status": ReservationStatus.NEU.value,
         "created_at": now,
         "updated_at": now,
@@ -221,7 +228,9 @@ def create_area_entity(data: dict) -> dict:
     now = datetime.now(timezone.utc).isoformat()
     return {
         "id": str(uuid.uuid4()),
-        **data,
+        "name": data.get("name"),
+        "description": data.get("description"),
+        "capacity": data.get("capacity"),
         "created_at": now,
         "updated_at": now,
         "archived": False
