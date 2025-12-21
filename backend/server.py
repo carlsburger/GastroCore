@@ -1336,7 +1336,7 @@ async def get_version():
             "taxoffice": True,
             "loyalty": True,
             "marketing": True,
-            "ai": False
+            "ai": True
         }
     }
 
