@@ -122,11 +122,14 @@ backend:
     file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/POST/PATCH/DELETE /api/events with publish/cancel actions"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All CRUD operations working. GET /api/events retrieves events, POST creates with draft status, PATCH updates, GET /{id} retrieves single event, POST /{id}/publish publishes, POST /{id}/cancel cancels events. Admin and Schichtleiter access confirmed."
 
   - task: "EventProducts CRUD API"
     implemented: true
@@ -134,11 +137,14 @@ backend:
     file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/POST/PATCH/DELETE /api/events/{id}/products"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All EventProducts CRUD operations working. GET /api/events/{id}/products lists products, POST creates new products, PATCH updates existing products, DELETE archives products. Tested with Gänseabend event."
 
   - task: "EventBookings API"
     implemented: true
@@ -146,11 +152,14 @@ backend:
     file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET/PATCH /api/events/{id}/bookings with status changes"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: EventBookings management working. GET /api/events/{id}/bookings lists bookings with items and product names, PATCH /api/events/{id}/bookings/{booking_id} updates booking status and notes successfully."
 
   - task: "Public Event Booking API"
     implemented: true
@@ -158,11 +167,14 @@ backend:
     file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/public/events, POST /api/public/events/{id}/book with capacity validation"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Public booking API fully functional. GET /api/public/events lists published events (no auth), GET /api/public/events/{id} shows event details with products. POST /api/public/events/{id}/book works for both ticket_only (Kabarett) and reservation_with_preorder (Gänseabend) modes. Capacity validation working - large bookings rejected with 422 status. Confirmation codes generated successfully."
 
 frontend:
   - task: "Events Admin Page"
