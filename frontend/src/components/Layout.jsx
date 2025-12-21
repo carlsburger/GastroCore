@@ -81,6 +81,18 @@ export const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [buildId, setBuildId] = React.useState(null);
+
+  // Fetch build info for admin/schichtleiter
+  React.useEffect(() => {
+    if (hasRole("admin") || hasRole("schichtleiter")) {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
+      fetch(`${backendUrl}/api/version`)
+        .then((res) => res.json())
+        .then((data) => setBuildId(data.build_id))
+        .catch(() => setBuildId(null));
+    }
+  }, [hasRole]);
 
   const handleLogout = () => {
     logout();
