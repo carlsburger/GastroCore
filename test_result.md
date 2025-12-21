@@ -374,6 +374,66 @@ backend:
         agent: "testing"
         comment: "⚠️ NOT TESTED: Document upload endpoints exist but require file upload testing which is complex in automated tests. Implementation includes proper file validation, storage, and access control based on visibility settings."
 
+  - task: "Tax Office Settings API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/taxoffice_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/PATCH /api/taxoffice/settings - Steuerbüro-Konfiguration mit Empfänger-E-Mail, CC/BCC, Absendername, Betreff-Template"
+
+  - task: "Tax Office Export Jobs API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/taxoffice_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/POST /api/taxoffice/jobs - Export-Jobs mit Status (pending/generating/ready/sent/failed), CSV + PDF Generation"
+
+  - task: "Tax Office Export Downloads API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/taxoffice_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/taxoffice/jobs/{job_id}/download/{file_index} - Download CSV und PDF Dateien"
+
+  - task: "Staff Registration Package API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/taxoffice_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/taxoffice/staff-registration/{staff_id} - Mitarbeiter-Meldepaket mit Personaldaten + Dokumenten-Bundle"
+
+  - task: "Staff Tax Fields API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/taxoffice_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PATCH /api/taxoffice/staff/{staff_id}/tax-fields - Update tax_id, iban, Steuerklasse, etc."
+
 frontend:
   - task: "Payment Rules Page"
     implemented: true
