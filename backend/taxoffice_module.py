@@ -680,10 +680,14 @@ async def send_to_taxoffice(
 @taxoffice_router.post("/staff-registration/{staff_id}")
 async def create_staff_registration(
     staff_id: str,
-    data: StaffRegistrationRequest,
+    data: Optional[StaffRegistrationRequest] = None,
     user: dict = Depends(require_admin)
 ):
     """Create staff registration package for tax office"""
+    
+    # Default empty request if none provided
+    if data is None:
+        data = StaffRegistrationRequest()
     
     # Get staff member
     member = await db.staff_members.find_one({"id": staff_id, "archived": False}, {"_id": 0})
