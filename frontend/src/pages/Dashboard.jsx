@@ -255,7 +255,7 @@ export const Dashboard = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post(`${BACKEND_URL}/api/reservations/walk-in`, walkInData, { headers });
+      await axios.post(`${BACKEND_URL}/api/walk-ins`, walkInData, { headers });
       toast.success("Walk-In erfasst und als 'Angekommen' markiert");
       setShowWalkInDialog(false);
       setWalkInData({
