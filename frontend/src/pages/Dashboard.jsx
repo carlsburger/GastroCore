@@ -327,6 +327,32 @@ export const Dashboard = () => {
     }
   };
 
+  // WhatsApp Reminder - generates deep link and opens it
+  const handleWhatsAppReminder = async (reservation) => {
+    if (!reservation.guest_phone) {
+      toast.error("Keine Telefonnummer hinterlegt");
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/reservations/${reservation.id}/whatsapp-reminder`,
+        {},
+        { headers }
+      );
+      // Open WhatsApp link in new tab
+      window.open(response.data.whatsapp_link, "_blank");
+      toast.success("WhatsApp wird geöffnet...");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Erstellen des WhatsApp-Links");
+    }
+  };
+
+  // Get guest flag info
+  const getGuestFlag = (phone) => {
+    if (!phone) return null;
+    return guestCache[phone];
+  };
+
   const getAreaName = (areaId) => {
     const area = areas.find((a) => a.id === areaId);
     return area?.name || "-";
