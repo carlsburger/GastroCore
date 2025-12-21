@@ -4861,6 +4861,176 @@ class GastroCoreAPITester:
         
         return cleanup_success
 
+    def test_service_terminal_sprint8(self):
+        """Test Service-Terminal Backend APIs (Sprint 8) - As per review request"""
+        print("\n🖥️ Testing Service-Terminal Backend APIs (Sprint 8)...")
+        
+        service_terminal_success = True
+        test_date = "2025-12-21"  # Test date from requirements
+        
+        # ============== 1) Reservierungen laden (Tagesliste) ==============
+        print("  1) Testing reservations loading with RBAC...")
+        
+        # Admin should be able to access reservations with date filter
+        result = self.make_request("GET", "reservations", {"date": test_date}, 
+                                 self.tokens.get("admin"), expected_status=200)
+        if result["success"]:
+            admin_reservations = result["data"]
+            self.log_test("GET /api/reservations?date=2025-12-21 as Admin", True, 
+                        f"Retrieved {len(admin_reservations)} reservations")
+        else:
+            self.log_test("GET /api/reservations?date=2025-12-21 as Admin", False, 
+                        f"Status: {result['status_code']}")
+            service_terminal_success = False
+        
+        # Schichtleiter should be able to access reservations with date filter
+        result = self.make_request("GET", "reservations", {"date": test_date}, 
+                                 self.tokens.get("schichtleiter"), expected_status=200)
+        if result["success"]:
+            schichtleiter_reservations = result["data"]
+            self.log_test("GET /api/reservations?date=2025-12-21 as Schichtleiter", True, 
+                        f"Retrieved {len(schichtleiter_reservations)} reservations")
+        else:
+            self.log_test("GET /api/reservations?date=2025-12-21 as Schichtleiter", False, 
+                        f"Status: {result['status_code']}")
+            service_terminal_success = False
+        
+        # Mitarbeiter MUST get 403 when accessing reservations
+        result = self.make_request("GET", "reservations", {}, 
+                                 self.tokens.get("mitarbeiter"), expected_status=403)
+        if result["success"]:
+            self.log_test("GET /api/reservations as Mitarbeiter → 403", True, 
+                        "✅ RBAC: Mitarbeiter correctly blocked with 403")
+        else:
+            self.log_test("GET /api/reservations as Mitarbeiter → 403", False, 
+                        f"Expected 403, got {result['status_code']} - RBAC FAILURE")
+            service_terminal_success = False
+        
+        # ============== 2) Statuswechsel mit Audit-Log ==============
+        print("  2) Testing status changes with audit logging...")
+        
+        # First create a test reservation for status change
+        reservation_data = {
+            "guest_name": "Service Terminal Test",
+            "guest_phone": "+49 170 5555555",
+            "guest_email": "service@example.de",
+            "party_size": 4,
+            "date": test_date,
+            "time": "18:00"
+        }
+        
+        result = self.make_request("POST", "reservations", reservation_data, 
+                                 self.tokens.get("schichtleiter"), expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            test_reservation_id = result["data"]["id"]
+            self.log_test("Create test reservation for status change", True, 
+                        f"Created reservation ID: {test_reservation_id}")
+        else:
+            self.log_test("Create test reservation for status change", False, 
+                        f"Status: {result['status_code']}")
+            service_terminal_success = False
+            test_reservation_id = None
+        
+        if test_reservation_id:
+            # Test status change: neu -> bestaetigt
+            result = self.make_request("PATCH", f"reservations/{test_reservation_id}/status", 
+                                     {"new_status": "bestaetigt"}, self.tokens.get("schichtleiter"), 
+                                     expected_status=200)
+            if result["success"]:
+                self.log_test("PATCH /api/reservations/{id}/status?new_status=bestaetigt", True, 
+                            "Status changed successfully")
+                
+                # Check that audit log was created
+                result = self.make_request("GET", "audit-logs", 
+                                         {"entity": "reservation", "limit": 1}, 
+                                         self.tokens.get("admin"), expected_status=200)
+                if result["success"] and result["data"]:
+                    latest_audit = result["data"][0]
+                    if (latest_audit.get("entity_id") == test_reservation_id and 
+                        latest_audit.get("action") == "status_change"):
+                        self.log_test("GET /api/audit-logs?entity=reservation&limit=1", True, 
+                                    "✅ Audit log created for status change")
+                    else:
+                        self.log_test("GET /api/audit-logs?entity=reservation&limit=1", False, 
+                                    "Audit log not found for status change")
+                        service_terminal_success = False
+                else:
+                    self.log_test("GET /api/audit-logs?entity=reservation&limit=1", False, 
+                                f"Status: {result['status_code']}")
+                    service_terminal_success = False
+            else:
+                self.log_test("PATCH /api/reservations/{id}/status?new_status=bestaetigt", False, 
+                            f"Status: {result['status_code']}")
+                service_terminal_success = False
+        
+        # ============== 3) Walk-in anlegen ==============
+        print("  3) Testing walk-in creation...")
+        
+        walk_in_data = {
+            "guest_name": "Walk-In Service Terminal",
+            "party_size": 2
+        }
+        
+        result = self.make_request("POST", "walk-ins", walk_in_data, 
+                                 self.tokens.get("schichtleiter"), expected_status=200)
+        if result["success"]:
+            walk_in_response = result["data"]
+            if (walk_in_response.get("status") == "angekommen" and 
+                walk_in_response.get("source") == "walk-in"):
+                self.log_test("POST /api/walk-ins", True, 
+                            f"✅ Walk-in created: status='angekommen', source='walk-in'")
+            else:
+                self.log_test("POST /api/walk-ins", False, 
+                            f"Expected status='angekommen' & source='walk-in', got status='{walk_in_response.get('status')}', source='{walk_in_response.get('source')}'")
+                service_terminal_success = False
+        else:
+            self.log_test("POST /api/walk-ins", False, f"Status: {result['status_code']}")
+            service_terminal_success = False
+        
+        # ============== 4) Warteliste anlegen ==============
+        print("  4) Testing waitlist creation...")
+        
+        waitlist_data = {
+            "guest_name": "Waitlist Service Terminal",
+            "guest_phone": "+49 170 6666666",
+            "party_size": 6,
+            "date": test_date
+        }
+        
+        result = self.make_request("POST", "waitlist", waitlist_data, 
+                                 self.tokens.get("schichtleiter"), expected_status=200)
+        if result["success"]:
+            waitlist_response = result["data"]
+            if waitlist_response.get("status") == "offen":
+                self.log_test("POST /api/waitlist", True, 
+                            f"✅ Waitlist entry created: status='offen'")
+            else:
+                self.log_test("POST /api/waitlist", False, 
+                            f"Expected status='offen', got '{waitlist_response.get('status')}'")
+                service_terminal_success = False
+        else:
+            self.log_test("POST /api/waitlist", False, f"Status: {result['status_code']}")
+            service_terminal_success = False
+        
+        # ============== 5) Bereiche laden ==============
+        print("  5) Testing areas loading for filters...")
+        
+        result = self.make_request("GET", "areas", {}, 
+                                 self.tokens.get("schichtleiter"), expected_status=200)
+        if result["success"]:
+            areas = result["data"]
+            if isinstance(areas, list):
+                self.log_test("GET /api/areas", True, 
+                            f"✅ Retrieved {len(areas)} areas for filter dropdown")
+            else:
+                self.log_test("GET /api/areas", False, "Response is not a list")
+                service_terminal_success = False
+        else:
+            self.log_test("GET /api/areas", False, f"Status: {result['status_code']}")
+            service_terminal_success = False
+        
+        return service_terminal_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Security Enhancement (Sprint 7.2)"""
         print("🚀 Starting GastroCore Backend API Tests - Security Enhancement (Sprint 7.2) Focus")
