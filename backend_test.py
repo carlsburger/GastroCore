@@ -396,8 +396,8 @@ class GastroCoreAPITester:
         no_show_reservation_id = result["data"]["id"]
         
         # Mark as no-show
-        result = self.make_request("PATCH", f"reservations/{no_show_reservation_id}/status", 
-                                 {"status": "no_show"}, self.tokens["schichtleiter"], 
+        result = self.make_request("PATCH", f"reservations/{no_show_reservation_id}/status?new_status=no_show", 
+                                 {}, self.tokens["schichtleiter"], 
                                  expected_status=200)
         if result["success"]:
             self.log_test("Mark reservation as no-show", True)
