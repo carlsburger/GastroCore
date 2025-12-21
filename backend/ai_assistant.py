@@ -230,29 +230,197 @@ async def generate_ai_suggestion(
             detail=f"KI-Fehler: {str(e)}"
         )
 
-# ============== SCHEDULE SUGGESTIONS ==============
-SCHEDULE_SYSTEM_PROMPT = """Du bist ein Dienstplan-Assistent für ein Restaurant.
-Deine Aufgabe ist es, VORSCHLÄGE für Schichtverteilungen zu machen.
-Du darfst KEINE Entscheidungen treffen, nur Vorschläge mit Begründung liefern.
-
-Antworte IMMER im folgenden JSON-Format:
-{
-    "suggestion": {
-        "shifts": [
-            {"staff_id": "...", "staff_name": "...", "day": "...", "shift_type": "...", "hours": ...}
-        ],
-        "summary": "Kurze Zusammenfassung"
+# ============== SCHEDULE CONFIG ==============
+DEFAULT_SCHEDULE_CONFIG = {
+    "type": "schedule_rules",
+    # Saison und Öffnungszeiten
+    "seasons": {
+        "summer": {"months": [4, 5, 6, 7, 8, 9, 10], "open_days": [0, 1, 2, 3, 4, 5, 6]},  # Mo-So
+        "winter": {"months": [1, 2, 3, 11, 12], "open_days": [2, 3, 4, 5, 6]}  # Mi-So
     },
-    "reasoning": "Ausführliche Begründung warum diese Verteilung sinnvoll ist",
-    "considerations": ["Punkt 1", "Punkt 2"],
-    "confidence": 0.8
+    "holidays": ["2025-10-03", "2025-12-25", "2025-12-26", "2025-01-01"],
+    "closed_days": ["2025-12-24", "2025-12-31"],
+    
+    # Personalbedarf - Service
+    "service": {
+        "normal_summer_weekday": 4,
+        "normal_summer_weekend": 5,
+        "normal_winter_weekday": 3,
+        "normal_winter_weekend": 4,
+        "culinary_event": 5,
+        "culture_early_shift": 3,
+        "culture_evening_shift": 5,
+        "holiday": 6,
+        "christmas": 7
+    },
+    
+    # Personalbedarf - Küche
+    "kitchen": {
+        "normal": 3,
+        "culinary_event": 4,
+        "culture": 3,
+        "holiday": 4,
+        "christmas": 5
+    },
+    
+    # Schichtleiter erforderlich pro Anlass
+    "shift_leader_required": {
+        "normal": True,
+        "culinary_event": True,
+        "culture": True,
+        "holiday": True,
+        "christmas": True
+    },
+    
+    # Arbeitszeit-Regeln
+    "work_rules": {
+        "max_days_consecutive": 5,
+        "min_free_days_per_week": 2,
+        "max_hours_per_day": 10,
+        "minijob_ratio": 1.0  # Max 1 Minijobber pro Festangestelltem
+    },
+    
+    # Schichttypen
+    "shift_types": {
+        "early": {"start": "10:00", "end": "16:00", "hours": 6},
+        "late": {"start": "16:00", "end": "23:00", "hours": 7},
+        "full": {"start": "10:00", "end": "23:00", "hours": 10}  # Mit Pause
+    }
 }
 
-Beachte:
-- Gleichmäßige Verteilung der Stunden
-- Sollstunden beachten
-- Überstunden vermeiden
-- Pausen einplanen"""
+async def get_schedule_config() -> dict:
+    """Get schedule configuration from database"""
+    config = await db.settings.find_one({"type": "schedule_rules"}, {"_id": 0})
+    if not config:
+        config = DEFAULT_SCHEDULE_CONFIG.copy()
+        await db.settings.insert_one(config)
+    return config
+
+def determine_occasion_type(date_str: str, events: list, config: dict) -> tuple[str, str]:
+    """Determine the occasion type and season for a given date"""
+    date = datetime.strptime(date_str, "%Y-%m-%d")
+    month = date.month
+    weekday = date.weekday()  # 0=Monday, 6=Sunday
+    
+    # Check if closed
+    if date_str in config.get("closed_days", []):
+        return "closed", "closed"
+    
+    # Determine season
+    summer_months = config.get("seasons", {}).get("summer", {}).get("months", [4,5,6,7,8,9,10])
+    season = "summer" if month in summer_months else "winter"
+    
+    # Check if holiday
+    if date_str in config.get("holidays", []):
+        if month == 12 and date.day in [25, 26]:
+            return "christmas", season
+        return "holiday", season
+    
+    # Check for events on this date
+    for event in events:
+        if event.get("date") == date_str:
+            event_type = event.get("event_type", "").lower()
+            if "kultur" in event_type or "kabarett" in event_type or "comedy" in event_type:
+                return "culture", season
+            elif any(k in event_type for k in ["tapas", "ente", "gans", "bbq", "kulinarisch"]):
+                return "culinary_event", season
+    
+    # Normal business day
+    return "normal", season
+
+def build_schedule_system_prompt(config: dict) -> str:
+    """Build dynamic system prompt based on configuration"""
+    service = config.get("service", {})
+    kitchen = config.get("kitchen", {})
+    rules = config.get("work_rules", {})
+    
+    return f"""Du bist eine KI, die den Dienstplan für ein Restaurant erstellt. Deine Aufgabe ist es, auf Basis der folgenden Regeln die Anzahl der benötigten Mitarbeitenden pro Veranstaltung oder Tagesgeschäft zu berechnen.
+
+WICHTIG: Du machst NUR VORSCHLÄGE. Du darfst KEINE Entscheidungen treffen oder Daten ändern.
+
+### SAISON UND ÖFFNUNGSZEITEN
+
+* **Sommer (April–Oktober)**: Betrieb täglich geöffnet.
+* **Winter (November–März)**: Montag & Dienstag Ruhetag, Mittwoch–Sonntag geöffnet.
+* **Feiertage**: 3. Oktober, Ostern, Muttertag, Weihnachten: besondere Behandlung.
+* **Geschlossen**: 24.12., 31.12., 1.1.
+
+### PERSONALBEDARF PRO ANLASS
+
+| Anlass | Servicekräfte | Küchenkräfte |
+|--------|---------------|--------------|
+| Normales Tagesgeschäft (Sommer, Werktag) | {service.get('normal_summer_weekday', 4)} | {kitchen.get('normal', 3)} |
+| Normales Tagesgeschäft (Sommer, Wochenende) | {service.get('normal_summer_weekend', 5)} | {kitchen.get('normal', 3)} |
+| Normales Tagesgeschäft (Winter, Werktag) | {service.get('normal_winter_weekday', 3)} | {kitchen.get('normal', 3)} |
+| Normales Tagesgeschäft (Winter, Wochenende) | {service.get('normal_winter_weekend', 4)} | {kitchen.get('normal', 3)} |
+| Kulinarische Aktionen (Tapas, Ente, BBQ) | {service.get('culinary_event', 5)} | {kitchen.get('culinary_event', 4)} |
+| Kulturveranstaltungen Frühschicht | {service.get('culture_early_shift', 3)} | {kitchen.get('culture', 3)} |
+| Kulturveranstaltungen Abendschicht | {service.get('culture_evening_shift', 5)} | {kitchen.get('culture', 3)} |
+| Feiertage | {service.get('holiday', 6)} | {kitchen.get('holiday', 4)} |
+| Weihnachten (25./26.12.) | {service.get('christmas', 7)} | {kitchen.get('christmas', 5)} |
+
+**Schichtleiter:** Jede Schicht benötigt zusätzlich einen Schichtleiter (nicht in obigen Zahlen enthalten).
+
+### ARBEITSZEIT-REGELN
+
+* Maximal {rules.get('max_days_consecutive', 5)} Arbeitstage am Stück (6. Tag nur in Ausnahmen)
+* Mindestens {rules.get('min_free_days_per_week', 2)} freie Tage pro Woche
+* Maximal {rules.get('max_hours_per_day', 10)} Stunden pro Tag
+* Minijobber nur wenn genug Festangestellte (Verhältnis max 1:1)
+
+### MITARBEITER-TYPEN
+
+* **Festangestellte**: Haben definierte Sollstunden pro Woche
+* **Saisonkräfte**: Nur in bestimmten Zeiträumen verfügbar
+* **Minijobber**: Nur zusätzlich zu Festangestellten einsetzbar
+* **Studenten**: Max. 70 Arbeitstage pro Jahr
+
+### EINSATZLOGIK
+
+1. Bestimme für jeden Tag den Anlass-Typ und die Saison
+2. Lade den benötigten Personalbedarf aus obiger Tabelle
+3. Besetze zuerst mit Festangestellten (nach Sollstunden und Verfügbarkeit)
+4. Dann Saisonkräfte und bei Bedarf Minijobber
+5. Beachte alle Arbeitszeit-Regeln
+6. Markiere offene Dienste als "offen"
+
+### ANTWORTFORMAT
+
+Antworte IMMER im folgenden JSON-Format:
+{{
+    "suggestion": {{
+        "days": [
+            {{
+                "date": "YYYY-MM-DD",
+                "occasion_type": "normal|culinary_event|culture|holiday|christmas|closed",
+                "season": "summer|winter",
+                "shifts": [
+                    {{
+                        "staff_id": "...",
+                        "staff_name": "...",
+                        "role": "service|kitchen|shift_leader",
+                        "shift_type": "early|late|full",
+                        "hours": 6
+                    }}
+                ],
+                "open_positions": [
+                    {{
+                        "role": "service",
+                        "shift_type": "late",
+                        "reason": "Kein verfügbarer Mitarbeiter"
+                    }}
+                ]
+            }}
+        ],
+        "summary": "Zusammenfassung der Woche",
+        "warnings": ["Überstunden bei Max Mustermann", "Minijob-Quote überschritten"]
+    }},
+    "reasoning": "Ausführliche Begründung der Verteilung",
+    "considerations": ["Punkt 1", "Punkt 2"],
+    "confidence": 0.85
+}}"""
+
+# ============== SCHEDULE SUGGESTIONS ==============
 
 @ai_router.post("/schedule/suggest")
 async def suggest_schedule(
