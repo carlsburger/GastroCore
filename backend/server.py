@@ -46,6 +46,10 @@ from email_service import (
     send_test_email, get_smtp_status, is_smtp_configured
 )
 from pdf_service import generate_table_plan_pdf
+from import_module import (
+    import_staff_from_json, import_staff_from_csv,
+    import_predefined_carlsburg_data
+)
 
 # ============== APP SETUP ==============
 app = FastAPI(
