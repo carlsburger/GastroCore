@@ -514,6 +514,80 @@ async def archive_reservation(
     await create_audit_log(user, "reservation", reservation_id, "archive", before, after)
     return {"message": "Reservierung archiviert"}
 
+# ============== PUBLIC CANCELLATION ENDPOINT ==============
+@api_router.post("/reservations/{reservation_id}/cancel")
+async def cancel_reservation_public(
+    reservation_id: str,
+    token: str,
+    background_tasks: BackgroundTasks
+):
+    """Public endpoint for guests to cancel their reservation via email link"""
+    # Verify token
+    if not verify_cancel_token(reservation_id, token):
+        raise HTTPException(status_code=403, detail="Ungültiger Stornierungslink")
+    
+    existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Reservierung nicht gefunden")
+    
+    # Can only cancel if not already completed or no-show
+    if existing.get("status") in ["abgeschlossen", "no_show", "storniert"]:
+        raise HTTPException(status_code=400, detail="Diese Reservierung kann nicht mehr storniert werden")
+    
+    # Update status to cancelled
+    update_data = {
+        "status": "storniert",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.reservations.update_one({"id": reservation_id}, {"$set": update_data})
+    
+    # Create audit log with system actor
+    system_actor = {"id": "system", "email": "system@gastrocore.de"}
+    await create_audit_log(system_actor, "reservation", reservation_id, "cancel_by_guest", 
+                          safe_dict_for_audit(existing), {**safe_dict_for_audit(existing), "status": "storniert"})
+    
+    # Send cancellation confirmation email
+    if existing.get("guest_email"):
+        background_tasks.add_task(send_cancellation_email, existing)
+    
+    return {"message": "Reservierung erfolgreich storniert", "cancelled": True}
+
+# ============== REMINDER ENDPOINT (for cron job) ==============
+@api_router.post("/reservations/send-reminders")
+async def send_reservation_reminders(
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_roles(UserRole.ADMIN))
+):
+    """Send reminder emails for reservations happening tomorrow"""
+    tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # Find all confirmed reservations for tomorrow that haven't been reminded yet
+    reservations = await db.reservations.find({
+        "date": tomorrow,
+        "status": {"$in": ["neu", "bestaetigt"]},
+        "archived": False,
+        "reminder_sent": {"$ne": True}
+    }, {"_id": 0}).to_list(1000)
+    
+    sent_count = 0
+    for res in reservations:
+        if res.get("guest_email"):
+            area_name = None
+            if res.get("area_id"):
+                area = await db.areas.find_one({"id": res["area_id"]}, {"_id": 0})
+                area_name = area.get("name") if area else None
+            
+            background_tasks.add_task(send_reminder_email, res, area_name)
+            
+            # Mark as reminded
+            await db.reservations.update_one(
+                {"id": res["id"]},
+                {"$set": {"reminder_sent": True}}
+            )
+            sent_count += 1
+    
+    return {"message": f"Erinnerungen gesendet: {sent_count}", "count": sent_count}
+
 # ============== SETTINGS ENDPOINTS ==============
 @api_router.get("/settings")
 async def get_settings(user: dict = Depends(require_roles(UserRole.ADMIN))):
