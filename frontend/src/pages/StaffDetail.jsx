@@ -59,6 +59,10 @@ import {
   Save,
   Building2,
   Smartphone,
+  Eye,
+  EyeOff,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -90,6 +94,93 @@ const CHECKLIST_LABELS = {
   emergency_contact: "Notfallkontakt",
 };
 
+// Masked Field Component with reveal toggle
+const MaskedField = ({ label, maskedValue, hasValue, fieldName, memberId, onReveal }) => {
+  const [revealed, setRevealed] = useState(false);
+  const [revealedValue, setRevealedValue] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem("token");
+
+  const handleToggleReveal = async () => {
+    if (revealed) {
+      setRevealed(false);
+      setRevealedValue(null);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/staff/members/${memberId}/reveal-field`,
+        { field: fieldName },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.revealed) {
+        setRevealedValue(response.data.value);
+        setRevealed(true);
+        toast.info("Klartext wird angezeigt (protokolliert)");
+        // Auto-hide after 30 seconds for security
+        setTimeout(() => {
+          setRevealed(false);
+          setRevealedValue(null);
+        }, 30000);
+      }
+    } catch (err) {
+      toast.error("Fehler beim Entschlüsseln");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="flex items-center gap-2">
+        <Lock className="h-3 w-3 text-amber-500" />
+        {label}
+        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+          Verschlüsselt
+        </Badge>
+      </Label>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 relative">
+          <Input
+            value={revealed ? revealedValue : (maskedValue || "-")}
+            readOnly
+            className={`font-mono ${!hasValue ? "text-muted-foreground italic" : ""} ${revealed ? "bg-amber-50 border-amber-300" : "bg-gray-50"}`}
+          />
+          {revealed && (
+            <div className="absolute right-2 top-2">
+              <Badge className="bg-amber-100 text-amber-700 text-xs">Klartext</Badge>
+            </div>
+          )}
+        </div>
+        {hasValue && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleReveal}
+            disabled={loading}
+            className={revealed ? "border-amber-300 text-amber-700" : ""}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : revealed ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+      </div>
+      {revealed && (
+        <p className="text-xs text-amber-600">
+          ⚠️ Klartext wird in 30 Sekunden automatisch ausgeblendet
+        </p>
+      )}
+    </div>
+  );
+};
+
 export const StaffDetail = () => {
   const { memberId } = useParams();
   const navigate = useNavigate();
@@ -105,8 +196,9 @@ export const StaffDetail = () => {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
-  // HR Fields editing state
+  // HR Fields editing state (for NEW entries only)
   const [hrFields, setHrFields] = useState({
     email: "",
     mobile_phone: "",
@@ -146,10 +238,10 @@ export const StaffDetail = () => {
         zip_code: member.zip_code || "",
         city: member.city || "",
         date_of_birth: member.date_of_birth || "",
-        tax_id: member.tax_id || "",
-        social_security_number: member.social_security_number || "",
+        tax_id: "", // Never pre-fill encrypted fields
+        social_security_number: "",
         health_insurance: member.health_insurance || "",
-        bank_iban: member.bank_iban || "",
+        bank_iban: "",
         emergency_contact_name: member.emergency_contact_name || "",
         emergency_contact_phone: member.emergency_contact_phone || "",
       });
@@ -176,13 +268,28 @@ export const StaffDetail = () => {
   const handleSaveHRFields = async () => {
     setSaving(true);
     try {
+      // Only send non-empty sensitive fields
+      const dataToSend = { ...hrFields };
+      if (!dataToSend.tax_id) delete dataToSend.tax_id;
+      if (!dataToSend.social_security_number) delete dataToSend.social_security_number;
+      if (!dataToSend.bank_iban) delete dataToSend.bank_iban;
+
       const response = await axios.patch(
         `${BACKEND_URL}/api/staff/members/${memberId}/hr-fields`,
-        hrFields,
+        dataToSend,
         { headers }
       );
       setMember(response.data);
-      toast.success("HR-Daten gespeichert");
+      setEditMode(false);
+      toast.success("HR-Daten gespeichert (verschlüsselt)");
+      
+      // Clear sensitive fields from form
+      setHrFields(prev => ({
+        ...prev,
+        tax_id: "",
+        social_security_number: "",
+        bank_iban: ""
+      }));
       
       if (response.data.warnings?.length > 0) {
         response.data.warnings.forEach(w => {
@@ -558,11 +665,12 @@ export const StaffDetail = () => {
           {/* HR/Tax Tab (Admin only) */}
           {isAdmin && (
             <TabsContent value="hr" className="space-y-4">
-              <Alert>
-                <Shield className="h-4 w-4" />
-                <AlertTitle>Sensible Daten</AlertTitle>
-                <AlertDescription>
-                  Diese Daten sind nur für Administratoren sichtbar und werden im Audit-Log protokolliert.
+              <Alert className="border-amber-200 bg-amber-50">
+                <ShieldCheck className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Hochsensible Daten - Verschlüsselt</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  Steuer-ID, SV-Nummer und IBAN werden verschlüsselt gespeichert. 
+                  Das Anzeigen im Klartext wird protokolliert.
                 </AlertDescription>
               </Alert>
 
@@ -572,31 +680,28 @@ export const StaffDetail = () => {
                     <Building2 className="h-5 w-5" />
                     Steuer- und Sozialversicherungsdaten
                   </CardTitle>
-                  <CardDescription>Daten für Lohnabrechnung und Steuerbüro</CardDescription>
+                  <CardDescription>Verschlüsselte Daten für Lohnabrechnung und Steuerbüro</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="tax_id">Steuer-ID</Label>
-                      <Input
-                        id="tax_id"
-                        value={hrFields.tax_id}
-                        onChange={(e) => setHrFields({ ...hrFields, tax_id: e.target.value })}
-                        placeholder="12345678901 (11 Ziffern)"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="social_security_number">Sozialversicherungsnummer</Label>
-                      <Input
-                        id="social_security_number"
-                        value={hrFields.social_security_number}
-                        onChange={(e) => setHrFields({ ...hrFields, social_security_number: e.target.value })}
-                        placeholder="12 150485 K 123"
-                      />
-                    </div>
+                <CardContent className="space-y-6">
+                  {/* Display masked values */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <MaskedField
+                      label="Steuer-ID (11 Ziffern)"
+                      maskedValue={member.tax_id_masked}
+                      hasValue={member.tax_id_has_value}
+                      fieldName="tax_id"
+                      memberId={memberId}
+                    />
+                    <MaskedField
+                      label="Sozialversicherungsnummer"
+                      maskedValue={member.social_security_number_masked}
+                      hasValue={member.social_security_number_has_value}
+                      fieldName="social_security_number"
+                      memberId={memberId}
+                    />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="health_insurance">Krankenkasse</Label>
                       <Input
@@ -606,26 +711,75 @@ export const StaffDetail = () => {
                         placeholder="AOK Bayern"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bank_iban">Bank IBAN</Label>
-                      <div className="relative">
-                        <CreditCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="bank_iban"
-                          value={hrFields.bank_iban}
-                          onChange={(e) => setHrFields({ ...hrFields, bank_iban: e.target.value })}
-                          placeholder="DE89 3704 0044 0532 0130 00"
-                          className="pl-10"
-                        />
-                      </div>
+                    <MaskedField
+                      label="Bank IBAN"
+                      maskedValue={member.bank_iban_masked}
+                      hasValue={member.bank_iban_has_value}
+                      fieldName="bank_iban"
+                      memberId={memberId}
+                    />
+                  </div>
+
+                  {/* Edit section for new/updated values */}
+                  <div className="border-t pt-6 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium text-sm flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        Neue Werte eingeben (werden verschlüsselt gespeichert)
+                      </h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditMode(!editMode)}
+                      >
+                        {editMode ? "Abbrechen" : "Bearbeiten"}
+                      </Button>
                     </div>
+
+                    {editMode && (
+                      <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="new_tax_id">Neue Steuer-ID</Label>
+                            <Input
+                              id="new_tax_id"
+                              value={hrFields.tax_id}
+                              onChange={(e) => setHrFields({ ...hrFields, tax_id: e.target.value })}
+                              placeholder="12345678901 (11 Ziffern)"
+                              maxLength={11}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new_ssn">Neue SV-Nummer</Label>
+                            <Input
+                              id="new_ssn"
+                              value={hrFields.social_security_number}
+                              onChange={(e) => setHrFields({ ...hrFields, social_security_number: e.target.value })}
+                              placeholder="12150485K123"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new_iban">Neue IBAN</Label>
+                          <Input
+                            id="new_iban"
+                            value={hrFields.bank_iban}
+                            onChange={(e) => setHrFields({ ...hrFields, bank_iban: e.target.value })}
+                            placeholder="DE89370400440532013000"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          💡 Lassen Sie Felder leer, um bestehende Werte beizubehalten.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end pt-4">
                     <Button onClick={handleSaveHRFields} disabled={saving} className="rounded-full">
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                       <Save className="h-4 w-4 mr-2" />
-                      Steuer-/SV-Daten speichern
+                      Verschlüsselt speichern
                     </Button>
                   </div>
                 </CardContent>
