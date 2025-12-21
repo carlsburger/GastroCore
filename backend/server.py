@@ -42,7 +42,8 @@ from core.exceptions import (
 )
 from email_service import (
     send_confirmation_email, send_reminder_email, send_cancellation_email,
-    send_waitlist_notification, verify_cancel_token, get_email_templates
+    send_waitlist_notification, verify_cancel_token, get_email_templates,
+    send_test_email, get_smtp_status, is_smtp_configured
 )
 from pdf_service import generate_table_plan_pdf
 
