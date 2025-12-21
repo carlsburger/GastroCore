@@ -814,8 +814,6 @@ async def archive_waitlist_entry(entry_id: str, user: dict = Depends(require_man
 
 
 # ============== GUEST MANAGEMENT (Grey/Blacklist) ==============
-import re
-
 def escape_regex(pattern: str) -> str:
     """Escape special regex characters for safe MongoDB regex search"""
     return re.escape(pattern)
