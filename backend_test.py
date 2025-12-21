@@ -83,6 +83,24 @@ class GastroCoreAPITester:
         
         # For now, let's skip admin-specific tests and focus on what we can test
         return False
+
+    def test_seed_data(self):
+        """Test seeding initial data"""
+        print("\n🌱 Testing seed data creation...")
+        
+        result = self.make_request("POST", "seed", expected_status=200)
+        
+        if result["success"]:
+            self.log_test("Seed data creation", True, "Test users and data created successfully")
+            return True
+        else:
+            # Check if data already exists
+            if result["status_code"] == 200 and "bereits vorhanden" in str(result.get("data", {})):
+                self.log_test("Seed data creation", True, "Data already exists - OK")
+                return True
+            else:
+                self.log_test("Seed data creation", False, f"Status: {result['status_code']}")
+                return False
         """Test seeding initial data"""
         print("\n🌱 Testing seed data creation...")
         
