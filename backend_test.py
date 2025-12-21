@@ -1580,13 +1580,7 @@ class GastroCoreAPITester:
             self.log_test("Completeness score calculation", False, f"Status: {result['status_code']}")
             hr_success = False
         
-        return hr_successsitive fields", True, "Sensitive fields properly filtered")
-            else:
-                self.log_test("RBAC: Schichtleiter blocked from sensitive fields", False, "Sensitive fields visible to Schichtleiter")
-                hr_success = False
-        else:
-            self.log_test("RBAC: Schichtleiter blocked from sensitive fields", False, f"Status: {result['status_code']}")
-            hr_success = False
+        return hr_success
         
         # GET /api/staff/members/{id} als Admin → Alle Felder + completeness Score
         result = self.make_request("GET", f"staff/members/{member_id}", {}, self.tokens["admin"], expected_status=200)
