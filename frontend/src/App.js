@@ -127,6 +127,26 @@ function App() {
             }
           />
 
+          {/* Settings - Admin only */}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Message Logs - Admin only */}
+          <Route
+            path="/message-logs"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <MessageLogs />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
