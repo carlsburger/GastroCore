@@ -435,3 +435,67 @@ async def send_waitlist_notification(entry: dict, lang: str = "de") -> bool:
     text = f"{t['greeting']}\n\n{t['text']}\n\n{entry.get('date')}"
     
     return await send_email(entry['guest_email'], subject, html, text, "waitlist")
+
+
+
+async def send_email_template(to_email: str, subject: str, body: str) -> bool:
+    """Send a simple text email (for welcome emails, etc.)"""
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("SMTP credentials not configured, skipping email")
+        return False
+    
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+        msg['To'] = to_email
+        
+        # Simple HTML wrapper
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: 'Lato', Arial, sans-serif; line-height: 1.6; color: #00280b; background-color: #fafbed; margin: 0; padding: 0; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .logo {{ width: 60px; height: 60px; background-color: #00280b; border-radius: 50%; display: inline-block; line-height: 60px; }}
+                .logo span {{ color: #fafbed; font-family: Georgia, serif; font-size: 28px; font-weight: bold; }}
+                h1 {{ font-family: Georgia, serif; color: #00280b; margin: 20px 0 10px; font-size: 24px; }}
+                .content {{ background-color: #f3f6de; border-radius: 12px; padding: 30px; margin: 20px 0; white-space: pre-line; }}
+                .footer {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dce0c5; color: #4a5d4e; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo"><span>G</span></div>
+                    <h1>GastroCore</h1>
+                </div>
+                <div class="content">{body}</div>
+                <div class="footer">
+                    <p>&copy; {datetime.now().year} GastroCore. Alle Rechte vorbehalten.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        
+        context = ssl.create_default_context()
+        
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
+        
+        logger.info(f"Template email sent to {to_email}")
+        await log_email(to_email, subject, "template", "sent")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send template email to {to_email}: {str(e)}")
+        await log_email(to_email, subject, "template", "failed", str(e))
+        raise e
