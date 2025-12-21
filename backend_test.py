@@ -533,7 +533,7 @@ class GastroCoreAPITester:
             return False
 
     def test_audit_logging(self):
-        """Test audit log functionality"""
+        """Test audit log functionality - Specific requirement from review"""
         print("\n📋 Testing audit logging...")
         
         if "admin" not in self.tokens:
@@ -541,26 +541,140 @@ class GastroCoreAPITester:
             return False
         
         # Get audit logs
-        result = self.make_request("GET", "audit-logs", {"limit": 50}, 
+        result = self.make_request("GET", "audit-logs", {"limit": 100}, 
                                  self.tokens["admin"], expected_status=200)
-        if result["success"] and isinstance(result["data"], list):
-            logs = result["data"]
-            self.log_test("Get audit logs", True, f"Retrieved {len(logs)} audit log entries")
-            
-            # Check if our test actions are logged
-            test_actions = ["create", "update", "status_change"]
-            logged_actions = [log["action"] for log in logs]
-            
-            for action in test_actions:
-                if action in logged_actions:
-                    self.log_test(f"Audit log contains {action}", True)
-                else:
-                    self.log_test(f"Audit log contains {action}", False, "Action not found in logs")
-            
-            return True
-        else:
+        if not result["success"]:
             self.log_test("Get audit logs", False, f"Status: {result['status_code']}")
             return False
+        
+        logs = result["data"]
+        self.log_test("Get audit logs", True, f"Retrieved {len(logs)} audit log entries")
+        
+        # 9. Audit-Log: Jede Status-Änderung erzeugt Audit-Eintrag
+        status_change_logs = [log for log in logs if log.get("action") == "status_change"]
+        if len(status_change_logs) > 0:
+            self.log_test("Audit-Log: Status changes create audit entries", True, 
+                        f"Found {len(status_change_logs)} status change audit entries")
+        else:
+            self.log_test("Audit-Log: Status changes create audit entries", False, 
+                        "No status change audit entries found")
+            return False
+        
+        # Check if our test status changes are logged
+        if hasattr(self, 'test_data') and "status_test_reservations" in self.test_data:
+            test_reservation_ids = self.test_data["status_test_reservations"]
+            logged_reservation_ids = [log.get("entity_id") for log in status_change_logs]
+            
+            found_test_logs = any(res_id in logged_reservation_ids for res_id in test_reservation_ids)
+            if found_test_logs:
+                self.log_test("Audit-Log: Test status changes are logged", True)
+            else:
+                self.log_test("Audit-Log: Test status changes are logged", False, 
+                            "Test status changes not found in audit logs")
+        
+        # Check audit log structure
+        if status_change_logs:
+            sample_log = status_change_logs[0]
+            required_fields = ["timestamp", "actor_id", "entity", "entity_id", "action"]
+            missing_fields = [field for field in required_fields if field not in sample_log]
+            
+            if not missing_fields:
+                self.log_test("Audit-Log: Proper structure", True, "All required fields present")
+            else:
+                self.log_test("Audit-Log: Proper structure", False, f"Missing fields: {missing_fields}")
+        
+        return True
+
+    def test_health_endpoint(self):
+        """Test health endpoint - Specific requirement from review"""
+        print("\n🏥 Testing health endpoint...")
+        
+        # 11. Health-Endpoint /api/health liefert 'healthy'
+        result = self.make_request("GET", "health", expected_status=200)
+        if result["success"]:
+            health_data = result["data"]
+            if health_data.get("status") == "healthy":
+                self.log_test("Health endpoint returns 'healthy'", True)
+            else:
+                self.log_test("Health endpoint returns 'healthy'", False, 
+                            f"Status: {health_data.get('status', 'unknown')}")
+                return False
+        else:
+            self.log_test("Health endpoint accessible", False, f"Status: {result['status_code']}")
+            return False
+        
+        return True
+
+    def test_error_handling(self):
+        """Test error handling - Specific requirement from review"""
+        print("\n⚠️ Testing error handling...")
+        
+        error_success = True
+        
+        # 12. Fehlerhandling: Ungültige Requests liefern saubere Error-Response mit error_code
+        
+        # Test invalid login
+        result = self.make_request("POST", "auth/login", 
+                                 {"email": "invalid@test.de", "password": "wrong"}, 
+                                 expected_status=401)
+        if result["success"]:
+            error_data = result["data"]
+            if "error_code" in error_data and "detail" in error_data:
+                self.log_test("Error handling: Invalid login returns proper error", True, 
+                            f"error_code: {error_data.get('error_code')}")
+            else:
+                self.log_test("Error handling: Invalid login returns proper error", False, 
+                            "Missing error_code or detail in response")
+                error_success = False
+        else:
+            self.log_test("Error handling: Invalid login returns proper error", False, 
+                        f"Expected 401, got {result['status_code']}")
+            error_success = False
+        
+        # Test invalid reservation data
+        invalid_reservation = {
+            "guest_name": "",  # Invalid: empty name
+            "guest_phone": "123",  # Invalid: too short
+            "party_size": 0,  # Invalid: zero people
+            "date": "invalid-date",  # Invalid: bad format
+            "time": "25:00"  # Invalid: bad time
+        }
+        
+        if "schichtleiter" in self.tokens:
+            result = self.make_request("POST", "reservations", invalid_reservation, 
+                                     self.tokens["schichtleiter"], expected_status=400)
+            if result["success"]:
+                error_data = result["data"]
+                if "error_code" in error_data and "detail" in error_data:
+                    self.log_test("Error handling: Invalid reservation returns proper error", True, 
+                                f"error_code: {error_data.get('error_code')}")
+                else:
+                    self.log_test("Error handling: Invalid reservation returns proper error", False, 
+                                "Missing error_code or detail in response")
+                    error_success = False
+            else:
+                self.log_test("Error handling: Invalid reservation returns proper error", False, 
+                            f"Expected 400, got {result['status_code']}")
+                error_success = False
+        
+        # Test accessing non-existent resource
+        result = self.make_request("GET", "reservations/non-existent-id", 
+                                 token=self.tokens.get("schichtleiter"), expected_status=404)
+        if result["success"]:
+            error_data = result["data"]
+            if "error_code" in error_data and "detail" in error_data:
+                self.log_test("Error handling: Not found returns proper error", True, 
+                            f"error_code: {error_data.get('error_code')}")
+            else:
+                self.log_test("Error handling: Not found returns proper error", False, 
+                            "Missing error_code or detail in response")
+                error_success = False
+        else:
+            self.log_test("Error handling: Not found returns proper error", False, 
+                        f"Expected 404, got {result['status_code']}")
+            error_success = False
+        
+        return error_success
 
     def test_filtering_functionality(self):
         """Test filtering reservations by status, area, and date"""
