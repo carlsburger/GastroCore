@@ -279,6 +279,16 @@ function App() {
             }
           />
 
+          {/* AI Assistant Module (Sprint 9) - Admin & Schichtleiter */}
+          <Route
+            path="/ai-assistant"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <AIAssistant />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
