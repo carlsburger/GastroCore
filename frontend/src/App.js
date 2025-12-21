@@ -241,6 +241,16 @@ function App() {
             }
           />
 
+          {/* Tax Office Module (Sprint 6) - Admin only */}
+          <Route
+            path="/taxoffice"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <TaxOfficeExports />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
