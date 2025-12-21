@@ -727,12 +727,66 @@ async def resend_payment_link(transaction_id: str, user: dict = Depends(require_
         transaction_id=transaction_id,
         action="link_resent",
         status=transaction.get("payment_status"),
-        actor=user
+        actor=user,
+        provider_response={"checkout_url": checkout_url}
     )
     
     return {
         "checkout_url": checkout_url,
         "message": "Zahlungslink bereit zum Versenden",
+        "success": True
+    }
+
+
+# ============== CANCEL PAYMENT (PUBLIC) ==============
+@payment_router.post("/cancel/{session_id}")
+async def cancel_payment(session_id: str):
+    """Handle payment cancellation (called from cancel page)"""
+    
+    transaction = await db.payment_transactions.find_one({"session_id": session_id})
+    if not transaction:
+        raise NotFoundException("Transaktion")
+    
+    # Only update if still pending (idempotent)
+    if transaction.get("payment_status") == PaymentStatus.PAYMENT_PENDING.value:
+        result = await db.payment_transactions.update_one(
+            {
+                "session_id": session_id,
+                "payment_status": PaymentStatus.PAYMENT_PENDING.value
+            },
+            {"$set": {
+                "payment_status": PaymentStatus.FAILED.value,
+                "cancel_reason": "user_cancelled",
+                "updated_at": now_iso()
+            }}
+        )
+        
+        if result.modified_count > 0:
+            # Update entity status
+            entity_type = transaction.get("entity_type")
+            entity_id = transaction.get("entity_id")
+            
+            if entity_type == "reservation":
+                await db.reservations.update_one(
+                    {"id": entity_id},
+                    {"$set": {"payment_status": PaymentStatus.FAILED.value, "updated_at": now_iso()}}
+                )
+            elif entity_type == "event_booking":
+                await db.event_bookings.update_one(
+                    {"id": entity_id},
+                    {"$set": {"payment_status": PaymentStatus.FAILED.value, "updated_at": now_iso()}}
+                )
+            
+            await create_payment_log(
+                transaction_id=transaction["id"],
+                action="user_cancelled",
+                status=PaymentStatus.FAILED.value,
+                provider_response={"reason": "user_cancelled"}
+            )
+    
+    return {
+        "message": "Zahlung abgebrochen",
+        "status": PaymentStatus.FAILED.value,
         "success": True
     }
 
