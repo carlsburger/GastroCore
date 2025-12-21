@@ -900,10 +900,17 @@ async def archive_reward(reward_id: str, user: dict = Depends(require_admin)):
 # ============== LOYALTY SETTINGS ==============
 async def get_loyalty_settings() -> dict:
     """Get loyalty settings"""
-    settings = await db.loyalty_settings.find_one({"type": "loyalty"})
+    settings = await db.loyalty_settings.find_one({"type": "loyalty"}, {"_id": 0})
     if not settings:
         return LoyaltySettings().model_dump()
-    return settings
+    # Remove MongoDB _id if present and return only serializable fields
+    return {
+        "points_per_euro": settings.get("points_per_euro", 0.1),
+        "max_points_per_transaction": settings.get("max_points_per_transaction", 100),
+        "qr_validity_seconds": settings.get("qr_validity_seconds", 90),
+        "points_expiry_days": settings.get("points_expiry_days"),
+        "rounding": settings.get("rounding", "floor")
+    }
 
 
 @loyalty_router.get("/settings")
