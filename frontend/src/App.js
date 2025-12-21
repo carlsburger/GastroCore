@@ -45,6 +45,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/book" element={<BookingWidget />} />
           <Route path="/cancel/:reservationId" element={<CancelReservation />} />
+          <Route path="/confirm/:reservationId" element={<ConfirmReservation />} />
           
           {/* Change Password (authenticated but no role check) */}
           <Route
