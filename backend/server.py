@@ -1781,6 +1781,9 @@ from staff_module import staff_router, seed_work_areas, seed_sample_staff
 # Import Tax Office Module (Sprint 6 - Steuerbüro Exporte)
 from taxoffice_module import taxoffice_router
 
+# Import Loyalty Module (Sprint 7 - Kunden-App & Punkte-System)
+from loyalty_module import loyalty_router, customer_router
+
 # Add seed events endpoint BEFORE including routers
 @api_router.post("/seed-events", tags=["Admin"])
 async def seed_events_endpoint(user: dict = Depends(require_admin)):
