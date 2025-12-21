@@ -1305,6 +1305,185 @@ class GastroCoreAPITester:
         
         return settings_success
 
+    def test_security_enhancement_sprint72(self):
+        """Test Security Enhancement (Sprint 7.2) - As per review request"""
+        print("\n🔒 Testing Security Enhancement (Sprint 7.2)...")
+        
+        if "admin" not in self.tokens or "schichtleiter" not in self.tokens:
+            self.log_test("Security Enhancement", False, "Required tokens not available")
+            return False
+        
+        security_success = True
+        
+        # First, seed staff data if needed
+        result = self.make_request("POST", "seed-staff", {}, self.tokens["admin"], expected_status=200)
+        
+        # Get staff members to work with
+        result = self.make_request("GET", "staff/members", {}, self.tokens["admin"], expected_status=200)
+        if not result["success"] or not result["data"]:
+            self.log_test("Get staff members for security testing", False, "No staff members available")
+            return False
+        
+        staff_member = result["data"][0]
+        member_id = staff_member["id"]
+        
+        # Add some test HR data first
+        hr_data = {
+            "tax_id": "12345678901",
+            "social_security_number": "123456789012",
+            "bank_iban": "DE89370400440532013000"
+        }
+        
+        result = self.make_request("PATCH", f"staff/members/{member_id}/hr-fields", 
+                                 hr_data, self.tokens["admin"], expected_status=200)
+        if not result["success"]:
+            self.log_test("Setup HR data for testing", False, f"Status: {result['status_code']}")
+            return False
+        
+        # ============== SECURITY TEST CASES ==============
+        
+        # 1) RBAC: Schichtleiter sieht KEINE sensitiven Felder
+        print("  Testing RBAC: Schichtleiter field filtering...")
+        result = self.make_request("GET", "staff/members", {}, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            schichtleiter_data = result["data"][0] if result["data"] else {}
+            
+            # Check that NO sensitive fields are present
+            sensitive_fields = ["tax_id", "social_security_number", "bank_iban", 
+                              "tax_id_masked", "social_security_number_masked", "bank_iban_masked"]
+            found_sensitive = [field for field in sensitive_fields if field in schichtleiter_data]
+            
+            if not found_sensitive:
+                self.log_test("RBAC: Schichtleiter sees NO sensitive fields", True, 
+                            "✅ CRITICAL SECURITY TEST PASSED")
+            else:
+                self.log_test("RBAC: Schichtleiter sees NO sensitive fields", False, 
+                            f"❌ CRITICAL SECURITY BREACH: Found fields: {found_sensitive}")
+                security_success = False
+        else:
+            self.log_test("RBAC: Schichtleiter field filtering", False, f"Status: {result['status_code']}")
+            security_success = False
+        
+        # 2) Admin sieht maskierte Felder (nicht Klartext!)
+        print("  Testing Admin masked field display...")
+        result = self.make_request("GET", "staff/members", {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            admin_data = result["data"][0] if result["data"] else {}
+            
+            # Check for masked fields (should be present)
+            masked_fields = ["tax_id_masked", "social_security_number_masked", "bank_iban_masked"]
+            found_masked = [field for field in masked_fields if field in admin_data and admin_data[field]]
+            
+            # Check that cleartext fields are NOT present
+            cleartext_fields = ["tax_id", "social_security_number", "bank_iban"]
+            found_cleartext = [field for field in cleartext_fields if field in admin_data and admin_data[field] and not admin_data[field].startswith("ENC:")]
+            
+            if found_masked and not found_cleartext:
+                self.log_test("Admin sees masked fields (not cleartext)", True, 
+                            f"Masked fields: {found_masked}")
+                
+                # Validate masking format
+                masking_valid = True
+                if "tax_id_masked" in admin_data and admin_data["tax_id_masked"]:
+                    if not admin_data["tax_id_masked"].endswith("01"):  # Should show last 2 digits
+                        masking_valid = False
+                
+                if "bank_iban_masked" in admin_data and admin_data["bank_iban_masked"]:
+                    if not "000" in admin_data["bank_iban_masked"]:  # Should show last 4
+                        masking_valid = False
+                
+                if masking_valid:
+                    self.log_test("Masking format validation", True, "Masking format correct")
+                else:
+                    self.log_test("Masking format validation", False, "Masking format incorrect")
+                    security_success = False
+            else:
+                self.log_test("Admin sees masked fields (not cleartext)", False, 
+                            f"Found cleartext: {found_cleartext}, Found masked: {found_masked}")
+                security_success = False
+        else:
+            self.log_test("Admin masked field display", False, f"Status: {result['status_code']}")
+            security_success = False
+        
+        # 3) Verschlüsselung bei Speicherung
+        print("  Testing encryption at storage...")
+        new_hr_data = {
+            "tax_id": "98765432109",
+            "social_security_number": "987654321098",
+            "bank_iban": "DE89370400440532013999"
+        }
+        
+        result = self.make_request("PATCH", f"staff/members/{member_id}/hr-fields", 
+                                 new_hr_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            response_data = result["data"]
+            
+            # Response should show masked values, not cleartext
+            has_masked = any(field in response_data for field in ["tax_id_masked", "social_security_number_masked", "bank_iban_masked"])
+            has_cleartext = any(field in response_data and response_data[field] == new_hr_data[field] 
+                              for field in ["tax_id", "social_security_number", "bank_iban"])
+            
+            if has_masked and not has_cleartext:
+                self.log_test("Encryption at storage", True, "Response shows masked values")
+            else:
+                self.log_test("Encryption at storage", False, "Response shows cleartext values")
+                security_success = False
+        else:
+            self.log_test("Encryption at storage", False, f"Status: {result['status_code']}")
+            security_success = False
+        
+        # 4) Reveal-Endpoint (Admin only mit Audit)
+        print("  Testing reveal endpoint for Admin...")
+        reveal_data = {"field": "tax_id"}
+        result = self.make_request("POST", f"staff/members/{member_id}/reveal-field", 
+                                 reveal_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            reveal_response = result["data"]
+            if (reveal_response.get("revealed") == True and 
+                reveal_response.get("audit_logged") == True and
+                reveal_response.get("value")):
+                self.log_test("Reveal endpoint (Admin)", True, "Cleartext returned with audit")
+            else:
+                self.log_test("Reveal endpoint (Admin)", False, f"Invalid response: {reveal_response}")
+                security_success = False
+        else:
+            self.log_test("Reveal endpoint (Admin)", False, f"Status: {result['status_code']}")
+            security_success = False
+        
+        # 5) Reveal-Endpoint für Schichtleiter VERBOTEN
+        print("  Testing reveal endpoint blocked for Schichtleiter...")
+        result = self.make_request("POST", f"staff/members/{member_id}/reveal-field", 
+                                 reveal_data, self.tokens["schichtleiter"], expected_status=403)
+        if result["success"]:
+            self.log_test("Reveal endpoint blocked for Schichtleiter", True, 
+                        "✅ CRITICAL SECURITY TEST PASSED - 403 Forbidden")
+        else:
+            self.log_test("Reveal endpoint blocked for Schichtleiter", False, 
+                        f"❌ CRITICAL SECURITY BREACH: Expected 403, got {result['status_code']}")
+            security_success = False
+        
+        # 6) Audit-Log für Reveal-Aktionen
+        print("  Testing audit logs for reveal actions...")
+        result = self.make_request("GET", "audit-logs", 
+                                 {"entity": "staff_member_hr", "action": "reveal_sensitive_field"}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            audit_logs = result["data"]
+            reveal_logs = [log for log in audit_logs if log.get("action") == "reveal_sensitive_field"]
+            
+            if reveal_logs:
+                self.log_test("Audit logging for reveal actions", True, 
+                            f"Found {len(reveal_logs)} reveal audit entries")
+            else:
+                self.log_test("Audit logging for reveal actions", False, 
+                            "No reveal audit entries found")
+                security_success = False
+        else:
+            self.log_test("Audit logging for reveal actions", False, f"Status: {result['status_code']}")
+            security_success = False
+        
+        return security_success
+
     def test_hr_fields_extension_sprint71(self):
         """Test HR Fields Extension (Sprint 7.1) - As per review request"""
         print("\n🏢 Testing HR Fields Extension (Sprint 7.1)...")
