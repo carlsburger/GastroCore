@@ -1530,6 +1530,58 @@ class GastroCoreAPITester:
             if not has_sensitive_fields:
                 self.log_test("RBAC: Schichtleiter blocked from sensitive fields", True, "Sensitive fields properly filtered")
             else:
+                self.log_test("RBAC: Schichtleiter blocked from sensitive fields", False, "Sensitive fields exposed")
+                hr_success = False
+        else:
+            self.log_test("RBAC: Schichtleiter field filtering", False, f"Status: {result['status_code']}")
+            hr_success = False
+        
+        # 2) HR-Felder Update (Admin only)
+        print("  Testing HR fields update...")
+        hr_update_data = {
+            "tax_id": "12345678901",
+            "social_security_number": "123456789012",
+            "bank_iban": "DE89370400440532013000",
+            "health_insurance": "AOK Bayern",
+            "emergency_contact_name": "Max Mustermann",
+            "emergency_contact_phone": "+49 170 1234567"
+        }
+        
+        result = self.make_request("PATCH", f"staff/members/{member_id}/hr-fields", 
+                                 hr_update_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("HR fields update (Admin)", True, "HR fields updated successfully")
+        else:
+            self.log_test("HR fields update (Admin)", False, f"Status: {result['status_code']}")
+            hr_success = False
+        
+        # 3) Schichtleiter kann NICHT HR-Felder updaten
+        result = self.make_request("PATCH", f"staff/members/{member_id}/hr-fields", 
+                                 {"tax_id": "99999999999"}, self.tokens["schichtleiter"], expected_status=403)
+        if result["success"]:
+            self.log_test("HR fields update blocked for Schichtleiter", True, "403 Forbidden as expected")
+        else:
+            self.log_test("HR fields update blocked for Schichtleiter", False, 
+                        f"Expected 403, got {result['status_code']}")
+            hr_success = False
+        
+        # 4) Completeness Score (Admin only)
+        result = self.make_request("GET", f"staff/members/{member_id}/completeness", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            completeness = result["data"]
+            if "score" in completeness and "checklist" in completeness:
+                self.log_test("Completeness score calculation", True, 
+                            f"Score: {completeness.get('score')}%")
+            else:
+                self.log_test("Completeness score calculation", False, "Missing score or checklist")
+                hr_success = False
+        else:
+            self.log_test("Completeness score calculation", False, f"Status: {result['status_code']}")
+            hr_success = False
+        
+        return hr_successsitive fields", True, "Sensitive fields properly filtered")
+            else:
                 self.log_test("RBAC: Schichtleiter blocked from sensitive fields", False, "Sensitive fields visible to Schichtleiter")
                 hr_success = False
         else:
