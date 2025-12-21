@@ -500,7 +500,7 @@ class GastroCoreAPITester:
         result = self.make_request("POST", "reservations", reservation_data, 
                                  self.tokens["schichtleiter"], expected_status=200)
         if not result["success"]:
-            self.log_test("Create no-show test reservation", False)
+            self.log_test("Create no-show test reservation", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
             return False
         
         no_show_reservation_id = result["data"]["id"]
