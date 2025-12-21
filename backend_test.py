@@ -2070,6 +2070,392 @@ class GastroCoreAPITester:
         
         return seed_success
 
+    def test_sprint6_taxoffice_settings(self):
+        """Test Sprint 6: Tax Office Settings API"""
+        print("\n🏛️ Testing Tax Office Settings...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Tax Office Settings", False, "Admin token not available")
+            return False
+        
+        settings_success = True
+        
+        # 1. GET /api/taxoffice/settings - Get default settings
+        result = self.make_request("GET", "taxoffice/settings", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            settings = result["data"]
+            self.log_test("GET /api/taxoffice/settings", True, f"Retrieved settings with {len(settings)} fields")
+            
+            # Check default values
+            expected_fields = ["recipient_emails", "sender_name", "subject_template", "filename_prefix"]
+            missing_fields = [field for field in expected_fields if field not in settings]
+            if not missing_fields:
+                self.log_test("Tax Office Settings: Default structure", True, "All expected fields present")
+            else:
+                self.log_test("Tax Office Settings: Default structure", False, f"Missing fields: {missing_fields}")
+                settings_success = False
+        else:
+            self.log_test("GET /api/taxoffice/settings", False, f"Status: {result['status_code']}")
+            settings_success = False
+        
+        # 2. PATCH /api/taxoffice/settings - Update settings
+        update_data = {
+            "recipient_emails": ["steuerburo@example.de"],
+            "cc_emails": ["hr@gastrocore.de"],
+            "sender_name": "GastroCore HR Team",
+            "subject_template": "Carlsburg - Steuerbüro Export {period}",
+            "filename_prefix": "carlsburg_export",
+            "is_active": True
+        }
+        
+        result = self.make_request("PATCH", "taxoffice/settings", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_settings = result["data"]
+            if updated_settings.get("recipient_emails") == ["steuerburo@example.de"]:
+                self.log_test("PATCH /api/taxoffice/settings", True, "Settings updated successfully")
+            else:
+                self.log_test("PATCH /api/taxoffice/settings", False, "Settings not updated correctly")
+                settings_success = False
+        else:
+            self.log_test("PATCH /api/taxoffice/settings", False, f"Status: {result['status_code']}")
+            settings_success = False
+        
+        return settings_success
+
+    def test_sprint6_taxoffice_export_jobs(self):
+        """Test Sprint 6: Tax Office Export Jobs API"""
+        print("\n📊 Testing Tax Office Export Jobs...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Tax Office Export Jobs", False, "Admin token not available")
+            return False
+        
+        jobs_success = True
+        
+        # 1. GET /api/taxoffice/jobs - List all jobs (initially empty)
+        result = self.make_request("GET", "taxoffice/jobs", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            jobs = result["data"]
+            self.log_test("GET /api/taxoffice/jobs", True, f"Retrieved {len(jobs)} export jobs")
+        else:
+            self.log_test("GET /api/taxoffice/jobs", False, f"Status: {result['status_code']}")
+            jobs_success = False
+        
+        # 2. POST /api/taxoffice/jobs - Create monthly hours export job
+        job_data = {
+            "export_type": "monthly_hours",
+            "year": 2024,
+            "month": 12,
+            "include_pdf": True,
+            "include_csv": True,
+            "notes": "Test export for December 2024"
+        }
+        
+        result = self.make_request("POST", "taxoffice/jobs", job_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            job_id = result["data"]["id"]
+            self.test_data["taxoffice_job_id"] = job_id
+            self.log_test("POST /api/taxoffice/jobs (monthly_hours)", True, f"Job created with ID: {job_id}")
+            
+            # Check job status
+            if result["data"].get("status") == "pending":
+                self.log_test("Export Job Status", True, "Job created with 'pending' status")
+            else:
+                self.log_test("Export Job Status", False, f"Expected 'pending', got: {result['data'].get('status')}")
+        else:
+            self.log_test("POST /api/taxoffice/jobs (monthly_hours)", False, f"Status: {result['status_code']}")
+            jobs_success = False
+            return jobs_success
+        
+        # 3. POST /api/taxoffice/jobs - Create shift list export job
+        shift_job_data = {
+            "export_type": "shift_list",
+            "year": 2024,
+            "month": 12,
+            "include_csv": True,
+            "include_pdf": False,
+            "notes": "Test shift list export"
+        }
+        
+        result = self.make_request("POST", "taxoffice/jobs", shift_job_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            shift_job_id = result["data"]["id"]
+            self.test_data["taxoffice_shift_job_id"] = shift_job_id
+            self.log_test("POST /api/taxoffice/jobs (shift_list)", True, f"Shift job created with ID: {shift_job_id}")
+        else:
+            self.log_test("POST /api/taxoffice/jobs (shift_list)", False, f"Status: {result['status_code']}")
+            jobs_success = False
+        
+        # 4. GET /api/taxoffice/jobs/{job_id} - Get job details
+        result = self.make_request("GET", f"taxoffice/jobs/{job_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            job_details = result["data"]
+            if job_details.get("id") == job_id:
+                self.log_test("GET /api/taxoffice/jobs/{job_id}", True, 
+                            f"Job details retrieved, status: {job_details.get('status')}")
+            else:
+                self.log_test("GET /api/taxoffice/jobs/{job_id}", False, "Job ID mismatch")
+                jobs_success = False
+        else:
+            self.log_test("GET /api/taxoffice/jobs/{job_id}", False, f"Status: {result['status_code']}")
+            jobs_success = False
+        
+        return jobs_success
+
+    def test_sprint6_taxoffice_downloads(self):
+        """Test Sprint 6: Tax Office Export Downloads"""
+        print("\n📥 Testing Tax Office Export Downloads...")
+        
+        if "admin" not in self.tokens or "taxoffice_job_id" not in self.test_data:
+            self.log_test("Tax Office Downloads", False, "Prerequisites not met")
+            return False
+        
+        downloads_success = True
+        job_id = self.test_data["taxoffice_job_id"]
+        
+        # Wait a moment for job to potentially complete (it runs in background)
+        import time
+        time.sleep(2)
+        
+        # Check job status first
+        result = self.make_request("GET", f"taxoffice/jobs/{job_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            job = result["data"]
+            job_status = job.get("status")
+            files = job.get("files", [])
+            
+            self.log_test("Export Job Generation Status", True, 
+                        f"Status: {job_status}, Files: {len(files)}")
+            
+            if job_status == "ready" and len(files) > 0:
+                # Test downloading first file (CSV)
+                try:
+                    url = f"{self.base_url}/api/taxoffice/jobs/{job_id}/download/0"
+                    headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+                    response = requests.get(url, headers=headers)
+                    
+                    if response.status_code == 200:
+                        content_type = response.headers.get('content-type', '')
+                        if 'text/csv' in content_type:
+                            self.log_test("GET /api/taxoffice/jobs/{job_id}/download/0 (CSV)", True, 
+                                        f"CSV downloaded, size: {len(response.content)} bytes")
+                        else:
+                            self.log_test("GET /api/taxoffice/jobs/{job_id}/download/0 (CSV)", False, 
+                                        f"Expected CSV, got: {content_type}")
+                            downloads_success = False
+                    else:
+                        self.log_test("GET /api/taxoffice/jobs/{job_id}/download/0 (CSV)", False, 
+                                    f"Status: {response.status_code}")
+                        downloads_success = False
+                except Exception as e:
+                    self.log_test("GET /api/taxoffice/jobs/{job_id}/download/0 (CSV)", False, f"Error: {str(e)}")
+                    downloads_success = False
+                
+                # Test downloading second file (PDF) if exists
+                if len(files) > 1:
+                    try:
+                        url = f"{self.base_url}/api/taxoffice/jobs/{job_id}/download/1"
+                        headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+                        response = requests.get(url, headers=headers)
+                        
+                        if response.status_code == 200:
+                            content_type = response.headers.get('content-type', '')
+                            if 'application/pdf' in content_type:
+                                self.log_test("GET /api/taxoffice/jobs/{job_id}/download/1 (PDF)", True, 
+                                            f"PDF downloaded, size: {len(response.content)} bytes")
+                            else:
+                                self.log_test("GET /api/taxoffice/jobs/{job_id}/download/1 (PDF)", False, 
+                                            f"Expected PDF, got: {content_type}")
+                                downloads_success = False
+                        else:
+                            self.log_test("GET /api/taxoffice/jobs/{job_id}/download/1 (PDF)", False, 
+                                        f"Status: {response.status_code}")
+                            downloads_success = False
+                    except Exception as e:
+                        self.log_test("GET /api/taxoffice/jobs/{job_id}/download/1 (PDF)", False, f"Error: {str(e)}")
+                        downloads_success = False
+            else:
+                self.log_test("Export Job Files Ready", False, 
+                            f"Job not ready or no files. Status: {job_status}, Files: {len(files)}")
+                downloads_success = False
+        else:
+            self.log_test("Check Job Status for Downloads", False, f"Status: {result['status_code']}")
+            downloads_success = False
+        
+        return downloads_success
+
+    def test_sprint6_staff_registration(self):
+        """Test Sprint 6: Staff Registration Package"""
+        print("\n👤 Testing Staff Registration Package...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Staff Registration Package", False, "Admin token not available")
+            return False
+        
+        registration_success = True
+        
+        # First, get a staff member ID (use existing or create one)
+        result = self.make_request("GET", "staff/members", token=self.tokens["admin"], expected_status=200)
+        if not result["success"] or not result["data"]:
+            self.log_test("Staff Registration Package", False, "No staff members available")
+            return False
+        
+        staff_member = result["data"][0]  # Use first staff member
+        staff_id = staff_member.get("id")
+        
+        # POST /api/taxoffice/staff-registration/{staff_id}
+        registration_data = {
+            "staff_member_id": staff_id,
+            "include_documents": [],  # No documents for now
+            "additional_notes": "Test registration package for tax office"
+        }
+        
+        result = self.make_request("POST", f"taxoffice/staff-registration/{staff_id}", 
+                                 registration_data, self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            job_id = result["data"]["id"]
+            self.test_data["staff_registration_job_id"] = job_id
+            
+            # Check if it's a staff registration job
+            if result["data"].get("export_type") == "staff_registration":
+                self.log_test("POST /api/taxoffice/staff-registration/{staff_id}", True, 
+                            f"Registration package created with job ID: {job_id}")
+                
+                # Check if PDF file was generated
+                files = result["data"].get("files", [])
+                if len(files) > 0 and files[0].get("type") == "pdf":
+                    self.log_test("Staff Registration PDF Generation", True, 
+                                f"PDF generated: {files[0].get('name')}")
+                else:
+                    self.log_test("Staff Registration PDF Generation", False, "No PDF file generated")
+                    registration_success = False
+            else:
+                self.log_test("POST /api/taxoffice/staff-registration/{staff_id}", False, 
+                            f"Wrong export type: {result['data'].get('export_type')}")
+                registration_success = False
+        else:
+            self.log_test("POST /api/taxoffice/staff-registration/{staff_id}", False, 
+                        f"Status: {result['status_code']}")
+            registration_success = False
+        
+        return registration_success
+
+    def test_sprint6_staff_tax_fields(self):
+        """Test Sprint 6: Staff Tax Fields Update"""
+        print("\n💼 Testing Staff Tax Fields Update...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Staff Tax Fields Update", False, "Admin token not available")
+            return False
+        
+        tax_fields_success = True
+        
+        # Get a staff member ID
+        result = self.make_request("GET", "staff/members", token=self.tokens["admin"], expected_status=200)
+        if not result["success"] or not result["data"]:
+            self.log_test("Staff Tax Fields Update", False, "No staff members available")
+            return False
+        
+        staff_member = result["data"][0]
+        staff_id = staff_member.get("id")
+        
+        # PATCH /api/taxoffice/staff/{staff_id}/tax-fields
+        tax_fields_data = {
+            "tax_id": "12345678901",
+            "tax_class": "1",
+            "social_security_number": "12345678901234",
+            "health_insurance": "AOK Bayern",
+            "bank_name": "Deutsche Bank",
+            "iban": "DE89370400440532013000",
+            "bic": "COBADEFFXXX",
+            "hourly_wage": 15.50,
+            "monthly_salary": None,
+            "vacation_days": 30,
+            "children_count": 0,
+            "church_tax": False
+        }
+        
+        result = self.make_request("PATCH", f"taxoffice/staff/{staff_id}/tax-fields", 
+                                 tax_fields_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            response = result["data"]
+            if response.get("success") and "aktualisiert" in response.get("message", ""):
+                self.log_test("PATCH /api/taxoffice/staff/{staff_id}/tax-fields", True, 
+                            "Tax fields updated successfully")
+                
+                # Verify the update by getting the staff member again
+                result = self.make_request("GET", f"staff/members/{staff_id}", 
+                                         token=self.tokens["admin"], expected_status=200)
+                if result["success"]:
+                    updated_member = result["data"]
+                    tax_fields = updated_member.get("tax_fields", {})
+                    if tax_fields.get("tax_id") == "12345678901":
+                        self.log_test("Tax Fields Verification", True, "Tax fields saved correctly")
+                    else:
+                        self.log_test("Tax Fields Verification", False, "Tax fields not saved correctly")
+                        tax_fields_success = False
+                else:
+                    self.log_test("Tax Fields Verification", False, "Could not verify tax fields update")
+                    tax_fields_success = False
+            else:
+                self.log_test("PATCH /api/taxoffice/staff/{staff_id}/tax-fields", False, 
+                            f"Unexpected response: {response}")
+                tax_fields_success = False
+        else:
+            self.log_test("PATCH /api/taxoffice/staff/{staff_id}/tax-fields", False, 
+                        f"Status: {result['status_code']}")
+            tax_fields_success = False
+        
+        return tax_fields_success
+
+    def test_sprint6_audit_logs(self):
+        """Test Sprint 6: Tax Office Audit Logs"""
+        print("\n📋 Testing Tax Office Audit Logs...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Tax Office Audit Logs", False, "Admin token not available")
+            return False
+        
+        # Get audit logs and check for tax office operations
+        result = self.make_request("GET", "audit-logs", {"limit": 100}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            logs = result["data"]
+            
+            # Look for tax office related audit entries
+            taxoffice_logs = [log for log in logs if 
+                            "taxoffice" in log.get("entity", "") or 
+                            "export_job" in log.get("entity", "") or
+                            "tax_fields" in log.get("action", "")]
+            
+            if len(taxoffice_logs) > 0:
+                self.log_test("Tax Office Audit Logs", True, 
+                            f"Found {len(taxoffice_logs)} tax office audit entries")
+                
+                # Check audit log structure
+                sample_log = taxoffice_logs[0]
+                required_fields = ["timestamp", "actor_id", "entity", "entity_id", "action"]
+                missing_fields = [field for field in required_fields if field not in sample_log]
+                
+                if not missing_fields:
+                    self.log_test("Tax Office Audit Log Structure", True, "All required fields present")
+                else:
+                    self.log_test("Tax Office Audit Log Structure", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Tax Office Audit Logs", False, "No tax office audit entries found")
+                return False
+        else:
+            self.log_test("Tax Office Audit Logs", False, f"Status: {result['status_code']}")
+            return False
+        
+        return True
+
     def cleanup_test_data(self):
         """Clean up test data created during testing"""
         print("\n🧹 Cleaning up test data...")
