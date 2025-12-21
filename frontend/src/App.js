@@ -35,6 +35,8 @@ import StaffDetail from "./pages/StaffDetail";
 import Schedule from "./pages/Schedule";
 // Tax Office Module (Sprint 6)
 import TaxOfficeExports from "./pages/TaxOfficeExports";
+// Marketing Module (Sprint 8)
+import Marketing from "./pages/Marketing";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
