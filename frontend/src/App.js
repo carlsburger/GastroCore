@@ -37,6 +37,7 @@ import Schedule from "./pages/Schedule";
 import TaxOfficeExports from "./pages/TaxOfficeExports";
 // Marketing Module (Sprint 8)
 import Marketing from "./pages/Marketing";
+import Unsubscribe from "./pages/Unsubscribe";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
