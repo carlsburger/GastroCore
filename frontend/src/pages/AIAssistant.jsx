@@ -71,6 +71,11 @@ export default function AIAssistant() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("assistant");
 
+  // Schedule config states
+  const [scheduleConfig, setScheduleConfig] = useState(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [editingConfig, setEditingConfig] = useState(null);
+
   // Suggestion states
   const [generatingSuggestion, setGeneratingSuggestion] = useState(false);
   const [currentSuggestion, setCurrentSuggestion] = useState(null);
@@ -96,12 +101,16 @@ export default function AIAssistant() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [statusRes, logsRes] = await Promise.all([
+      const [statusRes, logsRes, configRes] = await Promise.all([
         api.get("/api/ai/status", { headers }),
         api.get("/api/ai/logs?limit=50", { headers }),
+        api.get("/api/ai/schedule/config", { headers }).catch(() => ({ data: null })),
       ]);
       setStatus(statusRes.data);
       setLogs(logsRes.data);
+      if (configRes.data) {
+        setScheduleConfig(configRes.data);
+      }
     } catch (error) {
       toast({
         title: "Fehler",
