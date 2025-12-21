@@ -663,6 +663,12 @@ export const Dashboard = () => {
                           {statusConfig?.label || reservation.status}
                         </Badge>
                         
+                        {/* Payment Status Badge */}
+                        <PaymentBadge 
+                          paymentStatus={reservation.payment_status} 
+                          amount={reservation.payment_amount || 0}
+                        />
+                        
                         {/* Quick Actions - 1 Click */}
                         {isSchichtleiter() && (
                           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
