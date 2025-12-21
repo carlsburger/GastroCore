@@ -1875,6 +1875,7 @@ app.include_router(loyalty_router)
 app.include_router(customer_router)
 app.include_router(marketing_router)
 app.include_router(marketing_public_router)
+app.include_router(ai_router)
 
 app.add_middleware(
     CORSMiddleware,
