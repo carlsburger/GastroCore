@@ -17,6 +17,7 @@ const translations = {
       payments: "Zahlungen",
       staff: "Mitarbeiter",
       schedule: "Dienstplan",
+      taxoffice: "Steuerbüro",
     },
     // Auth
     auth: {
