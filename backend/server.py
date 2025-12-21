@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from typing import List, Optional, Any, Dict
 import uuid
 import re
+import json
 from datetime import datetime, timezone, timedelta, date
 import logging
 from pathlib import Path
