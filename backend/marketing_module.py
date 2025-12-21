@@ -423,6 +423,8 @@ async def create_marketing_content(
         None, {"title": content["title"], "type": content["content_type"]}
     )
     
+    # Remove _id before returning (MongoDB adds it)
+    content.pop("_id", None)
     return content
 
 @marketing_router.patch("/{content_id}")
