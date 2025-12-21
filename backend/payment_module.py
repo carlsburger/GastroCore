@@ -597,33 +597,50 @@ async def handle_stripe_webhook(request: Request):
             new_status = PaymentStatus.FAILED.value
         
         if new_status:
-            await db.payment_transactions.update_one(
-                {"session_id": session_id},
+            # ATOMIC UPDATE: Only update if not already in final state (idempotent webhook handling)
+            result = await db.payment_transactions.update_one(
+                {
+                    "session_id": session_id,
+                    "payment_status": {"$nin": [PaymentStatus.PAID.value, PaymentStatus.REFUNDED.value]}
+                },
                 {"$set": {"payment_status": new_status, "updated_at": now_iso()}}
             )
             
-            # Update entity
-            entity_type = transaction.get("entity_type")
-            entity_id = transaction.get("entity_id")
-            
-            if entity_type == "reservation":
-                update_data = {"payment_status": new_status, "updated_at": now_iso()}
-                if new_status == PaymentStatus.PAID.value:
-                    update_data["status"] = "bestaetigt"
-                await db.reservations.update_one({"id": entity_id}, {"$set": update_data})
+            # Only update entity if transaction was actually updated
+            if result.modified_count > 0:
+                entity_type = transaction.get("entity_type")
+                entity_id = transaction.get("entity_id")
                 
-            elif entity_type == "event_booking":
-                update_data = {"payment_status": new_status, "updated_at": now_iso()}
-                if new_status == PaymentStatus.PAID.value:
-                    update_data["status"] = "confirmed"
-                await db.event_bookings.update_one({"id": entity_id}, {"$set": update_data})
-            
-            await create_payment_log(
-                transaction_id=transaction["id"],
-                action=f"webhook_{event_type}",
-                status=new_status,
-                provider_response={"event_type": event_type}
-            )
+                if entity_type == "reservation":
+                    update_data = {"payment_status": new_status, "updated_at": now_iso()}
+                    if new_status == PaymentStatus.PAID.value:
+                        update_data["status"] = "bestaetigt"
+                    await db.reservations.update_one({"id": entity_id}, {"$set": update_data})
+                    
+                elif entity_type == "event_booking":
+                    update_data = {"payment_status": new_status, "updated_at": now_iso()}
+                    if new_status == PaymentStatus.PAID.value:
+                        update_data["status"] = "confirmed"
+                    await db.event_bookings.update_one({"id": entity_id}, {"$set": update_data})
+                
+                await create_payment_log(
+                    transaction_id=transaction["id"],
+                    action=f"webhook_{event_type}",
+                    status=new_status,
+                    provider_response={"event_type": event_type}
+                )
+                
+                # Audit log for webhook
+                await create_audit_log(
+                    SYSTEM_ACTOR,
+                    "payment_transaction",
+                    transaction["id"],
+                    f"webhook_{event_type}",
+                    {"payment_status": transaction.get("payment_status")},
+                    {"payment_status": new_status}
+                )
+            else:
+                logger.info(f"Webhook {event_type} ignored - transaction already processed")
     
     return {"status": "ok"}
 
