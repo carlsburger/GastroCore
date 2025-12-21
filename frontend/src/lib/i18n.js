@@ -12,6 +12,7 @@ const translations = {
       logout: "Abmelden",
       waitlist: "Warteliste",
       guests: "Gäste",
+      messageLogs: "Nachrichten",
     },
     // Auth
     auth: {
