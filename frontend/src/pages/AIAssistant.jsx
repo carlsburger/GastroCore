@@ -176,6 +176,48 @@ export default function AIAssistant() {
     }
   };
 
+  const openConfigDialog = () => {
+    setEditingConfig(JSON.parse(JSON.stringify(scheduleConfig || {})));
+    setConfigDialogOpen(true);
+  };
+
+  const saveScheduleConfig = async () => {
+    try {
+      await api.patch("/api/ai/schedule/config", editingConfig, { headers });
+      toast({ title: "Erfolg", description: "Konfiguration gespeichert" });
+      setConfigDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Fehler",
+        description: "Konfiguration konnte nicht gespeichert werden",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetScheduleConfig = async () => {
+    if (!window.confirm("Wirklich auf Standardwerte zurücksetzen?")) return;
+    try {
+      await api.post("/api/ai/schedule/config/reset", {}, { headers });
+      toast({ title: "Erfolg", description: "Konfiguration zurückgesetzt" });
+      setConfigDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({ title: "Fehler", description: "Zurücksetzen fehlgeschlagen", variant: "destructive" });
+    }
+  };
+
+  const updateConfigValue = (section, key, value) => {
+    setEditingConfig((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [key]: parseInt(value) || value,
+      },
+    }));
+  };
+
   const requestScheduleSuggestion = async () => {
     setGeneratingSuggestion(true);
     try {
