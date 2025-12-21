@@ -265,6 +265,16 @@ function App() {
             }
           />
 
+          {/* Marketing Module (Sprint 8) - Admin & Schichtleiter */}
+          <Route
+            path="/marketing"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Marketing />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
