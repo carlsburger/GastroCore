@@ -23,6 +23,7 @@ import {
   Building2,
   Utensils,
   Megaphone,
+  Bot,
 } from "lucide-react";
 
 const navItems = [
@@ -30,6 +31,7 @@ const navItems = [
   { path: "/service-terminal", icon: Utensils, label: "Service-Terminal", roles: ["admin", "schichtleiter"] },
   { path: "/events-admin", icon: Calendar, label: "nav.events", roles: ["admin", "schichtleiter"] },
   { path: "/marketing", icon: Megaphone, label: "Marketing", roles: ["admin", "schichtleiter"] },
+  { path: "/ai-assistant", icon: Bot, label: "KI-Assistent", roles: ["admin", "schichtleiter"] },
   { path: "/schedule", icon: CalendarClock, label: "nav.schedule", roles: ["admin", "schichtleiter"] },
   { path: "/staff", icon: UserCog, label: "nav.staff", roles: ["admin", "schichtleiter"] },
   { path: "/taxoffice", icon: Building2, label: "nav.taxoffice", roles: ["admin"] },
