@@ -366,7 +366,8 @@ async def create_area(data: AreaCreate, user: dict = Depends(require_admin)):
     await db.areas.insert_one(area)
     await create_audit_log(user, "area", area["id"], "create", None, safe_dict_for_audit(area))
     
-    return area
+    # Return without _id
+    return {k: v for k, v in area.items() if k != "_id"}
 
 @api_router.put("/areas/{area_id}", tags=["Areas"])
 async def update_area(area_id: str, data: AreaCreate, user: dict = Depends(require_admin)):
