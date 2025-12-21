@@ -525,7 +525,7 @@ async def approve_content(
         )
     
     await create_audit_log(
-        db, user, "marketing_content", content_id,
+        user, "marketing_content", content_id,
         "approve" if data.approved else "reject",
         None, {"approved": data.approved, "notes": data.notes}
     )
