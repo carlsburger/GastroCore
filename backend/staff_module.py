@@ -395,15 +395,35 @@ def calculate_completeness(member: dict) -> dict:
     }
 
 
-def filter_member_for_role(member: dict, user_role: str) -> dict:
-    """Filter staff member fields based on user role"""
-    if user_role == "admin":
-        # Admin sees everything
-        return member
+def filter_member_for_role(member: dict, user_role: str, masked: bool = True) -> dict:
+    """
+    Filter staff member fields based on user role.
     
-    # Schichtleiter sees only contact fields, not sensitive HR data
-    filtered = {k: v for k, v in member.items() if k not in SENSITIVE_HR_FIELDS}
-    return filtered
+    Args:
+        member: The staff member dict
+        user_role: The role of the requesting user
+        masked: If True (default), mask sensitive fields even for admin
+    
+    Security: Non-admins NEVER see sensitive HR fields
+    """
+    if user_role != "admin":
+        # Non-admin: Remove ALL sensitive HR fields completely
+        filtered = {}
+        for k, v in member.items():
+            if k not in SENSITIVE_HR_FIELDS and k not in HIGH_SECURITY_FIELDS:
+                filtered[k] = v
+        return filtered
+    
+    # Admin: Apply masking to high-security fields by default
+    if masked:
+        return mask_sensitive_fields(member)
+    else:
+        # Decrypt fields for admin when explicitly requested
+        result = member.copy()
+        for field in HIGH_SECURITY_FIELDS:
+            if field in result and result[field]:
+                result[field] = decrypt_field(result[field])
+        return result
 
 
 # Schedules (Weekly)
