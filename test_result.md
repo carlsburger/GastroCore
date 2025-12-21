@@ -103,17 +103,24 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Sprint 4 für GastroCore - Payment-Modul (ADDITIV):
-  Zahlungen für Reservierungen & Events mit Stripe.
+  Sprint 5 für GastroCore - Mitarbeiter & Dienstplan Modul (ADDITIV):
   
-  Features:
-  - Payment Rules (konfigurierbar): Event, Großgruppen, Greylist, Feiertag
-  - Payment Types: Anzahlung pro Person, Fixe Anzahlung, Komplettzahlung
-  - Stripe Checkout Integration
-  - Zahlungsstatus im Dashboard sichtbar
-  - Manual Payment (Admin only)
-  - Refund-Funktion
-  - Payment Logs und Audit
+  1) MITARBEITER-MODUL (HR-BASIS):
+  - Stammdaten: Vorname, Nachname, Rolle, Eintrittsdatum, Beschäftigungsart, Sollstunden
+  - Personalakte: HR-Notizen, Dokumenten-Upload (PDF, Bilder) mit Kategorien
+  - Onboarding: Begrüßungs-E-Mail (DE/EN/PL)
+  
+  2) DIENSTPLAN-MODUL:
+  - Wochenbasiert, Status: Entwurf/Veröffentlicht/Archiviert
+  - Schichten mit Datum, Uhrzeit, Bereich, Rolle, Mitarbeiter
+  - Soll/Ist-Stundenübersicht pro Woche
+  
+  3) EXPORT:
+  - PDF: Wochenübersicht Dienstplan
+  - CSV: Mitarbeiter, Schichten, Stunden
+  
+  4) AUDIT:
+  - Alle Änderungen an Mitarbeitern, Dokumenten, Schichten protokolliert
 
 backend:
   - task: "Payment Rules CRUD API"
