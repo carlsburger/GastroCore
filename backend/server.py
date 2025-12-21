@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from typing import List, Optional, Any, Dict
 import uuid
+import re
 from datetime import datetime, timezone, timedelta, date
 import logging
 from pathlib import Path
