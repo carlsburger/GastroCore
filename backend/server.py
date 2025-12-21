@@ -1772,6 +1772,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup():
+    """Initialize default settings and rules on startup"""
+    await init_default_settings()
+    await init_default_reminder_rules()
+    logger.info("GastroCore v3.0.0 started - Sprint 3 features enabled")
+
 @app.on_event("shutdown")
 async def shutdown():
     await close_db_connection()
