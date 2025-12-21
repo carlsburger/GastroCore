@@ -188,6 +188,27 @@ function App() {
             }
           />
 
+          {/* Payment Module - Admin & Schichtleiter */}
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <PaymentRules />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payments/transactions"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <PaymentTransactions />
+              </ProtectedRoute>
+            }
+          />
+          {/* Public Payment Routes */}
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/cancel" element={<PaymentCancel />} />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
