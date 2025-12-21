@@ -414,9 +414,6 @@ async def send_test_email(to_email: str) -> dict:
         "smtp_status": get_smtp_status(),
         "message": "Testmail erfolgreich gesendet" if success else "Testmail fehlgeschlagen - siehe Logs"
     }
-        logger.error(f"Failed to send email to {to_email}: {str(e)}")
-        await log_email(to_email, subject, template_type, "failed", str(e))
-        return False
 
 
 async def send_confirmation_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
