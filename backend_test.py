@@ -1305,6 +1305,28 @@ class GastroCoreAPITester:
         
         return settings_success
 
+    def test_seed_payment_rules(self):
+        """Seed payment rules for testing"""
+        print("\n💰 Seeding payment rules...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Seed payment rules", False, "Admin token not available")
+            return False
+        
+        result = self.make_request("POST", "seed-payment-rules", {}, self.tokens["admin"], expected_status=200)
+        
+        if result["success"]:
+            seed_data = result["data"]
+            if seed_data.get("seeded") or "bereits vorhanden" in seed_data.get("message", ""):
+                self.log_test("Seed payment rules", True, seed_data.get("message", "Payment rules seeded"))
+                return True
+            else:
+                self.log_test("Seed payment rules", False, f"Unexpected response: {seed_data}")
+                return False
+        else:
+            self.log_test("Seed payment rules", False, f"Status: {result['status_code']}")
+            return False
+
     def test_sprint4_payment_rules_crud(self):
         """Test Sprint 4: Payment Rules CRUD (Admin only)"""
         print("\n💳 Testing Payment Rules CRUD...")
