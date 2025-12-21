@@ -139,7 +139,6 @@ class SendExportRequest(BaseModel):
 
 
 class StaffRegistrationRequest(BaseModel):
-    staff_member_id: str
     include_documents: List[str] = []  # Document IDs to include
     additional_notes: Optional[str] = None
 
