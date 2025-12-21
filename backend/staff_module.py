@@ -204,10 +204,127 @@ class StaffHRFieldsUpdate(BaseModel):
 
 # NEW: Contact Fields visible to Manager (Sprint 7.1)
 CONTACT_FIELDS = {"email", "phone", "mobile_phone", "emergency_contact_name", "emergency_contact_phone"}
-# Sensitive HR fields - Admin only
+# Sensitive HR fields - Admin only (NEVER exposed to non-admins)
 SENSITIVE_HR_FIELDS = {"tax_id", "social_security_number", "bank_iban", "health_insurance", "date_of_birth", "street", "zip_code", "city"}
+# HIGH SECURITY fields - encrypted at rest, masked in responses
+HIGH_SECURITY_FIELDS = {"tax_id", "social_security_number", "bank_iban"}
 # Fields requiring special audit logging
 AUDIT_SENSITIVE_FIELDS = {"tax_id", "social_security_number", "bank_iban"}
+
+# ============== ENCRYPTION MODULE (Sprint 7.2 - Security Enhancement) ==============
+from cryptography.fernet import Fernet
+import base64
+import hashlib
+
+# Get or generate encryption key from environment
+def get_encryption_key() -> bytes:
+    """Get encryption key from environment or generate deterministic one"""
+    key_env = os.environ.get("HR_ENCRYPTION_KEY")
+    if key_env:
+        # Use provided key
+        return base64.urlsafe_b64decode(key_env)
+    else:
+        # Generate deterministic key from JWT_SECRET for consistency
+        jwt_secret = os.environ.get("JWT_SECRET", "default-secret-key-for-dev")
+        # Create a proper Fernet key from the secret
+        key_hash = hashlib.sha256(jwt_secret.encode()).digest()
+        return base64.urlsafe_b64encode(key_hash)
+
+ENCRYPTION_KEY = get_encryption_key()
+cipher_suite = Fernet(ENCRYPTION_KEY)
+
+
+def encrypt_field(value: str) -> str:
+    """Encrypt a sensitive field value"""
+    if not value:
+        return value
+    try:
+        encrypted = cipher_suite.encrypt(value.encode('utf-8'))
+        return f"ENC:{encrypted.decode('utf-8')}"
+    except Exception as e:
+        logger.error(f"Encryption error: {e}")
+        return value
+
+
+def decrypt_field(value: str) -> str:
+    """Decrypt a sensitive field value"""
+    if not value or not value.startswith("ENC:"):
+        return value
+    try:
+        encrypted_data = value[4:].encode('utf-8')
+        decrypted = cipher_suite.decrypt(encrypted_data)
+        return decrypted.decode('utf-8')
+    except Exception as e:
+        logger.error(f"Decryption error: {e}")
+        return value
+
+
+def mask_tax_id(value: str) -> str:
+    """Mask Steuer-ID: show only last 2 digits"""
+    if not value:
+        return None
+    decrypted = decrypt_field(value)
+    clean = decrypted.replace(" ", "").replace("-", "")
+    if len(clean) >= 2:
+        return "*" * (len(clean) - 2) + clean[-2:]
+    return "*" * len(clean)
+
+
+def mask_social_security(value: str) -> str:
+    """Mask SV-Nummer: show only last 3 characters"""
+    if not value:
+        return None
+    decrypted = decrypt_field(value)
+    clean = decrypted.replace(" ", "").replace("-", "")
+    if len(clean) >= 3:
+        return "*" * (len(clean) - 3) + clean[-3:]
+    return "*" * len(clean)
+
+
+def mask_iban(value: str) -> str:
+    """Mask IBAN: show only last 4 digits"""
+    if not value:
+        return None
+    decrypted = decrypt_field(value)
+    clean = decrypted.replace(" ", "")
+    if len(clean) >= 4:
+        # Format: **** **** **** 1234
+        masked = "*" * (len(clean) - 4) + clean[-4:]
+        # Add spaces for readability
+        return " ".join([masked[i:i+4] for i in range(0, len(masked), 4)])
+    return "*" * len(clean)
+
+
+def mask_sensitive_fields(member: dict, include_has_value: bool = True) -> dict:
+    """Mask sensitive fields for display, optionally include has_value indicators"""
+    result = member.copy()
+    
+    # Mask high security fields
+    if "tax_id" in result and result["tax_id"]:
+        result["tax_id_masked"] = mask_tax_id(result["tax_id"])
+        result["tax_id_has_value"] = True
+        del result["tax_id"]
+    elif include_has_value:
+        result["tax_id_masked"] = None
+        result["tax_id_has_value"] = False
+    
+    if "social_security_number" in result and result["social_security_number"]:
+        result["social_security_number_masked"] = mask_social_security(result["social_security_number"])
+        result["social_security_number_has_value"] = True
+        del result["social_security_number"]
+    elif include_has_value:
+        result["social_security_number_masked"] = None
+        result["social_security_number_has_value"] = False
+    
+    if "bank_iban" in result and result["bank_iban"]:
+        result["bank_iban_masked"] = mask_iban(result["bank_iban"])
+        result["bank_iban_has_value"] = True
+        del result["bank_iban"]
+    elif include_has_value:
+        result["bank_iban_masked"] = None
+        result["bank_iban_has_value"] = False
+    
+    return result
 
 
 def validate_tax_id(tax_id: str) -> bool:
