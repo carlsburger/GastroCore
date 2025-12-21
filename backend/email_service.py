@@ -1,3 +1,6 @@
+"""
+Email Service with Multi-Language Templates (DE/EN/PL)
+"""
 import smtplib
 import ssl
 from email.mime.text import MIMEText
@@ -9,8 +12,8 @@ import hashlib
 import hmac
 from pathlib import Path
 from dotenv import load_dotenv
+from typing import Dict, Optional
 
-# Load environment variables
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -26,41 +29,178 @@ SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'Carlsburg Restaurant')
 APP_URL = os.environ.get('APP_URL', 'http://localhost:3000')
 CANCEL_SECRET = os.environ.get('JWT_SECRET', 'secret-key')
 
+
 def generate_cancel_token(reservation_id: str) -> str:
-    """Generate a secure cancellation token"""
+    """Generate secure cancellation token"""
     message = f"{reservation_id}:{CANCEL_SECRET}"
     return hashlib.sha256(message.encode()).hexdigest()[:32]
 
+
 def verify_cancel_token(reservation_id: str, token: str) -> bool:
-    """Verify a cancellation token"""
+    """Verify cancellation token"""
     expected = generate_cancel_token(reservation_id)
     return hmac.compare_digest(expected, token)
+
 
 def get_cancel_url(reservation_id: str) -> str:
     """Generate cancellation URL"""
     token = generate_cancel_token(reservation_id)
     return f"{APP_URL}/cancel/{reservation_id}?token={token}"
 
-def format_date_german(date_str: str) -> str:
-    """Format date string to German format"""
+
+# ============== MULTI-LANGUAGE TEMPLATES ==============
+TEMPLATES = {
+    "confirmation": {
+        "de": {
+            "subject": "Ihre Reservierung bei {restaurant} - {date} um {time} Uhr",
+            "greeting": "Vielen Dank für Ihre Reservierung",
+            "details_title": "Reservierungsdetails",
+            "date_label": "Datum",
+            "time_label": "Uhrzeit",
+            "guests_label": "Personen",
+            "area_label": "Bereich",
+            "occasion_label": "Anlass",
+            "cancel_text": "Müssen Sie Ihre Pläne ändern?",
+            "cancel_button": "Reservierung stornieren",
+            "footer": "Wir freuen uns auf Ihren Besuch!"
+        },
+        "en": {
+            "subject": "Your reservation at {restaurant} - {date} at {time}",
+            "greeting": "Thank you for your reservation",
+            "details_title": "Reservation Details",
+            "date_label": "Date",
+            "time_label": "Time",
+            "guests_label": "Guests",
+            "area_label": "Area",
+            "occasion_label": "Occasion",
+            "cancel_text": "Need to change your plans?",
+            "cancel_button": "Cancel Reservation",
+            "footer": "We look forward to your visit!"
+        },
+        "pl": {
+            "subject": "Twoja rezerwacja w {restaurant} - {date} o {time}",
+            "greeting": "Dziękujemy za rezerwację",
+            "details_title": "Szczegóły rezerwacji",
+            "date_label": "Data",
+            "time_label": "Godzina",
+            "guests_label": "Osoby",
+            "area_label": "Strefa",
+            "occasion_label": "Okazja",
+            "cancel_text": "Chcesz zmienić plany?",
+            "cancel_button": "Anuluj rezerwację",
+            "footer": "Czekamy na Twoją wizytę!"
+        }
+    },
+    "reminder": {
+        "de": {
+            "subject": "Erinnerung: Ihre Reservierung morgen um {time} Uhr",
+            "greeting": "Bis morgen!",
+            "text": "Wir möchten Sie an Ihre Reservierung erinnern.",
+            "footer": "Wir freuen uns auf Ihren Besuch!"
+        },
+        "en": {
+            "subject": "Reminder: Your reservation tomorrow at {time}",
+            "greeting": "See you tomorrow!",
+            "text": "We would like to remind you of your reservation.",
+            "footer": "We look forward to your visit!"
+        },
+        "pl": {
+            "subject": "Przypomnienie: Twoja rezerwacja jutro o {time}",
+            "greeting": "Do zobaczenia jutro!",
+            "text": "Chcielibyśmy przypomnieć o Twojej rezerwacji.",
+            "footer": "Czekamy na Twoją wizytę!"
+        }
+    },
+    "cancellation": {
+        "de": {
+            "subject": "Stornierung bestätigt - {date}",
+            "greeting": "Stornierung bestätigt",
+            "text": "Ihre Reservierung wurde erfolgreich storniert.",
+            "footer": "Wir würden uns freuen, Sie ein anderes Mal begrüßen zu dürfen!"
+        },
+        "en": {
+            "subject": "Cancellation confirmed - {date}",
+            "greeting": "Cancellation confirmed",
+            "text": "Your reservation has been successfully cancelled.",
+            "footer": "We would be happy to welcome you another time!"
+        },
+        "pl": {
+            "subject": "Potwierdzenie anulowania - {date}",
+            "greeting": "Anulowanie potwierdzone",
+            "text": "Twoja rezerwacja została pomyślnie anulowana.",
+            "footer": "Będziemy szczęśliwi, mogąc powitać Cię innym razem!"
+        }
+    },
+    "waitlist": {
+        "de": {
+            "subject": "Ein Platz ist frei geworden! - {date}",
+            "greeting": "Gute Nachrichten!",
+            "text": "Ein Platz für Ihre gewünschte Reservierung ist frei geworden. Bitte kontaktieren Sie uns, um Ihre Reservierung zu bestätigen.",
+            "footer": "Wir freuen uns auf Ihre Rückmeldung!"
+        },
+        "en": {
+            "subject": "A spot has opened up! - {date}",
+            "greeting": "Good news!",
+            "text": "A spot for your desired reservation has become available. Please contact us to confirm your reservation.",
+            "footer": "We look forward to hearing from you!"
+        },
+        "pl": {
+            "subject": "Miejsce się zwolniło! - {date}",
+            "greeting": "Dobre wieści!",
+            "text": "Miejsce na Twoją rezerwację jest dostępne. Prosimy o kontakt w celu potwierdzenia.",
+            "footer": "Czekamy na Twoją odpowiedź!"
+        }
+    }
+}
+
+
+def get_email_templates() -> list:
+    """Get all email templates for admin editing"""
+    templates = []
+    for template_type, languages in TEMPLATES.items():
+        for lang, content in languages.items():
+            templates.append({
+                "key": f"{template_type}_{lang}",
+                "template_type": template_type,
+                "language": lang,
+                **content
+            })
+    return templates
+
+
+def format_date_localized(date_str: str, lang: str) -> str:
+    """Format date for different languages"""
     try:
         dt = datetime.strptime(date_str, "%Y-%m-%d")
-        weekdays = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
-        months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 
-                  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
-        return f"{weekdays[dt.weekday()]}, {dt.day}. {months[dt.month-1]} {dt.year}"
+        
+        weekdays = {
+            "de": ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+            "en": ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            "pl": ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela']
+        }
+        
+        months = {
+            "de": ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+            "en": ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            "pl": ['Stycznia', 'Lutego', 'Marca', 'Kwietnia', 'Maja', 'Czerwca', 'Lipca', 'Sierpnia', 'Września', 'Października', 'Listopada', 'Grudnia']
+        }
+        
+        wd = weekdays.get(lang, weekdays["de"])[dt.weekday()]
+        m = months.get(lang, months["de"])[dt.month - 1]
+        
+        return f"{wd}, {dt.day}. {m} {dt.year}"
     except:
         return date_str
 
-# Email Templates
-def get_confirmation_email(reservation: dict, area_name: str = None) -> tuple:
-    """Generate confirmation email subject and body"""
-    cancel_url = get_cancel_url(reservation['id'])
-    date_formatted = format_date_german(reservation['date'])
+
+def get_html_template(template_type: str, lang: str, data: dict) -> str:
+    """Generate HTML email from template"""
+    t = TEMPLATES.get(template_type, {}).get(lang, TEMPLATES.get(template_type, {}).get("de", {}))
     
-    subject = f"Ihre Reservierung bei Carlsburg - {reservation['date']} um {reservation['time']} Uhr"
+    cancel_url = data.get("cancel_url", "")
+    restaurant = data.get("restaurant", SMTP_FROM_NAME)
     
-    html = f"""
+    base_html = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -69,9 +209,9 @@ def get_confirmation_email(reservation: dict, area_name: str = None) -> tuple:
             body {{ font-family: 'Lato', Arial, sans-serif; line-height: 1.6; color: #00280b; background-color: #fafbed; margin: 0; padding: 0; }}
             .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
             .header {{ text-align: center; margin-bottom: 30px; }}
-            .logo {{ width: 60px; height: 60px; background-color: #00280b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }}
-            .logo span {{ color: #fafbed; font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: bold; }}
-            h1 {{ font-family: 'Playfair Display', Georgia, serif; color: #00280b; margin: 20px 0 10px; font-size: 28px; }}
+            .logo {{ width: 60px; height: 60px; background-color: #00280b; border-radius: 50%; display: inline-block; line-height: 60px; }}
+            .logo span {{ color: #fafbed; font-family: Georgia, serif; font-size: 28px; font-weight: bold; }}
+            h1 {{ font-family: Georgia, serif; color: #00280b; margin: 20px 0 10px; font-size: 28px; }}
             .card {{ background-color: #f3f6de; border-radius: 12px; padding: 30px; margin: 20px 0; }}
             .detail-row {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #dce0c5; }}
             .detail-row:last-child {{ border-bottom: none; }}
@@ -81,254 +221,103 @@ def get_confirmation_email(reservation: dict, area_name: str = None) -> tuple:
             .btn {{ display: inline-block; background-color: #00280b; color: #fafbed !important; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 600; margin: 10px 5px; }}
             .btn-outline {{ background-color: transparent; border: 2px solid #00280b; color: #00280b !important; }}
             .footer {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dce0c5; color: #4a5d4e; font-size: 14px; }}
-            .highlight {{ background-color: #ffed00; padding: 2px 8px; border-radius: 4px; }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
                 <div class="logo"><span>C</span></div>
-                <h1>Reservierung bestätigt</h1>
-                <p>Vielen Dank für Ihre Reservierung, {reservation['guest_name']}!</p>
+                <h1>{t.get('greeting', 'Hello')}</h1>
+                <p>{data.get('guest_name', '')}</p>
             </div>
-            
+    """
+    
+    if template_type == "confirmation" or template_type == "reminder":
+        base_html += f"""
             <div class="card">
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <span class="status-badge">Bestätigt</span>
+                    <span class="status-badge">{"Bestätigt" if template_type == "confirmation" else "Morgen"}</span>
                 </div>
                 
                 <div class="detail-row">
-                    <span class="detail-label">Datum</span>
-                    <span class="detail-value">{date_formatted}</span>
+                    <span class="detail-label">{t.get('date_label', 'Date')}</span>
+                    <span class="detail-value">{data.get('date_formatted', data.get('date', ''))}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Uhrzeit</span>
-                    <span class="detail-value">{reservation['time']} Uhr</span>
+                    <span class="detail-label">{t.get('time_label', 'Time')}</span>
+                    <span class="detail-value">{data.get('time', '')} Uhr</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Personen</span>
-                    <span class="detail-value">{reservation['party_size']} Personen</span>
+                    <span class="detail-label">{t.get('guests_label', 'Guests')}</span>
+                    <span class="detail-value">{data.get('party_size', '')} {t.get('guests_label', 'Guests')}</span>
                 </div>
-                {f'''<div class="detail-row">
-                    <span class="detail-label">Bereich</span>
-                    <span class="detail-value">{area_name}</span>
-                </div>''' if area_name else ''}
-                {f'''<div class="detail-row">
-                    <span class="detail-label">Notizen</span>
-                    <span class="detail-value">{reservation.get("notes", "")}</span>
-                </div>''' if reservation.get("notes") else ''}
+                {'<div class="detail-row"><span class="detail-label">' + t.get('area_label', 'Area') + '</span><span class="detail-value">' + data.get('area_name', '') + '</span></div>' if data.get('area_name') else ''}
+                {'<div class="detail-row"><span class="detail-label">' + t.get('occasion_label', 'Occasion') + '</span><span class="detail-value">' + data.get('occasion', '') + '</span></div>' if data.get('occasion') else ''}
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-                <p>Müssen Sie Ihre Pläne ändern?</p>
-                <a href="{cancel_url}" class="btn btn-outline">Reservierung stornieren</a>
+                <p>{t.get('cancel_text', 'Need to change plans?')}</p>
+                <a href="{cancel_url}" class="btn btn-outline">{t.get('cancel_button', 'Cancel')}</a>
             </div>
-            
-            <div class="footer">
-                <p><strong>Carlsburg Restaurant</strong></p>
-                <p>Wir freuen uns auf Ihren Besuch!</p>
-                <p style="font-size: 12px; margin-top: 20px;">
-                    Bei Fragen erreichen Sie uns unter reservierung@carlsburg.de
-                </p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    text = f"""
-Reservierung bestätigt
-
-Vielen Dank für Ihre Reservierung, {reservation['guest_name']}!
-
-Details:
-- Datum: {date_formatted}
-- Uhrzeit: {reservation['time']} Uhr
-- Personen: {reservation['party_size']}
-{f"- Bereich: {area_name}" if area_name else ""}
-{f"- Notizen: {reservation.get('notes', '')}" if reservation.get('notes') else ""}
-
-Müssen Sie Ihre Pläne ändern?
-Stornierungslink: {cancel_url}
-
-Carlsburg Restaurant
-Wir freuen uns auf Ihren Besuch!
-    """
-    
-    return subject, html, text
-
-
-def get_reminder_email(reservation: dict, area_name: str = None) -> tuple:
-    """Generate reminder email (24h before)"""
-    cancel_url = get_cancel_url(reservation['id'])
-    date_formatted = format_date_german(reservation['date'])
-    
-    subject = f"Erinnerung: Ihre Reservierung morgen um {reservation['time']} Uhr"
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body {{ font-family: 'Lato', Arial, sans-serif; line-height: 1.6; color: #00280b; background-color: #fafbed; margin: 0; padding: 0; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
-            .header {{ text-align: center; margin-bottom: 30px; }}
-            .logo {{ width: 60px; height: 60px; background-color: #00280b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }}
-            .logo span {{ color: #fafbed; font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: bold; }}
-            h1 {{ font-family: 'Playfair Display', Georgia, serif; color: #00280b; margin: 20px 0 10px; font-size: 28px; }}
-            .card {{ background-color: #f3f6de; border-radius: 12px; padding: 30px; margin: 20px 0; }}
-            .detail-row {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #dce0c5; }}
-            .detail-row:last-child {{ border-bottom: none; }}
-            .detail-label {{ color: #4a5d4e; font-size: 14px; }}
-            .detail-value {{ font-weight: 600; color: #00280b; }}
-            .reminder-badge {{ display: inline-block; background-color: #a2d2ff; color: #00280b; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; }}
-            .btn {{ display: inline-block; background-color: #00280b; color: #fafbed !important; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 600; margin: 10px 5px; }}
-            .btn-outline {{ background-color: transparent; border: 2px solid #00280b; color: #00280b !important; }}
-            .footer {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dce0c5; color: #4a5d4e; font-size: 14px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo"><span>C</span></div>
-                <h1>Bis morgen!</h1>
-                <p>Wir möchten Sie an Ihre Reservierung erinnern, {reservation['guest_name']}.</p>
-            </div>
-            
+        """
+    elif template_type == "cancellation":
+        base_html += f"""
             <div class="card">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <span class="reminder-badge">Morgen</span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Datum</span>
-                    <span class="detail-value">{date_formatted}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Uhrzeit</span>
-                    <span class="detail-value">{reservation['time']} Uhr</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Personen</span>
-                    <span class="detail-value">{reservation['party_size']} Personen</span>
-                </div>
-                {f'''<div class="detail-row">
-                    <span class="detail-label">Bereich</span>
-                    <span class="detail-value">{area_name}</span>
-                </div>''' if area_name else ''}
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <p>Können Sie nicht kommen?</p>
-                <a href="{cancel_url}" class="btn btn-outline">Reservierung stornieren</a>
-            </div>
-            
-            <div class="footer">
-                <p><strong>Carlsburg Restaurant</strong></p>
-                <p>Wir freuen uns auf Ihren Besuch!</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    text = f"""
-Erinnerung: Ihre Reservierung morgen
-
-Hallo {reservation['guest_name']},
-
-wir möchten Sie an Ihre Reservierung erinnern:
-
-- Datum: {date_formatted}
-- Uhrzeit: {reservation['time']} Uhr
-- Personen: {reservation['party_size']}
-{f"- Bereich: {area_name}" if area_name else ""}
-
-Können Sie nicht kommen?
-Stornierungslink: {cancel_url}
-
-Carlsburg Restaurant
-Wir freuen uns auf Ihren Besuch!
-    """
-    
-    return subject, html, text
-
-
-def get_cancellation_email(reservation: dict) -> tuple:
-    """Generate cancellation confirmation email"""
-    date_formatted = format_date_german(reservation['date'])
-    
-    subject = f"Stornierung bestätigt - {reservation['date']}"
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body {{ font-family: 'Lato', Arial, sans-serif; line-height: 1.6; color: #00280b; background-color: #fafbed; margin: 0; padding: 0; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
-            .header {{ text-align: center; margin-bottom: 30px; }}
-            .logo {{ width: 60px; height: 60px; background-color: #00280b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }}
-            .logo span {{ color: #fafbed; font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: bold; }}
-            h1 {{ font-family: 'Playfair Display', Georgia, serif; color: #00280b; margin: 20px 0 10px; font-size: 28px; }}
-            .card {{ background-color: #f3f6de; border-radius: 12px; padding: 30px; margin: 20px 0; }}
-            .cancelled-badge {{ display: inline-block; background-color: #e3e6d0; color: #4a5d4e; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; text-decoration: line-through; }}
-            .footer {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dce0c5; color: #4a5d4e; font-size: 14px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo"><span>C</span></div>
-                <h1>Stornierung bestätigt</h1>
-                <p>Ihre Reservierung wurde erfolgreich storniert.</p>
-            </div>
-            
-            <div class="card">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <span class="cancelled-badge">Storniert</span>
-                </div>
-                
                 <p style="text-align: center; color: #4a5d4e;">
-                    <strong>{date_formatted}</strong> um <strong>{reservation['time']} Uhr</strong><br>
-                    für {reservation['party_size']} Personen
+                    {t.get('text', '')}
+                </p>
+                <p style="text-align: center; color: #4a5d4e;">
+                    <strong>{data.get('date_formatted', data.get('date', ''))}</strong> - {data.get('time', '')} Uhr<br>
+                    {data.get('party_size', '')} {t.get('guests_label', 'Guests')}
                 </p>
             </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <p>Wir würden uns freuen, Sie ein anderes Mal begrüßen zu dürfen!</p>
+        """
+    elif template_type == "waitlist":
+        base_html += f"""
+            <div class="card">
+                <p style="text-align: center;">
+                    {t.get('text', '')}
+                </p>
+                <p style="text-align: center; font-weight: 600;">
+                    {data.get('date_formatted', data.get('date', ''))}
+                </p>
             </div>
-            
+        """
+    
+    base_html += f"""
             <div class="footer">
-                <p><strong>Carlsburg Restaurant</strong></p>
-                <p>reservierung@carlsburg.de</p>
+                <p><strong>{restaurant}</strong></p>
+                <p>{t.get('footer', '')}</p>
             </div>
         </div>
     </body>
     </html>
     """
     
-    text = f"""
-Stornierung bestätigt
+    return base_html
 
-Ihre Reservierung wurde erfolgreich storniert:
 
-- Datum: {date_formatted}
-- Uhrzeit: {reservation['time']} Uhr
-- Personen: {reservation['party_size']}
-
-Wir würden uns freuen, Sie ein anderes Mal begrüßen zu dürfen!
-
-Carlsburg Restaurant
-reservierung@carlsburg.de
-    """
+async def log_email(to_email: str, subject: str, template_type: str, status: str, error: str = None):
+    """Log email send attempt"""
+    from core.database import db
     
-    return subject, html, text
+    log = {
+        "id": hashlib.sha256(f"{to_email}{datetime.now().isoformat()}".encode()).hexdigest()[:16],
+        "to_email": to_email,
+        "subject": subject,
+        "template_type": template_type,
+        "status": status,
+        "error": error,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    try:
+        await db.email_logs.insert_one(log)
+    except Exception as e:
+        logger.error(f"Failed to log email: {e}")
 
 
-async def send_email(to_email: str, subject: str, html_body: str, text_body: str) -> bool:
+async def send_email(to_email: str, subject: str, html_body: str, text_body: str, template_type: str = "other") -> bool:
     """Send email via SMTP"""
     if not SMTP_USER or not SMTP_PASSWORD:
         logger.warning("SMTP credentials not configured, skipping email")
@@ -340,51 +329,109 @@ async def send_email(to_email: str, subject: str, html_body: str, text_body: str
         msg['From'] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
         msg['To'] = to_email
         
-        # Attach both plain text and HTML versions
-        part1 = MIMEText(text_body, 'plain', 'utf-8')
-        part2 = MIMEText(html_body, 'html', 'utf-8')
-        msg.attach(part1)
-        msg.attach(part2)
+        msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
         
-        # Create SSL context
         context = ssl.create_default_context()
         
-        # Connect and send
         with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
         
-        logger.info(f"Email sent successfully to {to_email}")
+        logger.info(f"Email sent to {to_email}")
+        await log_email(to_email, subject, template_type, "sent")
         return True
         
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {str(e)}")
+        await log_email(to_email, subject, template_type, "failed", str(e))
         return False
 
 
-async def send_confirmation_email(reservation: dict, area_name: str = None) -> bool:
+async def send_confirmation_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
     """Send reservation confirmation email"""
     if not reservation.get('guest_email'):
-        logger.info(f"No email for reservation {reservation['id']}, skipping")
         return False
     
-    subject, html, text = get_confirmation_email(reservation, area_name)
-    return await send_email(reservation['guest_email'], subject, html, text)
+    t = TEMPLATES["confirmation"].get(lang, TEMPLATES["confirmation"]["de"])
+    
+    data = {
+        **reservation,
+        "date_formatted": format_date_localized(reservation.get("date", ""), lang),
+        "area_name": area_name,
+        "cancel_url": get_cancel_url(reservation["id"]),
+        "restaurant": SMTP_FROM_NAME
+    }
+    
+    subject = t["subject"].format(
+        restaurant=SMTP_FROM_NAME,
+        date=reservation.get("date", ""),
+        time=reservation.get("time", "")
+    )
+    
+    html = get_html_template("confirmation", lang, data)
+    text = f"{t['greeting']}\n\n{t['date_label']}: {data['date_formatted']}\n{t['time_label']}: {reservation.get('time')}\n{t['guests_label']}: {reservation.get('party_size')}\n\n{data['cancel_url']}"
+    
+    return await send_email(reservation['guest_email'], subject, html, text, "confirmation")
 
 
-async def send_reminder_email(reservation: dict, area_name: str = None) -> bool:
+async def send_reminder_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
     """Send reminder email"""
     if not reservation.get('guest_email'):
         return False
     
-    subject, html, text = get_reminder_email(reservation, area_name)
-    return await send_email(reservation['guest_email'], subject, html, text)
+    t = TEMPLATES["reminder"].get(lang, TEMPLATES["reminder"]["de"])
+    
+    data = {
+        **reservation,
+        "date_formatted": format_date_localized(reservation.get("date", ""), lang),
+        "area_name": area_name,
+        "cancel_url": get_cancel_url(reservation["id"]),
+        "restaurant": SMTP_FROM_NAME
+    }
+    
+    subject = t["subject"].format(time=reservation.get("time", ""))
+    html = get_html_template("reminder", lang, data)
+    text = f"{t['greeting']}\n\n{t['text']}\n\n{t['date_label']}: {data['date_formatted']}\n{t['time_label']}: {reservation.get('time')}"
+    
+    return await send_email(reservation['guest_email'], subject, html, text, "reminder")
 
 
-async def send_cancellation_email(reservation: dict) -> bool:
+async def send_cancellation_email(reservation: dict, lang: str = "de") -> bool:
     """Send cancellation confirmation email"""
     if not reservation.get('guest_email'):
         return False
     
-    subject, html, text = get_cancellation_email(reservation)
-    return await send_email(reservation['guest_email'], subject, html, text)
+    t = TEMPLATES["cancellation"].get(lang, TEMPLATES["cancellation"]["de"])
+    
+    data = {
+        **reservation,
+        "date_formatted": format_date_localized(reservation.get("date", ""), lang),
+        "restaurant": SMTP_FROM_NAME
+    }
+    
+    subject = t["subject"].format(date=reservation.get("date", ""))
+    html = get_html_template("cancellation", lang, data)
+    text = f"{t['greeting']}\n\n{t['text']}\n\n{reservation.get('date')} - {reservation.get('time')}"
+    
+    return await send_email(reservation['guest_email'], subject, html, text, "cancellation")
+
+
+async def send_waitlist_notification(entry: dict, lang: str = "de") -> bool:
+    """Send waitlist notification email"""
+    if not entry.get('guest_email'):
+        return False
+    
+    t = TEMPLATES["waitlist"].get(lang, TEMPLATES["waitlist"]["de"])
+    
+    data = {
+        **entry,
+        "date_formatted": format_date_localized(entry.get("date", ""), lang),
+        "restaurant": SMTP_FROM_NAME
+    }
+    
+    subject = t["subject"].format(date=entry.get("date", ""))
+    html = get_html_template("waitlist", lang, data)
+    text = f"{t['greeting']}\n\n{t['text']}\n\n{entry.get('date')}"
+    
+    return await send_email(entry['guest_email'], subject, html, text, "waitlist")
