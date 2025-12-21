@@ -878,7 +878,7 @@ class GastroCoreAPITester:
         
         # Create a test guest
         guest_data = {
-            "phone": "+49 170 7777778",  # Different phone number to avoid conflicts
+            "phone": "491707777778",  # Without + to avoid regex issues
             "email": "testguest2@example.de",
             "name": "Test Guest 2",
             "flag": "none",
