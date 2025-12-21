@@ -237,6 +237,42 @@ backend:
         comment: "✅ TESTED: Public booking API fully functional. GET /api/public/events lists published events (no auth), GET /api/public/events/{id} shows event details with products. POST /api/public/events/{id}/book works for both ticket_only (Kabarett) and reservation_with_preorder (Gänseabend) modes. Capacity validation working - large bookings rejected with 422 status. Confirmation codes generated successfully."
 
 frontend:
+  - task: "Payment Rules Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/PaymentRules.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Zahlungsregeln CRUD UI mit Trigger, Type, Amount Konfiguration"
+
+  - task: "Payment Status in Dashboard"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Dashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PaymentBadge zeigt Zahlungsstatus bei Reservierungen an"
+
+  - task: "Payment Success/Cancel Pages"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/PaymentPages.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Public Success/Cancel Seiten für Stripe Redirect"
+
   - task: "Events Admin Page"
     implemented: true
     working: true
