@@ -463,7 +463,7 @@ async def archive_marketing_content(content_id: str, user: dict = Depends(requir
         {"$set": {"status": ContentStatus.ARCHIVED, "archived": True, "updated_at": now_iso()}}
     )
     
-    await create_audit_log(db, user, "marketing_content", content_id, "archive", None, None)
+    await create_audit_log(user, "marketing_content", content_id, "archive", None, None)
     
     return {"success": True}
 
@@ -487,7 +487,7 @@ async def submit_for_review(
         {"$set": {"status": ContentStatus.REVIEW, "review_notes": data.notes, "updated_at": now_iso()}}
     )
     
-    await create_audit_log(db, user, "marketing_content", content_id, "submit_review", None, {"notes": data.notes})
+    await create_audit_log(user, "marketing_content", content_id, "submit_review", None, {"notes": data.notes})
     
     return {"success": True, "status": ContentStatus.REVIEW}
 
@@ -558,7 +558,7 @@ async def schedule_content(
         }}
     )
     
-    await create_audit_log(db, user, "marketing_content", content_id, "schedule", None, {"scheduled_at": data.scheduled_at.isoformat()})
+    await create_audit_log(user, "marketing_content", content_id, "schedule", None, {"scheduled_at": data.scheduled_at.isoformat()})
     
     return {"success": True, "scheduled_at": data.scheduled_at.isoformat()}
 
@@ -586,7 +586,7 @@ async def send_test_newsletter(
     # Send immediately (not as job)
     success = await send_newsletter_to_recipient(content, test_recipient, f"test_{content_id}")
     
-    await create_audit_log(db, user, "marketing_content", content_id, "test_send", None, {"to": data.test_email, "smtp_configured": smtp_configured})
+    await create_audit_log(user, "marketing_content", content_id, "test_send", None, {"to": data.test_email, "smtp_configured": smtp_configured})
     
     return {
         "success": success or not smtp_configured,
@@ -628,7 +628,7 @@ async def send_newsletter_now(
     # Start background task
     background_tasks.add_task(run_newsletter_job, job["id"], content_id)
     
-    await create_audit_log(db, user, "marketing_content", content_id, "send_newsletter", None, {"job_id": job["id"]})
+    await create_audit_log(user, "marketing_content", content_id, "send_newsletter", None, {"job_id": job["id"]})
     
     return {"success": True, "job_id": job["id"], "smtp_configured": is_smtp_configured()}
 
@@ -670,7 +670,7 @@ async def post_social_now(
     channels = content.get("channels", [])
     config_status = {ch: is_social_configured(ch) for ch in channels if ch != "email"}
     
-    await create_audit_log(db, user, "marketing_content", content_id, "post_social", None, {"job_id": job["id"]})
+    await create_audit_log(user, "marketing_content", content_id, "post_social", None, {"job_id": job["id"]})
     
     return {"success": True, "job_id": job["id"], "platform_config": config_status}
 
@@ -716,7 +716,7 @@ async def retry_failed_content(
         await db.marketing_jobs.insert_one(job)
         background_tasks.add_task(run_social_post_job, job["id"], content_id)
     
-    await create_audit_log(db, user, "marketing_content", content_id, "retry", None, {"job_id": job["id"]})
+    await create_audit_log(user, "marketing_content", content_id, "retry", None, {"job_id": job["id"]})
     
     return {"success": True, "job_id": job["id"]}
 
