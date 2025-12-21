@@ -717,6 +717,276 @@ class GastroCoreAPITester:
         
         return filtering_success
 
+    def test_public_booking_widget(self):
+        """Test Sprint 2: Public Booking Widget API"""
+        print("\n🌐 Testing Public Booking Widget API...")
+        
+        widget_success = True
+        test_date = "2025-12-22"
+        
+        # Test availability check
+        availability_params = {"date": test_date, "party_size": 4}
+        result = self.make_request("GET", "public/availability", availability_params, 
+                                 expected_status=200)
+        if result["success"]:
+            availability_data = result["data"]
+            if "available" in availability_data and "slots" in availability_data:
+                self.log_test("Public availability check", True, 
+                            f"Available: {availability_data.get('available')}, Slots: {len(availability_data.get('slots', []))}")
+            else:
+                self.log_test("Public availability check", False, "Missing required fields in response")
+                widget_success = False
+        else:
+            self.log_test("Public availability check", False, f"Status: {result['status_code']}")
+            widget_success = False
+        
+        # Test public booking
+        booking_data = {
+            "guest_name": "Max Mustermann",
+            "guest_phone": "+49 170 1234567",
+            "guest_email": "max.mustermann@example.de",
+            "party_size": 4,
+            "date": test_date,
+            "time": "18:00",
+            "occasion": "Geburtstag",
+            "notes": "Test booking from widget",
+            "language": "de"
+        }
+        
+        result = self.make_request("POST", "public/book", booking_data, expected_status=200)
+        if result["success"]:
+            booking_response = result["data"]
+            if "success" in booking_response and booking_response.get("success"):
+                if booking_response.get("waitlist"):
+                    self.log_test("Public booking (waitlist)", True, "Added to waitlist - restaurant full")
+                    self.test_data["waitlist_id"] = booking_response.get("waitlist_id")
+                else:
+                    self.log_test("Public booking (reservation)", True, "Reservation created successfully")
+                    self.test_data["public_reservation_id"] = booking_response.get("reservation_id")
+            else:
+                self.log_test("Public booking", False, f"Booking failed: {booking_response}")
+                widget_success = False
+        else:
+            self.log_test("Public booking", False, f"Status: {result['status_code']}")
+            widget_success = False
+        
+        return widget_success
+
+    def test_walk_in_quick_entry(self):
+        """Test Sprint 2: Walk-In Quick Entry"""
+        print("\n🚶 Testing Walk-In Quick Entry...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Walk-in quick entry", False, "Schichtleiter token not available")
+            return False
+        
+        walk_in_data = {
+            "guest_name": "Walk-In Gast",
+            "guest_phone": "+49 170 9999999",
+            "party_size": 2,
+            "notes": "Spontaner Besuch"
+        }
+        
+        result = self.make_request("POST", "walk-ins", walk_in_data, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            walk_in_response = result["data"]
+            if walk_in_response.get("status") == "angekommen":
+                self.log_test("Walk-in quick entry", True, 
+                            f"Walk-in created with status 'angekommen', ID: {walk_in_response.get('id')}")
+                self.test_data["walk_in_id"] = walk_in_response.get("id")
+                return True
+            else:
+                self.log_test("Walk-in quick entry", False, 
+                            f"Expected status 'angekommen', got: {walk_in_response.get('status')}")
+                return False
+        else:
+            self.log_test("Walk-in quick entry", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_waitlist_management(self):
+        """Test Sprint 2: Waitlist Management"""
+        print("\n📋 Testing Waitlist Management...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Waitlist management", False, "Schichtleiter token not available")
+            return False
+        
+        waitlist_success = True
+        
+        # Create waitlist entry
+        waitlist_data = {
+            "guest_name": "Warteschlange Test",
+            "guest_phone": "+49 170 8888888",
+            "guest_email": "waitlist@example.de",
+            "party_size": 6,
+            "date": "2025-12-22",
+            "preferred_time": "19:00",
+            "priority": 3,
+            "notes": "Test waitlist entry",
+            "language": "de"
+        }
+        
+        result = self.make_request("POST", "waitlist", waitlist_data, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            waitlist_entry = result["data"]
+            if waitlist_entry.get("status") == "offen":
+                self.log_test("Create waitlist entry", True, 
+                            f"Waitlist entry created with ID: {waitlist_entry.get('id')}")
+                self.test_data["waitlist_entry_id"] = waitlist_entry.get("id")
+            else:
+                self.log_test("Create waitlist entry", False, 
+                            f"Expected status 'offen', got: {waitlist_entry.get('status')}")
+                waitlist_success = False
+        else:
+            self.log_test("Create waitlist entry", False, f"Status: {result['status_code']}")
+            waitlist_success = False
+        
+        # Get waitlist entries
+        result = self.make_request("GET", "waitlist", {"date": "2025-12-22"}, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            waitlist_entries = result["data"]
+            self.log_test("Get waitlist entries", True, f"Retrieved {len(waitlist_entries)} entries")
+        else:
+            self.log_test("Get waitlist entries", False, f"Status: {result['status_code']}")
+            waitlist_success = False
+        
+        # Update waitlist entry status
+        if "waitlist_entry_id" in self.test_data:
+            update_data = {"status": "informiert", "notes": "Gast wurde informiert"}
+            result = self.make_request("PATCH", f"waitlist/{self.test_data['waitlist_entry_id']}", 
+                                     update_data, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                updated_entry = result["data"]
+                if updated_entry.get("status") == "informiert":
+                    self.log_test("Update waitlist status", True, "Status updated to 'informiert'")
+                else:
+                    self.log_test("Update waitlist status", False, 
+                                f"Expected status 'informiert', got: {updated_entry.get('status')}")
+                    waitlist_success = False
+            else:
+                self.log_test("Update waitlist status", False, f"Status: {result['status_code']}")
+                waitlist_success = False
+        
+        return waitlist_success
+
+    def test_guest_management(self):
+        """Test Sprint 2: Guest Management (Greylist/Blacklist)"""
+        print("\n👥 Testing Guest Management...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Guest management", False, "Schichtleiter token not available")
+            return False
+        
+        guest_success = True
+        
+        # Get all guests
+        result = self.make_request("GET", "guests", {}, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            guests = result["data"]
+            self.log_test("Get guests", True, f"Retrieved {len(guests)} guests")
+        else:
+            self.log_test("Get guests", False, f"Status: {result['status_code']}")
+            guest_success = False
+        
+        # Create a test guest
+        guest_data = {
+            "phone": "+49 170 7777777",
+            "email": "testguest@example.de",
+            "name": "Test Guest",
+            "flag": "none",
+            "no_show_count": 0,
+            "notes": "Test guest for management"
+        }
+        
+        result = self.make_request("POST", "guests", guest_data, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            guest = result["data"]
+            self.log_test("Create guest", True, f"Guest created with ID: {guest.get('id')}")
+            self.test_data["test_guest_id"] = guest.get("id")
+        else:
+            # Guest might already exist, try to find it
+            result = self.make_request("GET", "guests", {"search": "+49 170 7777777"}, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and result["data"]:
+                guest = result["data"][0]
+                self.log_test("Find existing guest", True, f"Found guest with ID: {guest.get('id')}")
+                self.test_data["test_guest_id"] = guest.get("id")
+            else:
+                self.log_test("Create/find guest", False, f"Status: {result['status_code']}")
+                guest_success = False
+        
+        # Update guest flag to greylist
+        if "test_guest_id" in self.test_data:
+            update_data = {"flag": "greylist", "notes": "Marked as greylist for testing"}
+            result = self.make_request("PATCH", f"guests/{self.test_data['test_guest_id']}", 
+                                     update_data, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                updated_guest = result["data"]
+                if updated_guest.get("flag") == "greylist":
+                    self.log_test("Update guest flag to greylist", True)
+                else:
+                    self.log_test("Update guest flag to greylist", False, 
+                                f"Expected flag 'greylist', got: {updated_guest.get('flag')}")
+                    guest_success = False
+            else:
+                self.log_test("Update guest flag to greylist", False, f"Status: {result['status_code']}")
+                guest_success = False
+        
+        # Test filtering by flag
+        result = self.make_request("GET", "guests", {"flag": "greylist"}, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            greylist_guests = result["data"]
+            self.log_test("Filter guests by greylist flag", True, 
+                        f"Found {len(greylist_guests)} greylist guests")
+        else:
+            self.log_test("Filter guests by greylist flag", False, f"Status: {result['status_code']}")
+            guest_success = False
+        
+        return guest_success
+
+    def test_pdf_export(self):
+        """Test Sprint 2: PDF Table Plan Export"""
+        print("\n📄 Testing PDF Export...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("PDF export", False, "Schichtleiter token not available")
+            return False
+        
+        # Test PDF export for a specific date
+        export_params = {"date": "2025-12-21"}
+        
+        # Make request to PDF export endpoint
+        url = f"{self.base_url}/api/export/table-plan"
+        headers = {'Authorization': f'Bearer {self.tokens["schichtleiter"]}'}
+        
+        try:
+            response = requests.get(url, headers=headers, params=export_params)
+            
+            if response.status_code == 200:
+                # Check if response is PDF
+                content_type = response.headers.get('content-type', '')
+                if 'application/pdf' in content_type:
+                    pdf_size = len(response.content)
+                    self.log_test("PDF table plan export", True, 
+                                f"PDF generated successfully, size: {pdf_size} bytes")
+                    return True
+                else:
+                    self.log_test("PDF table plan export", False, 
+                                f"Expected PDF, got content-type: {content_type}")
+                    return False
+            else:
+                self.log_test("PDF table plan export", False, f"Status: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("PDF table plan export", False, f"Error: {str(e)}")
+            return False
+
     def cleanup_test_data(self):
         """Clean up test data created during testing"""
         print("\n🧹 Cleaning up test data...")
