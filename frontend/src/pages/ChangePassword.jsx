@@ -50,13 +50,13 @@ export const ChangePassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+    <div className="min-h-screen flex items-center justify-center p-8 bg-[#FAFBE0]">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-primary mx-auto flex items-center justify-center mb-4">
-            <span className="text-primary-foreground font-serif text-3xl font-bold">G</span>
+          <div className="w-16 h-16 rounded-full bg-[#005500] mx-auto flex items-center justify-center mb-4">
+            <span className="text-[#FFFF00] font-serif text-3xl font-bold">C</span>
           </div>
-          <h1 className="font-serif text-4xl font-medium text-primary">GastroCore</h1>
+          <h1 className="font-serif text-4xl font-bold text-[#005500]">Carlsburg Cockpit</h1>
         </div>
 
         <Card className="border-border shadow-lg">
