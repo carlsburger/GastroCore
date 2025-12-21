@@ -213,6 +213,32 @@ function App() {
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
 
+          {/* Staff Module (Sprint 5) - Admin & Schichtleiter */}
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Staff />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff/:memberId"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <StaffDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Schedule />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
