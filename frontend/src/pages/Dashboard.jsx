@@ -46,6 +46,7 @@ const STATUS_OPTIONS = [
   { value: "angekommen", label: "Angekommen", next: "abgeschlossen" },
   { value: "abgeschlossen", label: "Abgeschlossen", next: null },
   { value: "no_show", label: "No-Show", next: null },
+  { value: "storniert", label: "Storniert", next: null },
 ];
 
 const getStatusBadgeClass = (status) => {
