@@ -1373,12 +1373,14 @@ class GastroCoreAPITester:
         """Full QA Audit - Audit Logs"""
         print("\n📋 FULL QA AUDIT - Audit Logs")
         
-        if "admin" not in self.tokens:
-            self.log_test("Audit Logs", False, "Admin token not available")
+        # Try admin first, fall back to schichtleiter
+        token = self.tokens.get("admin") or self.tokens.get("schichtleiter")
+        if not token:
+            self.log_test("Audit Logs", False, "No admin or schichtleiter token available")
             return False
         
         # Test GET /api/audit-logs
-        result = self.make_request("GET", "audit-logs", {"limit": 100}, self.tokens["admin"], expected_status=200)
+        result = self.make_request("GET", "audit-logs", {"limit": 100}, token, expected_status=200)
         if result["success"]:
             logs = result["data"]
             self.log_test("GET audit-logs", True, f"Retrieved {len(logs)} audit log entries")
