@@ -1,5 +1,5 @@
 """
-Shared Enums and Models
+Extended Enums and Models for Sprint 2
 """
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
@@ -16,17 +16,14 @@ class UserRole(str, Enum):
     
     @classmethod
     def can_manage_reservations(cls, role: str) -> bool:
-        """Check if role can create/edit reservations"""
         return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value]
     
     @classmethod
     def can_access_backoffice(cls, role: str) -> bool:
-        """Check if role can access admin functions"""
         return role == cls.ADMIN.value
     
     @classmethod
     def can_access_terminal(cls, role: str) -> bool:
-        """Check if role can access service terminal"""
         return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value]
 
 
@@ -41,18 +38,39 @@ class ReservationStatus(str, Enum):
     
     @classmethod
     def is_terminal(cls, status: str) -> bool:
-        """Check if status is a terminal state (no further transitions)"""
         return status in [cls.ABGESCHLOSSEN.value, cls.NO_SHOW.value, cls.STORNIERT.value]
     
     @classmethod
     def is_active(cls, status: str) -> bool:
-        """Check if reservation is still active"""
         return status in [cls.NEU.value, cls.BESTAETIGT.value, cls.ANGEKOMMEN.value]
     
     @classmethod
     def can_cancel(cls, status: str) -> bool:
-        """Check if reservation can be cancelled"""
         return status in [cls.NEU.value, cls.BESTAETIGT.value]
+
+
+class WaitlistStatus(str, Enum):
+    """Waitlist entry status"""
+    OFFEN = "offen"
+    INFORMIERT = "informiert"
+    EINGELOEST = "eingeloest"
+    ERLEDIGT = "erledigt"
+
+
+class GuestFlag(str, Enum):
+    """Guest flag for no-show management"""
+    NONE = "none"
+    GREYLIST = "greylist"
+    BLACKLIST = "blacklist"
+
+
+class ReservationSource(str, Enum):
+    """Source of reservation"""
+    WIDGET = "widget"
+    INTERN = "intern"
+    WALK_IN = "walk-in"
+    WAITLIST = "waitlist"
+    PHONE = "phone"
 
 
 class AuditAction(str, Enum):
@@ -64,24 +82,6 @@ class AuditAction(str, Enum):
     PASSWORD_CHANGE = "password_change"
     LOGIN = "login"
     CANCEL_BY_GUEST = "cancel_by_guest"
-
-
-# Base Models with common fields
-class TimestampMixin(BaseModel):
-    """Mixin for created/updated timestamps"""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class ArchivableMixin(BaseModel):
-    """Mixin for soft-delete functionality"""
-    archived: bool = False
-
-
-class BaseEntity(TimestampMixin, ArchivableMixin):
-    """Base entity with ID, timestamps, and archive status"""
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
 
 def serialize_for_db(obj: dict) -> dict:
