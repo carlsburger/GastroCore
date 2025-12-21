@@ -204,19 +204,58 @@ class GastroCoreAPITester:
             return True
 
     def test_rbac_access_control(self):
-        """Test Role-Based Access Control"""
+        """Test Role-Based Access Control - Specific requirements from review"""
         print("\n🛡️ Testing RBAC access control...")
         
         rbac_success = True
         
-        # Test admin-only endpoints
+        # 1. RBAC: Mitarbeiter kann NICHT auf /api/reservations zugreifen (403)
+        result = self.make_request("GET", "reservations", token=self.tokens.get("mitarbeiter"), 
+                                 expected_status=403)
+        if result["success"]:
+            self.log_test("RBAC: Mitarbeiter blocked from /api/reservations (403)", True, "403 Forbidden as expected")
+        else:
+            self.log_test("RBAC: Mitarbeiter blocked from /api/reservations (403)", False, 
+                        f"Expected 403, got {result['status_code']}")
+            rbac_success = False
+        
+        # 2. RBAC: Mitarbeiter kann NICHT auf /api/users zugreifen (403)
+        result = self.make_request("GET", "users", token=self.tokens.get("mitarbeiter"), 
+                                 expected_status=403)
+        if result["success"]:
+            self.log_test("RBAC: Mitarbeiter blocked from /api/users (403)", True, "403 Forbidden as expected")
+        else:
+            self.log_test("RBAC: Mitarbeiter blocked from /api/users (403)", False, 
+                        f"Expected 403, got {result['status_code']}")
+            rbac_success = False
+        
+        # 3. RBAC: Schichtleiter KANN auf /api/reservations zugreifen
+        result = self.make_request("GET", "reservations", token=self.tokens.get("schichtleiter"), 
+                                 expected_status=200)
+        if result["success"]:
+            self.log_test("RBAC: Schichtleiter CAN access /api/reservations", True)
+        else:
+            self.log_test("RBAC: Schichtleiter CAN access /api/reservations", False, f"Status: {result['status_code']}")
+            rbac_success = False
+        
+        # 4. RBAC: Schichtleiter kann NICHT auf /api/users zugreifen (403)
+        result = self.make_request("GET", "users", token=self.tokens.get("schichtleiter"), 
+                                 expected_status=403)
+        if result["success"]:
+            self.log_test("RBAC: Schichtleiter blocked from /api/users (403)", True, "403 Forbidden as expected")
+        else:
+            self.log_test("RBAC: Schichtleiter blocked from /api/users (403)", False, 
+                        f"Expected 403, got {result['status_code']}")
+            rbac_success = False
+        
+        # Test admin access (should work for all)
         admin_endpoints = [
             ("GET", "users", 200),
+            ("GET", "reservations", 200),
             ("GET", "audit-logs", 200),
         ]
         
         for method, endpoint, expected_status in admin_endpoints:
-            # Test with admin token (should work)
             result = self.make_request(method, endpoint, token=self.tokens.get("admin"), 
                                      expected_status=expected_status)
             if result["success"]:
@@ -224,25 +263,6 @@ class GastroCoreAPITester:
             else:
                 self.log_test(f"Admin access to {endpoint}", False, f"Status: {result['status_code']}")
                 rbac_success = False
-            
-            # Test with mitarbeiter token (should fail with 403)
-            result = self.make_request(method, endpoint, token=self.tokens.get("mitarbeiter"), 
-                                     expected_status=403)
-            if result["success"]:
-                self.log_test(f"Mitarbeiter blocked from {endpoint}", True, "403 Forbidden as expected")
-            else:
-                self.log_test(f"Mitarbeiter blocked from {endpoint}", False, 
-                            f"Expected 403, got {result['status_code']}")
-                rbac_success = False
-        
-        # Test schichtleiter access to reservations (should work)
-        result = self.make_request("GET", "reservations", token=self.tokens.get("schichtleiter"), 
-                                 expected_status=200)
-        if result["success"]:
-            self.log_test("Schichtleiter access to reservations", True)
-        else:
-            self.log_test("Schichtleiter access to reservations", False, f"Status: {result['status_code']}")
-            rbac_success = False
         
         return rbac_success
 
