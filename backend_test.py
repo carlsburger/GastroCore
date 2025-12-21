@@ -2155,6 +2155,481 @@ class GastroCoreAPITester:
         
         return self.tests_passed == self.tests_run
 
+    # ============== SPRINT 5: STAFF & SCHEDULE MODULE TESTS ==============
+    
+    def test_seed_staff_data(self):
+        """Seed work areas and sample staff for testing"""
+        print("\n🌱 Seeding Staff & Schedule data...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Seed staff data", False, "Admin token not available")
+            return False
+        
+        result = self.make_request("POST", "seed-staff", {}, self.tokens["admin"], expected_status=200)
+        
+        if result["success"]:
+            seed_data = result["data"]
+            areas_seeded = seed_data.get("areas", {}).get("seeded", False)
+            staff_seeded = seed_data.get("staff", {}).get("seeded", False)
+            
+            if areas_seeded or staff_seeded or "bereits vorhanden" in str(seed_data):
+                self.log_test("Seed staff data", True, f"Areas: {areas_seeded}, Staff: {staff_seeded}")
+                return True
+            else:
+                self.log_test("Seed staff data", False, f"Unexpected response: {seed_data}")
+                return False
+        else:
+            self.log_test("Seed staff data", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_sprint5_work_areas_crud(self):
+        """Test Sprint 5: Work Areas CRUD operations"""
+        print("\n🏢 Testing Work Areas CRUD...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Work Areas CRUD", False, "Admin token not available")
+            return False
+        
+        work_areas_success = True
+        
+        # 1. GET /api/staff/work-areas - List all work areas
+        result = self.make_request("GET", "staff/work-areas", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            areas = result["data"]
+            self.log_test("GET /api/staff/work-areas", True, f"Retrieved {len(areas)} work areas")
+            
+            # Check for seeded areas
+            area_names = [area.get("name", "") for area in areas]
+            expected_areas = ["Service", "Küche", "Bar", "Event"]
+            found_areas = [name for name in expected_areas if name in area_names]
+            if len(found_areas) >= 3:
+                self.log_test("Work areas seeded correctly", True, f"Found areas: {found_areas}")
+            else:
+                self.log_test("Work areas seeded correctly", False, f"Expected areas not found. Found: {area_names}")
+        else:
+            self.log_test("GET /api/staff/work-areas", False, f"Status: {result['status_code']}")
+            work_areas_success = False
+        
+        # 2. POST /api/staff/work-areas - Create new work area
+        area_data = {
+            "name": "Test Bereich",
+            "description": "Test work area for automated testing",
+            "color": "#ff6b6b",
+            "sort_order": 10
+        }
+        
+        result = self.make_request("POST", "staff/work-areas", area_data, self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            area_id = result["data"]["id"]
+            self.test_data["test_work_area_id"] = area_id
+            self.log_test("POST /api/staff/work-areas", True, f"Work area created with ID: {area_id}")
+        else:
+            self.log_test("POST /api/staff/work-areas", False, f"Status: {result['status_code']}")
+            work_areas_success = False
+            return work_areas_success
+        
+        # 3. PATCH /api/staff/work-areas/{area_id} - Update work area
+        update_data = {
+            "name": "Updated Test Bereich",
+            "description": "Updated description",
+            "color": "#22c55e"
+        }
+        
+        result = self.make_request("PATCH", f"staff/work-areas/{area_id}", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_area = result["data"]
+            if updated_area.get("name") == "Updated Test Bereich":
+                self.log_test("PATCH /api/staff/work-areas/{area_id}", True, "Work area updated successfully")
+            else:
+                self.log_test("PATCH /api/staff/work-areas/{area_id}", False, "Work area not updated correctly")
+                work_areas_success = False
+        else:
+            self.log_test("PATCH /api/staff/work-areas/{area_id}", False, f"Status: {result['status_code']}")
+            work_areas_success = False
+        
+        # 4. DELETE /api/staff/work-areas/{area_id} - Archive work area
+        result = self.make_request("DELETE", f"staff/work-areas/{area_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("DELETE /api/staff/work-areas/{area_id}", True, "Work area archived successfully")
+        else:
+            self.log_test("DELETE /api/staff/work-areas/{area_id}", False, f"Status: {result['status_code']}")
+            work_areas_success = False
+        
+        # Test Manager access (should work)
+        if "schichtleiter" in self.tokens:
+            result = self.make_request("GET", "staff/work-areas", token=self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("Manager access to work areas", True, "Schichtleiter can access work areas")
+            else:
+                self.log_test("Manager access to work areas", False, f"Status: {result['status_code']}")
+                work_areas_success = False
+        
+        return work_areas_success
+
+    def test_sprint5_staff_members_crud(self):
+        """Test Sprint 5: Staff Members CRUD operations"""
+        print("\n👥 Testing Staff Members CRUD...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Staff Members CRUD", False, "Admin token not available")
+            return False
+        
+        staff_success = True
+        
+        # 1. GET /api/staff/members - List all staff members
+        result = self.make_request("GET", "staff/members", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            members = result["data"]
+            self.log_test("GET /api/staff/members", True, f"Retrieved {len(members)} staff members")
+            
+            # Check for seeded staff
+            member_names = [f"{m.get('first_name', '')} {m.get('last_name', '')}" for m in members]
+            expected_members = ["Max Mustermann", "Anna Schmidt", "Thomas Koch"]
+            found_members = [name for name in expected_members if name in member_names]
+            if len(found_members) >= 2:
+                self.log_test("Staff members seeded correctly", True, f"Found members: {found_members}")
+            else:
+                self.log_test("Staff members seeded correctly", False, f"Expected members not found. Found: {member_names}")
+        else:
+            self.log_test("GET /api/staff/members", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        # Get work areas for staff creation
+        areas_result = self.make_request("GET", "staff/work-areas", token=self.tokens["admin"], expected_status=200)
+        work_area_id = None
+        if areas_result["success"] and areas_result["data"]:
+            work_area_id = areas_result["data"][0]["id"]
+        
+        # 2. POST /api/staff/members - Create new staff member
+        member_data = {
+            "first_name": "Test",
+            "last_name": "Mitarbeiter",
+            "email": "test.mitarbeiter@example.de",
+            "phone": "+49 170 9999999",
+            "role": "service",
+            "employment_type": "teilzeit",
+            "weekly_hours": 20.0,
+            "entry_date": "2024-01-01",
+            "work_area_ids": [work_area_id] if work_area_id else [],
+            "notes": "Test staff member for automated testing"
+        }
+        
+        result = self.make_request("POST", "staff/members", member_data, self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            member_id = result["data"]["id"]
+            self.test_data["test_staff_member_id"] = member_id
+            self.log_test("POST /api/staff/members", True, f"Staff member created with ID: {member_id}")
+        else:
+            self.log_test("POST /api/staff/members", False, f"Status: {result['status_code']}")
+            staff_success = False
+            return staff_success
+        
+        # 3. GET /api/staff/members/{id} - Get single member
+        result = self.make_request("GET", f"staff/members/{member_id}", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            member = result["data"]
+            if member.get("first_name") == "Test" and member.get("last_name") == "Mitarbeiter":
+                self.log_test("GET /api/staff/members/{id}", True, "Staff member retrieved successfully")
+            else:
+                self.log_test("GET /api/staff/members/{id}", False, "Staff member data incorrect")
+                staff_success = False
+        else:
+            self.log_test("GET /api/staff/members/{id}", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        # 4. PATCH /api/staff/members/{id} - Update member
+        update_data = {
+            "first_name": "Updated Test",
+            "weekly_hours": 25.0,
+            "notes": "Updated test staff member"
+        }
+        
+        result = self.make_request("PATCH", f"staff/members/{member_id}", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_member = result["data"]
+            if updated_member.get("first_name") == "Updated Test" and updated_member.get("weekly_hours") == 25.0:
+                self.log_test("PATCH /api/staff/members/{id}", True, "Staff member updated successfully")
+            else:
+                self.log_test("PATCH /api/staff/members/{id}", False, "Staff member not updated correctly")
+                staff_success = False
+        else:
+            self.log_test("PATCH /api/staff/members/{id}", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        # 5. DELETE /api/staff/members/{id} - Archive member
+        result = self.make_request("DELETE", f"staff/members/{member_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("DELETE /api/staff/members/{id}", True, "Staff member archived successfully")
+        else:
+            self.log_test("DELETE /api/staff/members/{id}", False, f"Status: {result['status_code']}")
+            staff_success = False
+        
+        return staff_success
+
+    def test_sprint5_schedules_crud(self):
+        """Test Sprint 5: Schedules & Shifts CRUD operations"""
+        print("\n📅 Testing Schedules CRUD...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Schedules CRUD", False, "Schichtleiter token not available")
+            return False
+        
+        schedules_success = True
+        
+        # 1. GET /api/staff/schedules - List schedules
+        result = self.make_request("GET", "staff/schedules", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            schedules = result["data"]
+            self.log_test("GET /api/staff/schedules", True, f"Retrieved {len(schedules)} schedules")
+        else:
+            self.log_test("GET /api/staff/schedules", False, f"Status: {result['status_code']}")
+            schedules_success = False
+        
+        # 2. POST /api/staff/schedules - Create schedule for current week
+        from datetime import datetime
+        current_date = datetime.now()
+        year = current_date.year
+        week = current_date.isocalendar()[1]
+        
+        schedule_data = {
+            "year": year,
+            "week": week,
+            "notes": "Test schedule for automated testing"
+        }
+        
+        result = self.make_request("POST", "staff/schedules", schedule_data, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            schedule_id = result["data"]["id"]
+            self.test_data["test_schedule_id"] = schedule_id
+            self.log_test("POST /api/staff/schedules", True, f"Schedule created with ID: {schedule_id}")
+        else:
+            # Schedule might already exist, try next week
+            schedule_data["week"] = week + 1 if week < 52 else 1
+            if schedule_data["week"] == 1:
+                schedule_data["year"] = year + 1
+            
+            result = self.make_request("POST", "staff/schedules", schedule_data, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and "id" in result["data"]:
+                schedule_id = result["data"]["id"]
+                self.test_data["test_schedule_id"] = schedule_id
+                self.log_test("POST /api/staff/schedules", True, f"Schedule created with ID: {schedule_id}")
+            else:
+                self.log_test("POST /api/staff/schedules", False, f"Status: {result['status_code']}")
+                schedules_success = False
+                return schedules_success
+        
+        # 3. GET /api/staff/schedules/{id} - Get schedule with shifts
+        result = self.make_request("GET", f"staff/schedules/{schedule_id}", token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            schedule = result["data"]
+            if "shifts" in schedule and schedule.get("id") == schedule_id:
+                self.log_test("GET /api/staff/schedules/{id}", True, f"Schedule retrieved with {len(schedule['shifts'])} shifts")
+            else:
+                self.log_test("GET /api/staff/schedules/{id}", False, "Schedule data incomplete")
+                schedules_success = False
+        else:
+            self.log_test("GET /api/staff/schedules/{id}", False, f"Status: {result['status_code']}")
+            schedules_success = False
+        
+        # 4. POST /api/staff/schedules/{id}/publish - Publish schedule
+        result = self.make_request("POST", f"staff/schedules/{schedule_id}/publish", 
+                                 {}, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            self.log_test("POST /api/staff/schedules/{id}/publish", True, "Schedule published successfully")
+        else:
+            self.log_test("POST /api/staff/schedules/{id}/publish", False, f"Status: {result['status_code']}")
+            schedules_success = False
+        
+        return schedules_success
+
+    def test_sprint5_shifts_crud(self):
+        """Test Sprint 5: Shifts CRUD operations"""
+        print("\n⏰ Testing Shifts CRUD...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Shifts CRUD", False, "Schichtleiter token not available")
+            return False
+        
+        shifts_success = True
+        
+        # Get required data for shift creation
+        schedule_id = self.test_data.get("test_schedule_id")
+        if not schedule_id:
+            self.log_test("Shifts CRUD", False, "No test schedule available")
+            return False
+        
+        # Get staff members and work areas
+        staff_result = self.make_request("GET", "staff/members", token=self.tokens["schichtleiter"], expected_status=200)
+        areas_result = self.make_request("GET", "staff/work-areas", token=self.tokens["schichtleiter"], expected_status=200)
+        
+        if not (staff_result["success"] and areas_result["success"]):
+            self.log_test("Shifts CRUD", False, "Could not get staff/areas data")
+            return False
+        
+        staff_member_id = staff_result["data"][0]["id"] if staff_result["data"] else None
+        work_area_id = areas_result["data"][0]["id"] if areas_result["data"] else None
+        
+        if not (staff_member_id and work_area_id):
+            self.log_test("Shifts CRUD", False, "No staff member or work area available")
+            return False
+        
+        # 1. POST /api/staff/shifts - Create shift in schedule
+        from datetime import datetime, timedelta
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        shift_data = {
+            "schedule_id": schedule_id,
+            "staff_member_id": staff_member_id,
+            "work_area_id": work_area_id,
+            "shift_date": today,
+            "start_time": "09:00",
+            "end_time": "17:00",
+            "role": "service",
+            "notes": "Test shift for automated testing"
+        }
+        
+        result = self.make_request("POST", "staff/shifts", shift_data, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            shift_id = result["data"]["id"]
+            self.test_data["test_shift_id"] = shift_id
+            self.log_test("POST /api/staff/shifts", True, f"Shift created with ID: {shift_id}")
+        else:
+            self.log_test("POST /api/staff/shifts", False, f"Status: {result['status_code']}")
+            shifts_success = False
+            return shifts_success
+        
+        # 2. PATCH /api/staff/shifts/{id} - Update shift
+        update_data = {
+            "start_time": "10:00",
+            "end_time": "18:00",
+            "notes": "Updated test shift"
+        }
+        
+        result = self.make_request("PATCH", f"staff/shifts/{shift_id}", update_data, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            updated_shift = result["data"]
+            if updated_shift.get("start_time") == "10:00" and updated_shift.get("end_time") == "18:00":
+                self.log_test("PATCH /api/staff/shifts/{id}", True, "Shift updated successfully")
+            else:
+                self.log_test("PATCH /api/staff/shifts/{id}", False, "Shift not updated correctly")
+                shifts_success = False
+        else:
+            self.log_test("PATCH /api/staff/shifts/{id}", False, f"Status: {result['status_code']}")
+            shifts_success = False
+        
+        # 3. DELETE /api/staff/shifts/{id} - Delete shift
+        result = self.make_request("DELETE", f"staff/shifts/{shift_id}", 
+                                 token=self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            self.log_test("DELETE /api/staff/shifts/{id}", True, "Shift deleted successfully")
+        else:
+            self.log_test("DELETE /api/staff/shifts/{id}", False, f"Status: {result['status_code']}")
+            shifts_success = False
+        
+        return shifts_success
+
+    def test_sprint5_hours_overview(self):
+        """Test Sprint 5: Hours Overview API"""
+        print("\n📊 Testing Hours Overview...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Hours Overview", False, "Schichtleiter token not available")
+            return False
+        
+        # Test hours overview for current week
+        from datetime import datetime
+        current_date = datetime.now()
+        year = current_date.year
+        week = current_date.isocalendar()[1]
+        
+        result = self.make_request("GET", f"staff/hours-overview?year={year}&week={week}", 
+                                 token=self.tokens["schichtleiter"], expected_status=200)
+        
+        if result["success"]:
+            overview = result["data"]
+            required_fields = ["year", "week", "week_start", "week_end", "overview", "total_planned", "total_target"]
+            missing_fields = [field for field in required_fields if field not in overview]
+            
+            if not missing_fields:
+                self.log_test("GET /api/staff/hours-overview", True, 
+                            f"Hours overview for week {week}/{year}, {len(overview.get('overview', []))} staff members")
+                return True
+            else:
+                self.log_test("GET /api/staff/hours-overview", False, f"Missing fields: {missing_fields}")
+                return False
+        else:
+            self.log_test("GET /api/staff/hours-overview", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_sprint5_exports(self):
+        """Test Sprint 5: CSV Export functionality"""
+        print("\n📄 Testing CSV Exports...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("CSV Exports", False, "Admin token not available")
+            return False
+        
+        exports_success = True
+        
+        # 1. GET /api/staff/export/staff/csv - Export staff as CSV
+        url = f"{self.base_url}/api/staff/export/staff/csv"
+        headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'text/csv' in content_type:
+                    csv_size = len(response.content)
+                    self.log_test("GET /api/staff/export/staff/csv", True, 
+                                f"CSV generated successfully, size: {csv_size} bytes")
+                else:
+                    self.log_test("GET /api/staff/export/staff/csv", False, 
+                                f"Expected CSV, got content-type: {content_type}")
+                    exports_success = False
+            else:
+                self.log_test("GET /api/staff/export/staff/csv", False, f"Status: {response.status_code}")
+                exports_success = False
+        except Exception as e:
+            self.log_test("GET /api/staff/export/staff/csv", False, f"Error: {str(e)}")
+            exports_success = False
+        
+        # 2. GET /api/staff/export/shifts/csv?year=2024&week=52 - Export shifts as CSV
+        from datetime import datetime
+        current_date = datetime.now()
+        year = current_date.year
+        week = current_date.isocalendar()[1]
+        
+        url = f"{self.base_url}/api/staff/export/shifts/csv?year={year}&week={week}"
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'text/csv' in content_type:
+                    csv_size = len(response.content)
+                    self.log_test("GET /api/staff/export/shifts/csv", True, 
+                                f"CSV generated successfully, size: {csv_size} bytes")
+                else:
+                    self.log_test("GET /api/staff/export/shifts/csv", False, 
+                                f"Expected CSV, got content-type: {content_type}")
+                    exports_success = False
+            else:
+                self.log_test("GET /api/staff/export/shifts/csv", False, f"Status: {response.status_code}")
+                exports_success = False
+        except Exception as e:
+            self.log_test("GET /api/staff/export/shifts/csv", False, f"Error: {str(e)}")
+            exports_success = False
+        
+        return exports_success
+
 def main():
     """Main test execution"""
     tester = GastroCoreAPITester()
