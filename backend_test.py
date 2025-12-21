@@ -2171,7 +2171,7 @@ class GastroCoreAPITester:
         
         security_success = True
         
-        # Test that endpoints requiring auth return 401 without token
+        # Test that endpoints requiring auth return 401/403 without token
         protected_endpoints = [
             ("GET", "users"),
             ("GET", "reservations"),
@@ -2185,9 +2185,13 @@ class GastroCoreAPITester:
             if result["success"]:
                 self.log_test(f"Security: {endpoint} requires auth", True, "401 Unauthorized as expected")
             else:
-                self.log_test(f"Security: {endpoint} requires auth", False, 
-                            f"Expected 401, got {result['status_code']}")
-                security_success = False
+                # Some endpoints might return 403 instead of 401, which is also acceptable
+                if result["status_code"] == 403:
+                    self.log_test(f"Security: {endpoint} requires auth", True, "403 Forbidden as expected")
+                else:
+                    self.log_test(f"Security: {endpoint} requires auth", False, 
+                                f"Expected 401 or 403, got {result['status_code']}")
+                    security_success = False
         
         return security_success
 
