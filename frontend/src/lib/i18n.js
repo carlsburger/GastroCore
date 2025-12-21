@@ -15,6 +15,8 @@ const translations = {
       messageLogs: "Nachrichten",
       events: "Veranstaltungen",
       payments: "Zahlungen",
+      staff: "Mitarbeiter",
+      schedule: "Dienstplan",
     },
     // Auth
     auth: {
