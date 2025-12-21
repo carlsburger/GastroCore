@@ -75,6 +75,9 @@
 .status-no_show {
     @apply bg-[#bc4749] text-[#fafbed] border-[#bc4749];
 }
+.status-storniert {
+    @apply bg-[#9ca3af] text-[#fafbed] border-[#6b7280];
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
