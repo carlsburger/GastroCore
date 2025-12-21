@@ -203,12 +203,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Auth & RBAC"
-    - "Guest Search API"
-    - "Waitlist Conversion"
-    - "Full QA Audit Sprint 1-7"
-  stuck_tasks: []
-  test_all: true
+    - "Payments System"
+    - "Staff & Dienstplan" 
+    - "Loyalty System"
+  stuck_tasks:
+    - "Payments System"
+    - "Staff & Dienstplan"
+    - "Loyalty System"
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
