@@ -293,9 +293,9 @@ async def list_events(
     
     events = await db.events.find(query, {"_id": 0}).sort("start_datetime", 1).to_list(500)
     
-    # Add booked count to each event
+    # Add booked count to each event (include_pending=True for display)
     for event in events:
-        event["booked_count"] = await get_event_booked_count(event["id"])
+        event["booked_count"] = await get_event_booked_count(event["id"], include_pending=True)
         event["available_capacity"] = event.get("capacity_total", 0) - event["booked_count"]
     
     return events
@@ -308,7 +308,7 @@ async def get_event(event_id: str, user: dict = Depends(require_manager)):
     if not event:
         raise NotFoundException("Event")
     
-    event["booked_count"] = await get_event_booked_count(event_id)
+    event["booked_count"] = await get_event_booked_count(event_id, include_pending=True)
     event["available_capacity"] = event.get("capacity_total", 0) - event["booked_count"]
     
     # Get products if reservation_with_preorder
