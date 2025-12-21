@@ -144,6 +144,18 @@ class StaffMemberCreate(BaseModel):
     work_area_ids: List[str] = []  # Can work in multiple areas
     notes: Optional[str] = None  # HR internal notes
     user_id: Optional[str] = None  # Link to users collection (nullable)
+    # NEW HR Fields (Sprint 7.1 - Additive)
+    mobile_phone: Optional[str] = None
+    street: Optional[str] = None
+    zip_code: Optional[str] = None
+    city: Optional[str] = None
+    date_of_birth: Optional[str] = None  # YYYY-MM-DD
+    tax_id: Optional[str] = None  # Steuer-ID
+    social_security_number: Optional[str] = None  # SV-Nummer
+    health_insurance: Optional[str] = None  # Krankenkasse
+    bank_iban: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
 
 
 class StaffMemberUpdate(BaseModel):
@@ -159,6 +171,95 @@ class StaffMemberUpdate(BaseModel):
     notes: Optional[str] = None
     status: Optional[StaffStatus] = None
     user_id: Optional[str] = None
+    # NEW HR Fields (Sprint 7.1 - Additive)
+    mobile_phone: Optional[str] = None
+    street: Optional[str] = None
+    zip_code: Optional[str] = None
+    city: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    tax_id: Optional[str] = None
+    social_security_number: Optional[str] = None
+    health_insurance: Optional[str] = None
+    bank_iban: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+
+
+# NEW: HR Fields Update Model (Sprint 7.1)
+class StaffHRFieldsUpdate(BaseModel):
+    """Update sensitive HR fields - Admin only with audit logging"""
+    email: Optional[EmailStr] = None
+    mobile_phone: Optional[str] = None
+    street: Optional[str] = None
+    zip_code: Optional[str] = None
+    city: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    tax_id: Optional[str] = None
+    social_security_number: Optional[str] = None
+    health_insurance: Optional[str] = None
+    bank_iban: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+
+
+# NEW: Contact Fields visible to Manager (Sprint 7.1)
+CONTACT_FIELDS = {"email", "phone", "mobile_phone", "emergency_contact_name", "emergency_contact_phone"}
+# Sensitive HR fields - Admin only
+SENSITIVE_HR_FIELDS = {"tax_id", "social_security_number", "bank_iban", "health_insurance", "date_of_birth", "street", "zip_code", "city"}
+# Fields requiring special audit logging
+AUDIT_SENSITIVE_FIELDS = {"tax_id", "social_security_number", "bank_iban"}
+
+
+def calculate_completeness(member: dict) -> dict:
+    """Calculate onboarding completeness score and checklist"""
+    checklist = {
+        "email": bool(member.get("email")),
+        "mobile_phone": bool(member.get("mobile_phone") or member.get("phone")),
+        "address": bool(member.get("street") and member.get("zip_code") and member.get("city")),
+        "tax_id": bool(member.get("tax_id")),
+        "social_security_number": bool(member.get("social_security_number")),
+        "bank_iban": bool(member.get("bank_iban")),
+        "health_insurance": bool(member.get("health_insurance")),
+        "emergency_contact": bool(member.get("emergency_contact_name") and member.get("emergency_contact_phone")),
+    }
+    
+    # Calculate score (weighted)
+    weights = {
+        "email": 10,
+        "mobile_phone": 10,
+        "address": 15,
+        "tax_id": 20,
+        "social_security_number": 20,
+        "bank_iban": 15,
+        "health_insurance": 5,
+        "emergency_contact": 5
+    }
+    
+    total_weight = sum(weights.values())
+    achieved = sum(weights[k] for k, v in checklist.items() if v)
+    score = int((achieved / total_weight) * 100)
+    
+    # Pflichtfelder für "aktiv" Status
+    required_for_active = ["email", "mobile_phone", "tax_id", "social_security_number", "bank_iban"]
+    missing_for_active = [k for k in required_for_active if not checklist.get(k)]
+    
+    return {
+        "score": score,
+        "checklist": checklist,
+        "missing_for_active": missing_for_active,
+        "is_complete": score == 100
+    }
+
+
+def filter_member_for_role(member: dict, user_role: str) -> dict:
+    """Filter staff member fields based on user role"""
+    if user_role == "admin":
+        # Admin sees everything
+        return member
+    
+    # Schichtleiter sees only contact fields, not sensitive HR data
+    filtered = {k: v for k, v in member.items() if k not in SENSITIVE_HR_FIELDS}
+    return filtered
 
 
 # Schedules (Weekly)
