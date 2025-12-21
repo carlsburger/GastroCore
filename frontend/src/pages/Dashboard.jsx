@@ -330,7 +330,7 @@ export const Dashboard = () => {
               {format(new Date(selectedDate), "EEEE, d. MMMM yyyy", { locale: de })}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="lg"
@@ -340,19 +340,42 @@ export const Dashboard = () => {
             >
               <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
             </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleExportPDF}
+              disabled={exportLoading}
+              data-testid="export-pdf-button"
+              className="rounded-full h-12 px-4"
+              title="Tischplan als PDF"
+            >
+              {exportLoading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
+            </Button>
             {isSchichtleiter() && (
-              <Button
-                size="lg"
-                onClick={() => {
-                  setFormData({ ...formData, date: selectedDate });
-                  setShowCreateDialog(true);
-                }}
-                data-testid="new-reservation-button"
-                className="rounded-full h-12 px-6 font-bold"
-              >
-                <Plus size={20} className="mr-2" />
-                Neue Reservierung
-              </Button>
+              <>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => setShowWalkInDialog(true)}
+                  data-testid="walk-in-button"
+                  className="rounded-full h-12 px-6 font-bold"
+                >
+                  <Footprints size={20} className="mr-2" />
+                  Walk-In
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    setFormData({ ...formData, date: selectedDate });
+                    setShowCreateDialog(true);
+                  }}
+                  data-testid="new-reservation-button"
+                  className="rounded-full h-12 px-6 font-bold"
+                >
+                  <Plus size={20} className="mr-2" />
+                  Neue Reservierung
+                </Button>
+              </>
             )}
           </div>
         </div>
