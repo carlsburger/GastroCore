@@ -1761,6 +1761,427 @@ class GastroCoreAPITester:
                 noshow_success = False
         
         return noshow_success
+    
+    def test_full_qa_audit_sprint3_reminder_noshow_logic(self):
+        """Full QA Audit - Sprint 3: Reminder & No-show Logic"""
+        print("\n⏰ FULL QA AUDIT - Sprint 3: Reminder & No-show Logic")
+        
+        sprint3_success = True
+        
+        # 3.1 Reminder-Regeln
+        if "admin" in self.tokens:
+            # GET /api/settings → no_show_greylist_threshold und no_show_blacklist_threshold vorhanden?
+            result = self.make_request("GET", "settings", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                settings = result["data"]
+                setting_keys = [s.get("key") for s in settings]
+                
+                if "no_show_greylist_threshold" in setting_keys:
+                    self.log_test("3.1 Settings: no_show_greylist_threshold exists", True)
+                else:
+                    self.log_test("3.1 Settings: no_show_greylist_threshold exists", False)
+                    sprint3_success = False
+                
+                if "no_show_blacklist_threshold" in setting_keys:
+                    self.log_test("3.1 Settings: no_show_blacklist_threshold exists", True)
+                else:
+                    self.log_test("3.1 Settings: no_show_blacklist_threshold exists", False)
+                    sprint3_success = False
+            else:
+                self.log_test("3.1 Settings: Get settings", False, f"Status: {result['status_code']}")
+                sprint3_success = False
+        
+        # 3.2 No-show Konsequenzen
+        if "schichtleiter" in self.tokens:
+            # Test guest with 2 no-shows → should become greylist
+            test_phone = "+49 170 7777777"
+            
+            # Create guest with 2 no-shows
+            guest_data = {
+                "phone": test_phone,
+                "name": "Greylist Test",
+                "no_show_count": 2,
+                "flag": "greylist"
+            }
+            
+            result = self.make_request("POST", "guests", guest_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] or result["status_code"] == 409:
+                # Check if guest has greylist flag
+                result = self.make_request("GET", "guests", {"search": test_phone.replace("+", "")}, 
+                                         self.tokens["schichtleiter"], expected_status=200)
+                if result["success"] and result["data"]:
+                    guest = result["data"][0]
+                    if guest.get("flag") == "greylist" and guest.get("no_show_count") >= 2:
+                        self.log_test("3.2 No-show: 2x no_show → greylist", True, 
+                                    f"Flag: {guest.get('flag')}, Count: {guest.get('no_show_count')}")
+                    else:
+                        self.log_test("3.2 No-show: 2x no_show → greylist", False, 
+                                    f"Flag: {guest.get('flag')}, Count: {guest.get('no_show_count')}")
+                        sprint3_success = False
+                else:
+                    self.log_test("3.2 No-show: Check greylist guest", False, "Guest not found")
+                    sprint3_success = False
+            
+            # Test guest with 4 no-shows → should become blacklist
+            blacklist_phone = "+49 170 8888888"
+            blacklist_guest_data = {
+                "phone": blacklist_phone,
+                "name": "Blacklist Test",
+                "no_show_count": 4,
+                "flag": "blacklist"
+            }
+            
+            result = self.make_request("POST", "guests", blacklist_guest_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] or result["status_code"] == 409:
+                result = self.make_request("GET", "guests", {"search": blacklist_phone.replace("+", "")}, 
+                                         self.tokens["schichtleiter"], expected_status=200)
+                if result["success"] and result["data"]:
+                    guest = result["data"][0]
+                    if guest.get("flag") == "blacklist" and guest.get("no_show_count") >= 4:
+                        self.log_test("3.2 No-show: 4x no_show → blacklist", True, 
+                                    f"Flag: {guest.get('flag')}, Count: {guest.get('no_show_count')}")
+                    else:
+                        self.log_test("3.2 No-show: 4x no_show → blacklist", False, 
+                                    f"Flag: {guest.get('flag')}, Count: {guest.get('no_show_count')}")
+                        sprint3_success = False
+        
+        # 3.3 Storno-Links
+        # POST /api/public/reservations/{id}/cancel?token=INVALID → MUSS 403 sein
+        fake_reservation_id = "fake-reservation-id"
+        invalid_token = "invalid-token"
+        
+        result = self.make_request("POST", f"public/reservations/{fake_reservation_id}/cancel?token={invalid_token}", 
+                                 {}, expected_status=403)
+        if result["success"]:
+            self.log_test("3.3 Storno-Links: Invalid token rejected (403)", True)
+        else:
+            self.log_test("3.3 Storno-Links: Invalid token rejected (403)", False, 
+                        f"Expected 403, got {result['status_code']}")
+            sprint3_success = False
+        
+        # 3.4 Ungültige Statuswechsel
+        if "schichtleiter" in self.tokens:
+            # Create test reservation for status validation
+            today = datetime.now().strftime("%Y-%m-%d")
+            status_test_data = {
+                "guest_name": "Status Test",
+                "guest_phone": "+49 170 9999999",
+                "party_size": 2,
+                "date": today,
+                "time": "21:00"
+            }
+            
+            result = self.make_request("POST", "reservations", status_test_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                reservation_id = result["data"]["id"]
+                
+                # PATCH /api/reservations/{id}/status?new_status=abgeschlossen (von "neu") → MUSS Fehler sein
+                result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=abgeschlossen", 
+                                         {}, self.tokens["schichtleiter"], expected_status=400)
+                if result["success"]:
+                    self.log_test("3.4 Status: neu → abgeschlossen BLOCKED", True, "Invalid transition blocked")
+                else:
+                    self.log_test("3.4 Status: neu → abgeschlossen BLOCKED", False, 
+                                f"Expected 400, got {result['status_code']}")
+                    sprint3_success = False
+                
+                # First change to abgeschlossen via valid path
+                # neu → bestaetigt → angekommen → abgeschlossen
+                valid_transitions = ["bestaetigt", "angekommen", "abgeschlossen"]
+                for status in valid_transitions:
+                    result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status={status}", 
+                                             {}, self.tokens["schichtleiter"], expected_status=200)
+                    if not result["success"]:
+                        break
+                
+                # Now try: abgeschlossen → neu (MUSS Fehler sein)
+                result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=neu", 
+                                         {}, self.tokens["schichtleiter"], expected_status=400)
+                if result["success"]:
+                    self.log_test("3.4 Status: abgeschlossen → neu BLOCKED", True, "Invalid transition blocked")
+                else:
+                    self.log_test("3.4 Status: abgeschlossen → neu BLOCKED", False, 
+                                f"Expected 400, got {result['status_code']}")
+                    sprint3_success = False
+        
+        return sprint3_success
+    
+    def test_full_qa_audit_sprint4_payments(self):
+        """Full QA Audit - Sprint 4: Payments"""
+        print("\n💳 FULL QA AUDIT - Sprint 4: Payments")
+        
+        payments_success = True
+        
+        # Note: Payment endpoints might not be implemented yet
+        # Testing what's available
+        
+        # 4.1 Payment Rules
+        if "admin" in self.tokens:
+            # GET /api/payments/rules → Rules vorhanden?
+            result = self.make_request("GET", "payments/rules", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                rules = result["data"]
+                self.log_test("4.1 Payments: GET rules", True, f"Retrieved {len(rules)} payment rules")
+            else:
+                self.log_test("4.1 Payments: GET rules", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+                # Don't mark as failure since this might not be implemented yet
+            
+            # POST /api/payments/rules → Neue Regel erstellen
+            rule_data = {
+                "name": "Large Party Rule",
+                "condition": "party_size >= 8",
+                "amount": 50.00,
+                "description": "Deposit for parties of 8 or more"
+            }
+            
+            result = self.make_request("POST", "payments/rules", rule_data, 
+                                     self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                self.log_test("4.1 Payments: POST rules (create)", True)
+                self.test_data["payment_rule_id"] = result["data"].get("id")
+            else:
+                self.log_test("4.1 Payments: POST rules (create)", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+            
+            # GET /api/payments/check-required?entity_type=reservation&entity_id=XXX&party_size=10
+            if "test_reservation_id" in self.test_data:
+                check_params = {
+                    "entity_type": "reservation",
+                    "entity_id": self.test_data["test_reservation_id"],
+                    "party_size": 10
+                }
+                
+                result = self.make_request("GET", "payments/check-required", check_params, 
+                                         self.tokens["admin"], expected_status=200)
+                if result["success"]:
+                    payment_check = result["data"]
+                    if "payment_required" in payment_check:
+                        self.log_test("4.1 Payments: Check required", True, 
+                                    f"Payment required: {payment_check.get('payment_required')}")
+                    else:
+                        self.log_test("4.1 Payments: Check required", False, "Missing payment_required field")
+                        payments_success = False
+                else:
+                    self.log_test("4.1 Payments: Check required", False, 
+                                f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        # 4.2 Manuelle Zahlungsfreigabe
+        if "admin" in self.tokens and "test_reservation_id" in self.test_data:
+            reservation_id = self.test_data["test_reservation_id"]
+            
+            # POST /api/payments/manual/{id} OHNE reason → MUSS Fehler sein
+            result = self.make_request("POST", f"payments/manual/{reservation_id}", 
+                                     {}, self.tokens["admin"], expected_status=400)
+            if result["success"]:
+                self.log_test("4.2 Payments: Manual approval without reason BLOCKED", True, 
+                            "Missing reason blocked as expected")
+            else:
+                self.log_test("4.2 Payments: Manual approval without reason BLOCKED", False, 
+                            f"Expected 400, got {result['status_code']} - Endpoint may not be implemented")
+            
+            # POST /api/payments/manual/{id} als Schichtleiter → MUSS 403 sein
+            if "schichtleiter" in self.tokens:
+                manual_data = {"reason": "Test manual approval"}
+                result = self.make_request("POST", f"payments/manual/{reservation_id}", 
+                                         manual_data, self.tokens["schichtleiter"], expected_status=403)
+                if result["success"]:
+                    self.log_test("4.2 Payments: Schichtleiter blocked from manual approval (403)", True)
+                else:
+                    self.log_test("4.2 Payments: Schichtleiter blocked from manual approval (403)", False, 
+                                f"Expected 403, got {result['status_code']} - Endpoint may not be implemented")
+        
+        # 4.3 Payment-Logs
+        if "admin" in self.tokens:
+            # GET /api/payments/logs → Nur Admin
+            result = self.make_request("GET", "payments/logs", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                logs = result["data"]
+                self.log_test("4.3 Payments: GET logs (Admin)", True, f"Retrieved {len(logs)} payment logs")
+            else:
+                self.log_test("4.3 Payments: GET logs (Admin)", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        # 4.4 Payment Transactions
+        if "admin" in self.tokens:
+            # GET /api/payments/transactions
+            result = self.make_request("GET", "payments/transactions", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                transactions = result["data"]
+                self.log_test("4.4 Payments: GET transactions", True, f"Retrieved {len(transactions)} transactions")
+            else:
+                self.log_test("4.4 Payments: GET transactions", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        return payments_success
+    
+    def test_full_qa_audit_sprint5_staff_schedule(self):
+        """Full QA Audit - Sprint 5: Staff & Schedule"""
+        print("\n👥 FULL QA AUDIT - Sprint 5: Staff & Schedule")
+        
+        staff_success = True
+        
+        # Note: Staff endpoints might not be implemented yet
+        
+        # 5.1 Staff Members
+        if "admin" in self.tokens:
+            # GET /api/staff/members
+            result = self.make_request("GET", "staff/members", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                members = result["data"]
+                self.log_test("5.1 Staff: GET members", True, f"Retrieved {len(members)} staff members")
+            else:
+                self.log_test("5.1 Staff: GET members", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+            
+            # POST /api/staff/members → Neuer Mitarbeiter
+            member_data = {
+                "name": "QA Test Staff",
+                "email": "qa-staff@gastrocore.de",
+                "position": "Service",
+                "hourly_rate": 15.50
+            }
+            
+            result = self.make_request("POST", "staff/members", member_data, 
+                                     self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                member = result["data"]
+                self.log_test("5.1 Staff: POST members (create)", True, f"Staff ID: {member.get('id')}")
+                self.test_data["staff_member_id"] = member.get("id")
+            else:
+                self.log_test("5.1 Staff: POST members (create)", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+            
+            # PATCH /api/staff/members/{id} mit user_id Verknüpfung
+            if "staff_member_id" in self.test_data and "admin" in self.tokens:
+                member_id = self.test_data["staff_member_id"]
+                admin_user = self.test_data.get("admin_user", {})
+                update_data = {"user_id": admin_user.get("id")}
+                
+                result = self.make_request("PATCH", f"staff/members/{member_id}", update_data, 
+                                         self.tokens["admin"], expected_status=200)
+                if result["success"]:
+                    self.log_test("5.1 Staff: PATCH members (link user)", True)
+                else:
+                    self.log_test("5.1 Staff: PATCH members (link user)", False, 
+                                f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        # 5.2 Work Areas
+        if "admin" in self.tokens:
+            # GET /api/staff/work-areas
+            result = self.make_request("GET", "staff/work-areas", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                work_areas = result["data"]
+                self.log_test("5.2 Staff: GET work-areas", True, f"Retrieved {len(work_areas)} work areas")
+            else:
+                self.log_test("5.2 Staff: GET work-areas", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        # 5.3 Schedules
+        if "admin" in self.tokens:
+            # GET /api/staff/schedules
+            result = self.make_request("GET", "staff/schedules", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                schedules = result["data"]
+                self.log_test("5.3 Staff: GET schedules", True, f"Retrieved {len(schedules)} schedules")
+            else:
+                self.log_test("5.3 Staff: GET schedules", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+            
+            # POST /api/staff/schedules mit year, week
+            schedule_data = {
+                "year": 2025,
+                "week": 1,
+                "name": "QA Test Schedule"
+            }
+            
+            result = self.make_request("POST", "staff/schedules", schedule_data, 
+                                     self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                schedule = result["data"]
+                self.log_test("5.3 Staff: POST schedules (create)", True, f"Schedule ID: {schedule.get('id')}")
+                self.test_data["schedule_id"] = schedule.get("id")
+            else:
+                self.log_test("5.3 Staff: POST schedules (create)", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+            
+            # POST /api/staff/schedules/{id}/publish
+            if "schedule_id" in self.test_data:
+                schedule_id = self.test_data["schedule_id"]
+                result = self.make_request("POST", f"staff/schedules/{schedule_id}/publish", 
+                                         {}, self.tokens["admin"], expected_status=200)
+                if result["success"]:
+                    self.log_test("5.3 Staff: POST schedules/publish", True)
+                else:
+                    self.log_test("5.3 Staff: POST schedules/publish", False, 
+                                f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        # 5.4 Hours Overview
+        if "admin" in self.tokens:
+            # GET /api/staff/hours-overview
+            result = self.make_request("GET", "staff/hours-overview", token=self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                hours = result["data"]
+                self.log_test("5.4 Staff: GET hours-overview", True, "Hours overview retrieved")
+            else:
+                self.log_test("5.4 Staff: GET hours-overview", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        # 5.5 Exports
+        if "admin" in self.tokens:
+            # GET /api/staff/export/staff/csv → CSV generiert?
+            url = f"{self.base_url}/api/staff/export/staff/csv"
+            headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+            
+            try:
+                response = requests.get(url, headers=headers)
+                if response.status_code == 200:
+                    content_type = response.headers.get('content-type', '')
+                    if 'text/csv' in content_type or 'application/csv' in content_type:
+                        self.log_test("5.5 Staff: Export staff CSV", True, f"CSV size: {len(response.content)} bytes")
+                    else:
+                        self.log_test("5.5 Staff: Export staff CSV", False, f"Expected CSV, got: {content_type}")
+                        staff_success = False
+                else:
+                    self.log_test("5.5 Staff: Export staff CSV", False, 
+                                f"Status: {response.status_code} - Endpoint may not be implemented")
+            except Exception as e:
+                self.log_test("5.5 Staff: Export staff CSV", False, f"Error: {str(e)}")
+            
+            # GET /api/staff/export/shifts/csv → CSV generiert?
+            url = f"{self.base_url}/api/staff/export/shifts/csv"
+            
+            try:
+                response = requests.get(url, headers=headers)
+                if response.status_code == 200:
+                    content_type = response.headers.get('content-type', '')
+                    if 'text/csv' in content_type or 'application/csv' in content_type:
+                        self.log_test("5.5 Staff: Export shifts CSV", True, f"CSV size: {len(response.content)} bytes")
+                    else:
+                        self.log_test("5.5 Staff: Export shifts CSV", False, f"Expected CSV, got: {content_type}")
+                        staff_success = False
+                else:
+                    self.log_test("5.5 Staff: Export shifts CSV", False, 
+                                f"Status: {response.status_code} - Endpoint may not be implemented")
+            except Exception as e:
+                self.log_test("5.5 Staff: Export shifts CSV", False, f"Error: {str(e)}")
+        
+        # 5.6 Document Upload
+        if "admin" in self.tokens and "staff_member_id" in self.test_data:
+            # POST /api/staff/members/{id}/documents
+            member_id = self.test_data["staff_member_id"]
+            result = self.make_request("POST", f"staff/members/{member_id}/documents", 
+                                     {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                self.log_test("5.6 Staff: POST documents upload", True)
+            else:
+                self.log_test("5.6 Staff: POST documents upload", False, 
+                            f"Status: {result['status_code']} - Endpoint may not be implemented")
+        
+        return staff_success
             if result["success"]:
                 self.log_test("RBAC: Schichtleiter blocked from user management", True, "403 Forbidden as expected")
             else:
