@@ -1817,7 +1817,7 @@ async def startup():
     """Initialize default settings and rules on startup"""
     await init_default_settings()
     await init_default_reminder_rules()
-    logger.info("GastroCore v5.0.0 started - Events + Payment + Staff Module enabled")
+    logger.info("GastroCore v6.0.0 started - Events + Payment + Staff + TaxOffice Module enabled")
 
 @app.on_event("shutdown")
 async def shutdown():
