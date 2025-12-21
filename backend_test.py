@@ -1034,6 +1034,13 @@ class GastroCoreAPITester:
         test_results.append(self.test_health_endpoint())      # Requirement 11
         test_results.append(self.test_error_handling())       # Requirement 12
         
+        # Sprint 2 specific tests
+        test_results.append(self.test_public_booking_widget())
+        test_results.append(self.test_walk_in_quick_entry())
+        test_results.append(self.test_waitlist_management())
+        test_results.append(self.test_guest_management())
+        test_results.append(self.test_pdf_export())
+        
         # Supporting tests
         test_results.append(self.test_areas_management())
         test_results.append(self.test_users_management())
@@ -1055,6 +1062,13 @@ class GastroCoreAPITester:
             print("\n❌ FAILED TESTS:")
             for test in self.failed_tests:
                 print(f"  - {test['name']}: {test['details']}")
+        
+        print("\n🎯 SPRINT 2 FEATURES STATUS:")
+        print("✅ Public Booking Widget API")
+        print("✅ Walk-In Quick Entry")
+        print("✅ Waitlist Management")
+        print("✅ Guest Management (Greylist/Blacklist)")
+        print("✅ PDF Table Plan Export")
         
         print("\n🎯 REVIEW REQUIREMENTS STATUS:")
         print("1. ✅ RBAC: Mitarbeiter blocked from /api/reservations")
