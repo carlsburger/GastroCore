@@ -10,6 +10,8 @@ const translations = {
       auditLog: "Audit-Log",
       settings: "Einstellungen",
       logout: "Abmelden",
+      waitlist: "Warteliste",
+      guests: "Gäste",
     },
     // Auth
     auth: {
