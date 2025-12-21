@@ -582,7 +582,7 @@ export const StaffDetail = () => {
                         id="tax_id"
                         value={hrFields.tax_id}
                         onChange={(e) => setHrFields({ ...hrFields, tax_id: e.target.value })}
-                        placeholder="12 345 678 901"
+                        placeholder="12345678901 (11 Ziffern)"
                       />
                     </div>
                     <div className="space-y-2">
