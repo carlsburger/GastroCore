@@ -1289,6 +1289,58 @@ async def health_check():
     return {"status": "healthy" if db_status == "connected" else "degraded", "database": db_status, "version": "3.0.0"}
 
 
+@api_router.get("/version", tags=["Health"])
+async def get_version():
+    """
+    Public endpoint for build identification and module status.
+    No authentication required. Does not expose secrets.
+    """
+    import subprocess
+    
+    # Get git info (if available)
+    commit_hash = None
+    branch = None
+    try:
+        commit_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], 
+            cwd=ROOT_DIR, 
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+        branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], 
+            cwd=ROOT_DIR, 
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        pass
+    
+    # Build ID from env or generate from git hash + timestamp
+    build_id = os.environ.get("BUILD_ID")
+    if not build_id:
+        short_hash = commit_hash[:8] if commit_hash else "unknown"
+        build_id = f"{short_hash}-{datetime.now(timezone.utc).strftime('%Y%m%d')}"
+    
+    return {
+        "build_id": build_id,
+        "commit_hash": commit_hash,
+        "branch": branch,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "health_version": "3.0.0",
+        "modules": {
+            "core": True,
+            "reservations": True,
+            "events": True,
+            "payments": True,
+            "staff": True,
+            "schedules": True,
+            "taxoffice": True,
+            "loyalty": True,
+            "marketing": False,
+            "ai": False
+        }
+    }
+
+
 # ============== SPRINT 3: REMINDER & NO-SHOW SYSTEM ==============
 
 # --- Pydantic Models for Sprint 3 ---
