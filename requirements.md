@@ -25,6 +25,12 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
    - Suche nach Name/Telefon
    - Nur Schichtleiter/Admin darf bearbeiten
 
+5. **E-Mail-Benachrichtigungen** (neu)
+   - Bestätigung bei neuer Reservierung
+   - Erinnerung 24h vorher (Cron-Endpoint)
+   - Stornierungslink in jeder E-Mail
+   - Stornierungsbestätigung
+
 ### User Choices
 - **Auth**: JWT-basierte Custom Auth
 - **Design**: Hell/Beige Theme mit Tokens:
@@ -37,10 +43,11 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
 - **Initiale Benutzer**: Test-User pro Rolle mit Passwortwechsel beim ersten Login
 - **Sprache**: i18n vorbereitet, Default Deutsch
 - **Echtzeit**: Kein WebSocket, Polling/Refresh reicht
+- **E-Mail**: IONOS SMTP (reservierung@carlsburg.de)
 
 ---
 
-## Architecture Tasks Done (Sprint 1)
+## Architecture Tasks Done (Sprint 1 + E-Mail)
 
 ### Backend (FastAPI + MongoDB)
 - [x] JWT Authentication mit Rollen
@@ -52,6 +59,12 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
 - [x] AuditLog für alle Mutationen
 - [x] Seed-Endpoint für Test-Daten
 - [x] Archivierung statt Löschen
+- [x] E-Mail Service mit SMTP (IONOS)
+- [x] HTML E-Mail Templates (Carlsburg Branding)
+- [x] Bestätigungs-E-Mail bei Reservierung
+- [x] Erinnerungs-Endpoint für Cron-Jobs
+- [x] Stornierungslink mit Token-Verifizierung
+- [x] Öffentlicher Stornierungsendpoint
 
 ### Frontend (React + Shadcn/UI)
 - [x] Login Page mit Split-Screen Design
@@ -63,6 +76,13 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
 - [x] Protected Routes mit Role-Check
 - [x] i18n Setup (Deutsch)
 - [x] Custom Theme (Beige/Grün)
+- [x] Stornierungsseite (öffentlich)
+- [x] Status "Storniert" Support
+
+### E-Mail Templates
+- Bestätigung: Elegantes Design mit Reservierungsdetails + Stornierungslink
+- Erinnerung: "Bis morgen!" mit Reservierungsdetails + Stornierungslink
+- Stornierung: Bestätigung der erfolgreichen Stornierung
 
 ### Test Users
 | Rolle | E-Mail | Passwort |
@@ -72,28 +92,6 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
 | Mitarbeiter | mitarbeiter@gastrocore.de | Mitarbeiter123! |
 
 **Hinweis**: Beim ersten Login muss das Passwort geändert werden!
-
----
-
-## Next Tasks (Sprint 2+)
-
-### High Priority
-- [ ] Einstellungen-Page für Key/Value Settings (Admin)
-- [ ] Reservierung bearbeiten (Edit Dialog)
-- [ ] Datumsbereich-Filter für Reservierungen
-- [ ] Export-Funktion (CSV/PDF)
-
-### Medium Priority
-- [ ] E-Mail-Benachrichtigungen für Reservierungsbestätigungen
-- [ ] Druckansicht für Reservierungsliste
-- [ ] Gäste-Datenbank (wiederkehrende Gäste)
-- [ ] Tischplan-Visualisierung
-
-### Low Priority
-- [ ] Multi-Language Support (EN, FR)
-- [ ] Dark Mode
-- [ ] Mobile App (PWA)
-- [ ] Analytics Dashboard
 
 ---
 
@@ -118,10 +116,12 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
 ### Reservations
 - `GET /api/reservations` - List (with filters)
 - `GET /api/reservations/{id}` - Get One
-- `POST /api/reservations` - Create (Admin/Schichtleiter)
+- `POST /api/reservations` - Create (Admin/Schichtleiter) - **sendet Bestätigungs-E-Mail**
 - `PUT /api/reservations/{id}` - Update (Admin/Schichtleiter)
-- `PATCH /api/reservations/{id}/status` - Status Change (Admin/Schichtleiter)
+- `PATCH /api/reservations/{id}/status` - Status Change (Admin/Schichtleiter) - **sendet E-Mail bei Bestätigung**
 - `DELETE /api/reservations/{id}` - Archive (Admin/Schichtleiter)
+- `POST /api/reservations/{id}/cancel?token=...` - **Öffentliche Stornierung** (via E-Mail-Link)
+- `POST /api/reservations/send-reminders` - Erinnerungen senden (Admin, für Cron)
 
 ### Audit Log (Admin only)
 - `GET /api/audit-logs` - List with filters
@@ -132,8 +132,59 @@ Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Te
 
 ---
 
+## SMTP Konfiguration
+
+Die SMTP-Zugangsdaten sind in `/app/backend/.env` konfiguriert:
+
+```
+SMTP_HOST=smtp.ionos.de
+SMTP_PORT=465
+SMTP_USER=reservierung@carlsburg.de
+SMTP_PASSWORD=<ihr-passwort>
+SMTP_FROM_EMAIL=reservierung@carlsburg.de
+SMTP_FROM_NAME=Carlsburg Restaurant
+```
+
+**Hinweis**: Bei IONOS muss ggf. die E-Mail-Adresse erst im Webmail aktiviert werden und das korrekte Passwort verwendet werden.
+
+---
+
+## Cron-Job für Erinnerungen
+
+Um tägliche Erinnerungs-E-Mails zu versenden, kann ein Cron-Job eingerichtet werden:
+
+```bash
+# Täglich um 10:00 Uhr Erinnerungen für morgige Reservierungen senden
+0 10 * * * curl -X POST "https://ihre-domain.de/api/reservations/send-reminders" -H "Authorization: Bearer <admin-token>"
+```
+
+---
+
+## Next Tasks (Sprint 2+)
+
+### High Priority
+- [ ] SMTP-Credentials korrigieren (aktuell: "Authentication credentials invalid")
+- [ ] Einstellungen-Page für Key/Value Settings (Admin)
+- [ ] Reservierung bearbeiten (Edit Dialog)
+
+### Medium Priority
+- [ ] Datumsbereich-Filter für Reservierungen
+- [ ] Export-Funktion (CSV/PDF)
+- [ ] Druckansicht für Reservierungsliste
+- [ ] Gäste-Datenbank (wiederkehrende Gäste)
+
+### Low Priority
+- [ ] Tischplan-Visualisierung
+- [ ] Multi-Language Support (EN, FR)
+- [ ] Dark Mode
+- [ ] Mobile App (PWA)
+- [ ] Analytics Dashboard
+
+---
+
 ## Tech Stack
-- **Backend**: FastAPI, Motor (async MongoDB), PyJWT, bcrypt
+- **Backend**: FastAPI, Motor (async MongoDB), PyJWT, bcrypt, smtplib
 - **Frontend**: React 19, React Router, Shadcn/UI, Tailwind CSS, Axios
 - **Database**: MongoDB
 - **Auth**: JWT Tokens (24h expiry)
+- **E-Mail**: SMTP (IONOS)
