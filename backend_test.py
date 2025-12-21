@@ -971,6 +971,336 @@ class GastroCoreAPITester:
             self.log_test("PDF table plan export", False, f"Error: {str(e)}")
             return False
 
+    def test_sprint3_reminder_rules_crud(self):
+        """Test Sprint 3: Reminder Rules CRUD operations"""
+        print("\n⏰ Testing Reminder Rules CRUD...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Reminder Rules CRUD", False, "Admin token not available")
+            return False
+        
+        reminder_success = True
+        
+        # 1. GET /api/reminder-rules (list all rules)
+        result = self.make_request("GET", "reminder-rules", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            rules = result["data"]
+            self.log_test("GET reminder-rules", True, f"Retrieved {len(rules)} reminder rules")
+        else:
+            self.log_test("GET reminder-rules", False, f"Status: {result['status_code']}")
+            reminder_success = False
+        
+        # 2. POST /api/reminder-rules (create new rule)
+        rule_data = {
+            "name": "Test 24h Reminder",
+            "hours_before": 24,
+            "channel": "email",
+            "is_active": True,
+            "template_key": "reminder_24h"
+        }
+        
+        result = self.make_request("POST", "reminder-rules", rule_data, self.tokens["admin"], expected_status=200)
+        if result["success"] and "id" in result["data"]:
+            rule_id = result["data"]["id"]
+            self.test_data["test_reminder_rule_id"] = rule_id
+            self.log_test("POST reminder-rules (create)", True, f"Rule created with ID: {rule_id}")
+        else:
+            self.log_test("POST reminder-rules (create)", False, f"Status: {result['status_code']}")
+            reminder_success = False
+            return reminder_success
+        
+        # 3. PATCH /api/reminder-rules/{id} (update rule)
+        update_data = {
+            "name": "Updated 24h Reminder",
+            "hours_before": 48,
+            "channel": "both",
+            "is_active": False
+        }
+        
+        result = self.make_request("PATCH", f"reminder-rules/{rule_id}", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_rule = result["data"]
+            if updated_rule.get("name") == "Updated 24h Reminder" and updated_rule.get("hours_before") == 48:
+                self.log_test("PATCH reminder-rules (update)", True, "Rule updated successfully")
+            else:
+                self.log_test("PATCH reminder-rules (update)", False, "Rule not updated correctly")
+                reminder_success = False
+        else:
+            self.log_test("PATCH reminder-rules (update)", False, f"Status: {result['status_code']}")
+            reminder_success = False
+        
+        # 4. DELETE /api/reminder-rules/{id} (archive rule)
+        result = self.make_request("DELETE", f"reminder-rules/{rule_id}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.log_test("DELETE reminder-rules (archive)", True, "Rule archived successfully")
+        else:
+            self.log_test("DELETE reminder-rules (archive)", False, f"Status: {result['status_code']}")
+            reminder_success = False
+        
+        return reminder_success
+
+    def test_sprint3_whatsapp_deeplink(self):
+        """Test Sprint 3: WhatsApp Deep-Link Generator"""
+        print("\n📱 Testing WhatsApp Deep-Link Generator...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("WhatsApp Deep-Link", False, "Schichtleiter token not available")
+            return False
+        
+        # First create a test reservation or use existing one
+        if "test_reservation_id" not in self.test_data:
+            # Create a test reservation
+            today = datetime.now().strftime("%Y-%m-%d")
+            reservation_data = {
+                "guest_name": "WhatsApp Test User",
+                "guest_phone": "+491709999999",
+                "guest_email": "whatsapp@example.de",
+                "party_size": 2,
+                "date": today,
+                "time": "19:00"
+            }
+            
+            result = self.make_request("POST", "reservations", reservation_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and "id" in result["data"]:
+                reservation_id = result["data"]["id"]
+                self.test_data["whatsapp_test_reservation_id"] = reservation_id
+            else:
+                self.log_test("Create WhatsApp test reservation", False, f"Status: {result['status_code']}")
+                return False
+        else:
+            reservation_id = self.test_data["test_reservation_id"]
+        
+        # Test WhatsApp reminder link generation
+        result = self.make_request("POST", f"reservations/{reservation_id}/whatsapp-reminder", 
+                                 {}, self.tokens["schichtleiter"], expected_status=200)
+        
+        if result["success"]:
+            whatsapp_data = result["data"]
+            if "whatsapp_link" in whatsapp_data and whatsapp_data["whatsapp_link"].startswith("https://wa.me/"):
+                self.log_test("WhatsApp Deep-Link Generator", True, 
+                            f"Generated link: {whatsapp_data['whatsapp_link'][:50]}...")
+                return True
+            else:
+                self.log_test("WhatsApp Deep-Link Generator", False, "Invalid WhatsApp link format")
+                return False
+        else:
+            self.log_test("WhatsApp Deep-Link Generator", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_sprint3_guest_status_check(self):
+        """Test Sprint 3: Guest Status Check"""
+        print("\n👤 Testing Guest Status Check...")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Guest Status Check", False, "Schichtleiter token not available")
+            return False
+        
+        # Test guest status check with a phone number
+        test_phone = "+491709999999"
+        
+        result = self.make_request("GET", f"guests/check/{test_phone}", 
+                                 token=self.tokens["schichtleiter"], expected_status=200)
+        
+        if result["success"]:
+            guest_status = result["data"]
+            if "flag" in guest_status and "no_show_count" in guest_status:
+                self.log_test("Guest Status Check", True, 
+                            f"Flag: {guest_status.get('flag')}, No-shows: {guest_status.get('no_show_count')}")
+                return True
+            else:
+                self.log_test("Guest Status Check", False, "Missing required fields in response")
+                return False
+        else:
+            self.log_test("Guest Status Check", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_sprint3_guest_confirmation(self):
+        """Test Sprint 3: Guest Confirmation (public endpoints)"""
+        print("\n✅ Testing Guest Confirmation...")
+        
+        # First get a reservation ID (use existing or create one)
+        if "test_reservation_id" not in self.test_data:
+            if "schichtleiter" not in self.tokens:
+                self.log_test("Guest Confirmation", False, "No reservation available for testing")
+                return False
+            
+            # Create a test reservation
+            today = datetime.now().strftime("%Y-%m-%d")
+            reservation_data = {
+                "guest_name": "Confirmation Test User",
+                "guest_phone": "+491708888888",
+                "guest_email": "confirm@example.de",
+                "party_size": 3,
+                "date": today,
+                "time": "20:00"
+            }
+            
+            result = self.make_request("POST", "reservations", reservation_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and "id" in result["data"]:
+                reservation_id = result["data"]["id"]
+            else:
+                self.log_test("Create confirmation test reservation", False)
+                return False
+        else:
+            reservation_id = self.test_data["test_reservation_id"]
+        
+        # Generate confirm token using the pattern: confirm:{reservation_id}:{secret}
+        import hashlib
+        secret = "gastrocore-super-secret-key-2024-production"  # From .env JWT_SECRET
+        message = f"confirm:{reservation_id}:{secret}"
+        token = hashlib.sha256(message.encode()).hexdigest()[:32]
+        
+        confirmation_success = True
+        
+        # 1. GET /api/public/reservations/{id}/confirm-info?token=...
+        result = self.make_request("GET", f"public/reservations/{reservation_id}/confirm-info", 
+                                 {"token": token}, expected_status=200)
+        
+        if result["success"]:
+            confirm_info = result["data"]
+            if "guest_name" in confirm_info and "date" in confirm_info and "time" in confirm_info:
+                self.log_test("GET confirm-info", True, 
+                            f"Guest: {confirm_info.get('guest_name')}, Date: {confirm_info.get('date')}")
+            else:
+                self.log_test("GET confirm-info", False, "Missing required fields in response")
+                confirmation_success = False
+        else:
+            self.log_test("GET confirm-info", False, f"Status: {result['status_code']}")
+            confirmation_success = False
+        
+        # 2. POST /api/public/reservations/{id}/confirm?token=...
+        result = self.make_request("POST", f"public/reservations/{reservation_id}/confirm", 
+                                 {"token": token}, expected_status=200)
+        
+        if result["success"]:
+            confirm_response = result["data"]
+            if "message" in confirm_response:
+                self.log_test("POST confirm", True, f"Message: {confirm_response.get('message')}")
+            else:
+                self.log_test("POST confirm", False, "Missing message in response")
+                confirmation_success = False
+        else:
+            self.log_test("POST confirm", False, f"Status: {result['status_code']}")
+            confirmation_success = False
+        
+        return confirmation_success
+
+    def test_sprint3_message_logs(self):
+        """Test Sprint 3: Message Logs"""
+        print("\n📨 Testing Message Logs...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Message Logs", False, "Admin token not available")
+            return False
+        
+        message_logs_success = True
+        
+        # 1. GET /api/message-logs (list all message logs)
+        result = self.make_request("GET", "message-logs", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            logs = result["data"]
+            self.log_test("GET message-logs", True, f"Retrieved {len(logs)} message logs")
+        else:
+            self.log_test("GET message-logs", False, f"Status: {result['status_code']}")
+            message_logs_success = False
+        
+        # 2. Filter by channel: GET /api/message-logs?channel=whatsapp
+        result = self.make_request("GET", "message-logs", {"channel": "whatsapp"}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            whatsapp_logs = result["data"]
+            self.log_test("GET message-logs (WhatsApp filter)", True, 
+                        f"Retrieved {len(whatsapp_logs)} WhatsApp logs")
+        else:
+            self.log_test("GET message-logs (WhatsApp filter)", False, f"Status: {result['status_code']}")
+            message_logs_success = False
+        
+        # 3. Filter by channel: GET /api/message-logs?channel=email
+        result = self.make_request("GET", "message-logs", {"channel": "email"}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            email_logs = result["data"]
+            self.log_test("GET message-logs (Email filter)", True, 
+                        f"Retrieved {len(email_logs)} Email logs")
+        else:
+            self.log_test("GET message-logs (Email filter)", False, f"Status: {result['status_code']}")
+            message_logs_success = False
+        
+        return message_logs_success
+
+    def test_sprint3_settings(self):
+        """Test Sprint 3: Settings endpoints"""
+        print("\n⚙️ Testing Settings...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Settings", False, "Admin token not available")
+            return False
+        
+        settings_success = True
+        
+        # 1. GET /api/settings (check no_show_greylist_threshold, cancellation_deadline_hours)
+        result = self.make_request("GET", "settings", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            settings = result["data"]
+            self.log_test("GET settings", True, f"Retrieved {len(settings)} settings")
+            
+            # Check for specific settings
+            setting_keys = [s.get("key") for s in settings]
+            if "no_show_greylist_threshold" in setting_keys:
+                self.log_test("Settings: no_show_greylist_threshold exists", True)
+            else:
+                self.log_test("Settings: no_show_greylist_threshold exists", False)
+                settings_success = False
+        else:
+            self.log_test("GET settings", False, f"Status: {result['status_code']}")
+            settings_success = False
+        
+        # 2. POST /api/settings with {key, value}
+        test_setting = {
+            "key": "test_sprint3_setting",
+            "value": "test_value_123",
+            "description": "Test setting for Sprint 3"
+        }
+        
+        result = self.make_request("POST", "settings", test_setting, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            created_setting = result["data"]
+            if created_setting.get("key") == "test_sprint3_setting":
+                self.log_test("POST settings (create)", True, "Setting created successfully")
+            else:
+                self.log_test("POST settings (create)", False, "Setting not created correctly")
+                settings_success = False
+        else:
+            self.log_test("POST settings (create)", False, f"Status: {result['status_code']}")
+            settings_success = False
+        
+        # 3. Update existing setting
+        update_setting = {
+            "key": "test_sprint3_setting",
+            "value": "updated_value_456",
+            "description": "Updated test setting"
+        }
+        
+        result = self.make_request("POST", "settings", update_setting, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_setting = result["data"]
+            if updated_setting.get("value") == "updated_value_456":
+                self.log_test("POST settings (update)", True, "Setting updated successfully")
+            else:
+                self.log_test("POST settings (update)", False, "Setting not updated correctly")
+                settings_success = False
+        else:
+            self.log_test("POST settings (update)", False, f"Status: {result['status_code']}")
+            settings_success = False
+        
+        return settings_success
+
     def cleanup_test_data(self):
         """Clean up test data created during testing"""
         print("\n🧹 Cleaning up test data...")
@@ -996,6 +1326,13 @@ class GastroCoreAPITester:
             else:
                 self.log_test("Archive test user", False, f"Status: {result['status_code']}")
                 cleanup_success = False
+        
+        # Clean up Sprint 3 test data
+        if "test_reminder_rule_id" in self.test_data and "admin" in self.tokens:
+            # Note: Rule should already be archived in the test, but just in case
+            result = self.make_request("DELETE", f"reminder-rules/{self.test_data['test_reminder_rule_id']}", 
+                                     token=self.tokens["admin"], expected_status=200)
+            # Don't fail cleanup if this fails since it might already be archived
         
         return cleanup_success
 
