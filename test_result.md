@@ -103,169 +103,143 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Sprint 3 für GastroCore - Reminder & No-Show System:
-  1) Reminder-System (E-Mail + WhatsApp Deep-Link)
-  2) Storno & Bestätigung durch Gast
-  3) No-Show-Logik (Greylist/Blacklist)
-  4) Service-Terminal Erweiterungen
-  5) Message-Log
+  Sprint 4 für GastroCore - Veranstaltungen-Modul (ADDITIV):
+  A) Kabarett: fester Eintrittspreis (29€), begrenzte Plätze
+  B) Gänseabend: Event mit verpflichtender Vorbestellung (Fisch/Fleisch/Veg)
+  
+  Features:
+  - Event CRUD mit Status (draft/published/sold_out/cancelled)
+  - EventProducts für Vorbestellungen
+  - EventBookings mit Buchungscode
+  - Öffentliche Event-Seite und Buchungsflow
+  - Integration ins Backoffice
+  - Kapazitätsprüfung und Validierung
 
 backend:
-  - task: "Reminder Rules CRUD"
+  - task: "Event CRUD API"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "GET/POST/PATCH/DELETE /api/reminder-rules implemented"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: All CRUD operations working. GET returns rules, POST creates with validation, PATCH updates correctly, DELETE archives properly. Authentication required (admin only)."
+        comment: "GET/POST/PATCH/DELETE /api/events with publish/cancel actions"
 
-  - task: "WhatsApp Deep-Link Generator"
+  - task: "EventProducts CRUD API"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "POST /api/reservations/{id}/whatsapp-reminder generates wa.me link"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: WhatsApp deep-link generation working perfectly. Generates proper wa.me URLs with encoded messages in German. Requires manager+ role. Message logs created correctly."
+        comment: "GET/POST/PATCH/DELETE /api/events/{id}/products"
 
-  - task: "Guest Confirmation by Link"
+  - task: "EventBookings API"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "GET/POST /api/public/reservations/{id}/confirm-info and confirm"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Guest confirmation working. GET confirm-info returns reservation details, POST confirm updates status to 'bestaetigt'. Token validation working correctly. Public endpoints (no auth required)."
+        comment: "GET/PATCH /api/events/{id}/bookings with status changes"
 
-  - task: "Cancellation Deadline Check"
+  - task: "Public Event Booking API"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "GET /api/public/reservations/{id}/cancel-info with deadline check"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Cancellation functionality working as part of existing public cancellation system."
-
-  - task: "Message Log"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "GET /api/message-logs - logs all sent messages"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Message logs working perfectly. GET /api/message-logs returns all logs, filtering by channel (whatsapp/email) works correctly. Admin authentication required."
-
-  - task: "Guest Status Check"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/events_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "GET /api/guests/check/{phone} returns flag and no_show_count"
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Guest status check working. Returns proper flag (none/greylist/blacklist) and no_show_count. Manager+ authentication required."
+        comment: "GET /api/public/events, POST /api/public/events/{id}/book with capacity validation"
 
 frontend:
-  - task: "Settings Page (Reminder & No-Show Config)"
+  - task: "Events Admin Page"
     implemented: true
     working: true
-    file: "/app/frontend/src/pages/Settings.jsx"
+    file: "/app/frontend/src/pages/Events.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Tabs for Reminders, No-Show Rules, Cancellation settings"
+        comment: "Event list with status filter, create/edit dialog, publish/cancel actions"
 
-  - task: "Confirm Reservation Page"
+  - task: "EventProducts Editor"
     implemented: true
     working: true
-    file: "/app/frontend/src/pages/ConfirmReservation.jsx"
+    file: "/app/frontend/src/pages/EventProducts.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Public /confirm/:id page for guest confirmation"
+        comment: "Create/edit products with price_delta, required flag"
 
-  - task: "Message Logs Page"
+  - task: "EventBookings Page"
     implemented: true
     working: true
-    file: "/app/frontend/src/pages/MessageLogs.jsx"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: true
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Admin view for all sent messages"
-
-  - task: "Dashboard - WhatsApp Button & Guest Flags"
-    implemented: true
-    working: true
-    file: "/app/frontend/src/pages/Dashboard.jsx"
+    file: "/app/frontend/src/pages/EventBookings.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "WhatsApp button, Greylist/Blacklist markers, unconfirmed warning"
+        comment: "Bookings list with stats, preorder summary for kitchen, status changes"
+
+  - task: "Public Events List"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/PublicEventsList.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Public /events-public page with event cards"
+
+  - task: "Public Event Booking Flow"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/PublicEventBooking.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Multi-step form: contact -> preorder selection -> confirmation"
 
 metadata:
   created_by: "main_agent"
-  version: "3.0"
-  test_sequence: 2
+  version: "4.0"
+  test_sequence: 1
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Settings Management"
-    - "Frontend Integration Testing"
+    - "Event CRUD API"
+    - "Public Event Booking"
+    - "Preorder Selection Validation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Sprint 3 features implemented. Please test: 1) GET/POST /api/reminder-rules, 2) POST /api/reservations/{id}/whatsapp-reminder, 3) GET/POST /api/public/reservations/{id}/confirm-info and confirm?token=..., 4) GET /api/guests/check/{phone}, 5) GET /api/message-logs. Test users: admin@gastrocore.de / NewAdmin123!"
-  - agent: "testing"
-    message: "✅ SPRINT 3 BACKEND TESTING COMPLETE - 100% SUCCESS RATE! All 64 tests passed. Key findings: 1) All Sprint 3 APIs working perfectly with proper authentication/authorization, 2) WhatsApp deep-link generation functional, 3) Guest confirmation system working with token validation, 4) Message logging operational, 5) Settings management functional, 6) All RBAC and validation rules working correctly. Minor note: SMTP email credentials need updating for production email sending. Backend APIs ready for frontend integration."
+    message: "Sprint 4 Veranstaltungen-Modul ADDITIV implementiert. Teste: 1) GET /api/events (Admin), 2) POST /api/public/events/{id}/book mit items[], 3) Kapazitätsprüfung, 4) Preorder-Validierung. Seed-Events: Kabarett (ticket_only, 29€) + Gänseabend (reservation_with_preorder, 49€). Login: admin@gastrocore.de / NewAdmin123!"
