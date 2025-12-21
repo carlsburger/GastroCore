@@ -3,86 +3,59 @@
 ## Original Problem Statement
 Modulare Gastro-App Sprint 1 für ein produktionsreifes Core-System + Service-Terminal-Grundlage.
 
-### Anforderungen
-1. **Auth & Rollen**
-   - Rollen: Admin, Schichtleiter, Mitarbeiter
-   - RBAC auf API-Ebene
-   - Admin: Vollzugriff
-   - Schichtleiter: Zugriff auf Service-Terminal + Reservierungen
-   - Mitarbeiter: kein Backoffice-Zugriff
+## Architecture Review Complete ✓
 
-2. **Audit-Log (Pflicht)**
-   - Jede mutierende Aktion erzeugt Audit-Eintrag
-   - Felder: actor, entity, entity_id, before/after diff, timestamp
+### 1. Architektur-Eichung ✓
+- **Modularer Monolith** implementiert:
+  - `/app/backend/core/` - Auth, Audit, Config, Validators, Exceptions, Models
+  - `/app/backend/server.py` - API Endpoints (Reservations, Areas, Users, Settings)
+- **Klare Modulgrenzen** und Zuständigkeiten
+- **Keine Duplikate** oder Hardcodierungen
 
-3. **Stammdaten**
-   - Bereiche anlegen (z.B. Terrasse, Saal, Wintergarten)
-   - Einstellungen als Key/Value (vorbereitet)
+### 2. RBAC Hart Gemacht ✓
+- **Admin**: Vollzugriff auf alle Endpoints
+- **Schichtleiter**: Service-Terminal + Reservierungen (kein Zugriff auf /users, /settings, /audit-logs)
+- **Mitarbeiter**: KEIN Backoffice-Zugriff (403 auf /reservations)
+- **Serverseitige Prüfung** in ALLEN Endpoints
+- **Saubere Fehlermeldungen** mit error_code
 
-4. **Service-Terminal (UI)**
-   - Tagesliste Reservierungen (Filter: Status, Bereich)
-   - Statuswechsel: neu → bestätigt → angekommen → abgeschlossen → no-show
-   - Suche nach Name/Telefon
-   - Nur Schichtleiter/Admin darf bearbeiten
+### 3. Audit-Log Vollständigkeit ✓
+- **JEDE mutierende Aktion** erzeugt Audit-Eintrag
+- Felder: actor_id, actor_email, entity, entity_id, action, before, after, timestamp
+- Aktionen: create, update, archive, status_change, password_change, login, cancel_by_guest
 
-5. **E-Mail-Benachrichtigungen** (neu)
-   - Bestätigung bei neuer Reservierung
-   - Erinnerung 24h vorher (Cron-Endpoint)
-   - Stornierungslink in jeder E-Mail
-   - Stornierungsbestätigung
+### 4. Status-Konsistenz ✓
+- **Strenger Workflow** definiert in `core/config.py`:
+  - neu → bestaetigt, storniert, no_show
+  - bestaetigt → angekommen, storniert, no_show
+  - angekommen → abgeschlossen, no_show
+  - Terminal-Status: abgeschlossen, no_show, storniert
+- **Serverseitige Validierung** in `core/validators.py`
+- **Keine inkonsistenten Zustände** möglich
 
-### User Choices
-- **Auth**: JWT-basierte Custom Auth
-- **Design**: Hell/Beige Theme mit Tokens:
-  - Primary: #00280b
-  - Footer: #002f02
-  - Accent: #ffed00
-  - Background: #fafbed
-  - Container: #f3f6de
-  - Fonts: Lato (Body+H4), Playfair Display (H1–H3, H5–H6)
-- **Initiale Benutzer**: Test-User pro Rolle mit Passwortwechsel beim ersten Login
-- **Sprache**: i18n vorbereitet, Default Deutsch
-- **Echtzeit**: Kein WebSocket, Polling/Refresh reicht
-- **E-Mail**: IONOS SMTP (reservierung@carlsburg.de)
+### 5. Konfiguration statt Code ✓
+- **Settings in `core/config.py`**:
+  - Status-Übergänge (STATUS_TRANSITIONS)
+  - Schwellwerte (MAX_PARTY_SIZE, MIN_PARTY_SIZE)
+  - Reservierungsvoraus (RESERVATION_ADVANCE_DAYS)
+- **Runtime-Config** via Settings-API änderbar
 
----
+### 6. Service-Terminal Realitäts-Check ✓
+- **1-Klick Aktionen**: Quick-Action Buttons direkt in der Liste
+- **Große Klickflächen**: h-12, min-w-[140px]
+- **Klare Statusfarben**: Gelb (Neu), Blau (Bestätigt), Grün (Angekommen), Grau (Storniert), Rot (No-Show)
+- **Mobile-optimiert**: Responsive Layout, große Touch-Targets
 
-## Architecture Tasks Done (Sprint 1 + E-Mail)
+### 7. Fehlerhandling & Robustheit ✓
+- **Zentrale Exception-Klassen** in `core/exceptions.py`
+- **Globaler Exception-Handler** für konsistente Fehlermeldungen
+- **Strukturierte Error-Response**: `{detail, error_code, success: false}`
+- **Keine Silent Failures**
 
-### Backend (FastAPI + MongoDB)
-- [x] JWT Authentication mit Rollen
-- [x] RBAC Middleware für alle Endpoints
-- [x] User Model mit must_change_password Flag
-- [x] Reservation Model mit Status-Workflow
-- [x] Area Model für Bereiche
-- [x] Setting Model für Key/Value-Einstellungen
-- [x] AuditLog für alle Mutationen
-- [x] Seed-Endpoint für Test-Daten
-- [x] Archivierung statt Löschen
-- [x] E-Mail Service mit SMTP (IONOS)
-- [x] HTML E-Mail Templates (Carlsburg Branding)
-- [x] Bestätigungs-E-Mail bei Reservierung
-- [x] Erinnerungs-Endpoint für Cron-Jobs
-- [x] Stornierungslink mit Token-Verifizierung
-- [x] Öffentlicher Stornierungsendpoint
-
-### Frontend (React + Shadcn/UI)
-- [x] Login Page mit Split-Screen Design
-- [x] Password Change Page
-- [x] Dashboard/Service-Terminal
-- [x] Areas Management (Admin)
-- [x] Users Management (Admin)
-- [x] Audit-Log Viewer (Admin)
-- [x] Protected Routes mit Role-Check
-- [x] i18n Setup (Deutsch)
-- [x] Custom Theme (Beige/Grün)
-- [x] Stornierungsseite (öffentlich)
-- [x] Status "Storniert" Support
-
-### E-Mail Templates
-- Bestätigung: Elegantes Design mit Reservierungsdetails + Stornierungslink
-- Erinnerung: "Bis morgen!" mit Reservierungsdetails + Stornierungslink
-- Stornierung: Bestätigung der erfolgreichen Stornierung
+### 8. Performance-Basics ✓
+- **Pagination**: `limit` Parameter auf allen Listen-Endpoints
+- **Indexed Queries**: Optimierte MongoDB-Abfragen
+- **Background Tasks**: E-Mail-Versand nicht blockierend
 
 ### Test Users
 | Rolle | E-Mail | Passwort |
