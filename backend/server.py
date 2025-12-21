@@ -1836,6 +1836,9 @@ from taxoffice_module import taxoffice_router
 # Import Loyalty Module (Sprint 7 - Kunden-App & Punkte-System)
 from loyalty_module import loyalty_router, customer_router
 
+# Import Marketing Module (Sprint 8 - Newsletter & Social Automation)
+from marketing_module import marketing_router, marketing_public_router
+
 # Add seed events endpoint BEFORE including routers
 @api_router.post("/seed-events", tags=["Admin"])
 async def seed_events_endpoint(user: dict = Depends(require_admin)):
