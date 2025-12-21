@@ -148,6 +148,19 @@ export const PaymentSuccess = () => {
 };
 
 export const PaymentCancel = () => {
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const [cancelled, setCancelled] = useState(false);
+
+  useEffect(() => {
+    // Notify backend about cancellation
+    if (sessionId && !cancelled) {
+      axios.post(`${BACKEND_URL}/api/payments/cancel/${sessionId}`)
+        .then(() => setCancelled(true))
+        .catch((err) => console.log("Cancel notification failed:", err));
+    }
+  }, [sessionId, cancelled]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="max-w-md w-full">
