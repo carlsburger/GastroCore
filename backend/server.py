@@ -1912,6 +1912,7 @@ async def seed_staff_endpoint(user: dict = Depends(require_admin)):
 
 app.include_router(api_router)
 app.include_router(public_router)
+app.include_router(internal_router)  # First-Run Seed System
 app.include_router(events_router)
 app.include_router(public_events_router)
 app.include_router(payment_router)
