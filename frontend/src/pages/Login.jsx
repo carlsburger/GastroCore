@@ -9,6 +9,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
+// Carlsburg Logo Component
+const CarlsburgLogo = ({ size = 80, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Building with curved base */}
+    <path
+      d="M50 10 L70 30 L70 60 L30 60 L30 30 Z"
+      fill="currentColor"
+    />
+    {/* Roof peak */}
+    <path
+      d="M50 5 L75 30 L70 30 L50 10 L30 30 L25 30 Z"
+      fill="currentColor"
+    />
+    {/* Window */}
+    <rect x="42" y="35" width="16" height="12" fill="#005500" />
+    <line x1="50" y1="35" x2="50" y2="47" stroke="#FFFF00" strokeWidth="2" />
+    <line x1="42" y1="41" x2="58" y2="41" stroke="#FFFF00" strokeWidth="2" />
+    {/* Curved base */}
+    <path
+      d="M10 85 Q50 60 90 85"
+      stroke="currentColor"
+      strokeWidth="6"
+      fill="none"
+    />
+    {/* Door */}
+    <rect x="44" y="50" width="12" height="10" fill="#005500" />
+  </svg>
+);
+
 export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,19 +75,18 @@ export const Login = () => {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left side - Login Form */}
-      <div className="flex items-center justify-center p-8 bg-background">
+      <div className="flex items-center justify-center p-8 bg-[#FAFBE0]">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary mx-auto flex items-center justify-center mb-4">
-              <span className="text-primary-foreground font-serif text-3xl font-bold">G</span>
-            </div>
-            <h1 className="font-serif text-4xl font-medium text-primary">GastroCore</h1>
-            <p className="text-muted-foreground mt-2">Gastro-Management System</p>
+            <CarlsburgLogo size={80} className="text-[#FFFF00] mx-auto mb-4" />
+            <h1 className="font-serif text-4xl font-bold text-[#005500]">Carlsburg</h1>
+            <p className="text-[#005500]/70 mt-1 text-lg">Cockpit</p>
+            <p className="text-[#005500]/50 mt-2 text-sm">Historisches Panoramarestaurant</p>
           </div>
 
-          <Card className="border-border shadow-lg">
+          <Card className="border-[#005500]/20 shadow-lg bg-white">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-serif">{t("auth.login")}</CardTitle>
+              <CardTitle className="text-2xl font-serif text-[#005500]">{t("auth.login")}</CardTitle>
               <CardDescription>
                 Melden Sie sich mit Ihren Zugangsdaten an
               </CardDescription>
@@ -71,7 +105,7 @@ export const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="name@example.de"
+                    placeholder="name@carlsburg.de"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -105,7 +139,7 @@ export const Login = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 rounded-full font-bold"
+                  className="w-full h-11 rounded-full font-bold bg-[#005500] hover:bg-[#003300] text-[#FAFBE0]"
                   disabled={loading}
                   data-testid="login-submit"
                 >
@@ -122,31 +156,44 @@ export const Login = () => {
             </CardContent>
           </Card>
 
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-[#005500]/50">
             Testbenutzer: admin@gastrocore.de / Admin123!
           </p>
         </div>
       </div>
 
-      {/* Right side - Image */}
-      <div
-        className="hidden lg:block relative bg-cover bg-center"
-        style={{
-          backgroundImage:
-            'url("https://images.unsplash.com/photo-1596226391997-5e7ea4805d03?crop=entropy&cs=srgb&fm=jpg&q=85")',
-        }}
-      >
-        <div className="absolute inset-0 bg-[#00280b]/60" />
-        <div className="absolute inset-0 flex items-end p-12">
-          <div className="text-[#fafbed] max-w-lg">
-            <h2 className="font-serif text-4xl mb-4">
+      {/* Right side - Carlsburg Branding */}
+      <div className="hidden lg:block relative bg-[#005500]">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-12">
+          <CarlsburgLogo size={200} className="text-[#FFFF00] mb-8" />
+          <h2 className="font-serif text-5xl font-bold text-[#FFFF00] mb-4 text-center">
+            Carlsburg
+          </h2>
+          <p className="text-xl text-[#FAFBE0] text-center mb-8">
+            Historisches Panoramarestaurant
+          </p>
+          <div className="text-[#FAFBE0]/70 text-center max-w-md">
+            <p className="text-lg mb-4">
               Ihr Restaurant. Professionell verwaltet.
-            </h2>
-            <p className="text-lg opacity-90">
+            </p>
+            <p className="text-sm">
               Reservierungen, Personal und Service – alles in einer eleganten Oberfläche.
             </p>
           </div>
         </div>
+        {/* Decorative curved line at bottom */}
+        <svg 
+          className="absolute bottom-0 left-0 right-0 w-full h-32"
+          viewBox="0 0 100 20"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 20 Q50 0 100 20"
+            stroke="#FFFF00"
+            strokeWidth="0.5"
+            fill="none"
+          />
+        </svg>
       </div>
     </div>
   );
