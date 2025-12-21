@@ -31,6 +31,8 @@ import { PaymentSuccess, PaymentCancel } from "./pages/PaymentPages";
 import Staff from "./pages/Staff";
 import StaffDetail from "./pages/StaffDetail";
 import Schedule from "./pages/Schedule";
+// Tax Office Module (Sprint 6)
+import TaxOfficeExports from "./pages/TaxOfficeExports";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
