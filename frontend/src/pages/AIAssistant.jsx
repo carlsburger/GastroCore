@@ -809,6 +809,226 @@ export default function AIAssistant() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Config Dialog */}
+      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-[#005500]" />
+              Dienstplan-KI Konfiguration
+            </DialogTitle>
+          </DialogHeader>
+          {editingConfig && (
+            <div className="space-y-6">
+              {/* Service Personalbedarf */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Personalbedarf - Service</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs">Sommer Werktag</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.normal_summer_weekday || 4}
+                      onChange={(e) => updateConfigValue("service", "normal_summer_weekday", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sommer Wochenende</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.normal_summer_weekend || 5}
+                      onChange={(e) => updateConfigValue("service", "normal_summer_weekend", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Winter Werktag</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.normal_winter_weekday || 3}
+                      onChange={(e) => updateConfigValue("service", "normal_winter_weekday", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Winter Wochenende</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.normal_winter_weekend || 4}
+                      onChange={(e) => updateConfigValue("service", "normal_winter_weekend", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Kulinarische Aktion</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.culinary_event || 5}
+                      onChange={(e) => updateConfigValue("service", "culinary_event", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Kultur Frühschicht</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.culture_early_shift || 3}
+                      onChange={(e) => updateConfigValue("service", "culture_early_shift", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Kultur Abendschicht</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.culture_evening_shift || 5}
+                      onChange={(e) => updateConfigValue("service", "culture_evening_shift", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Feiertag</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editingConfig.service?.holiday || 6}
+                      onChange={(e) => updateConfigValue("service", "holiday", e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Kitchen Personalbedarf */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Personalbedarf - Küche</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs">Normal</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="15"
+                      value={editingConfig.kitchen?.normal || 3}
+                      onChange={(e) => updateConfigValue("kitchen", "normal", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Kulinarische Aktion</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="15"
+                      value={editingConfig.kitchen?.culinary_event || 4}
+                      onChange={(e) => updateConfigValue("kitchen", "culinary_event", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Kultur</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="15"
+                      value={editingConfig.kitchen?.culture || 3}
+                      onChange={(e) => updateConfigValue("kitchen", "culture", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Feiertag</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="15"
+                      value={editingConfig.kitchen?.holiday || 4}
+                      onChange={(e) => updateConfigValue("kitchen", "holiday", e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Work Rules */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Arbeitszeit-Regeln</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs">Max. Tage am Stück</Label>
+                    <Input
+                      type="number"
+                      min="3"
+                      max="7"
+                      value={editingConfig.work_rules?.max_days_consecutive || 5}
+                      onChange={(e) => updateConfigValue("work_rules", "max_days_consecutive", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Min. freie Tage/Woche</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="3"
+                      value={editingConfig.work_rules?.min_free_days_per_week || 2}
+                      onChange={(e) => updateConfigValue("work_rules", "min_free_days_per_week", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Max. Stunden/Tag</Label>
+                    <Input
+                      type="number"
+                      min="6"
+                      max="12"
+                      value={editingConfig.work_rules?.max_hours_per_day || 10}
+                      onChange={(e) => updateConfigValue("work_rules", "max_hours_per_day", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Minijob-Verhältnis</Label>
+                    <Input
+                      type="number"
+                      min="0.5"
+                      max="2"
+                      step="0.1"
+                      value={editingConfig.work_rules?.minijob_ratio || 1.0}
+                      onChange={(e) => updateConfigValue("work_rules", "minijob_ratio", parseFloat(e.target.value))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="p-4 bg-yellow-50 rounded-lg text-sm text-yellow-800">
+                <Info className="w-4 h-4 inline mr-2" />
+                Diese Werte werden von der KI als Basis für Dienstplan-Vorschläge verwendet.
+                Der Schichtleiter ist in den Zahlen NICHT enthalten.
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={resetScheduleConfig} className="text-red-600">
+              Zurücksetzen
+            </Button>
+            <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={saveScheduleConfig} className="bg-[#005500] hover:bg-[#003300]">
+              Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
