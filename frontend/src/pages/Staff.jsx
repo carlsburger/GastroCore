@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const EMPLOYMENT_TYPES = {
   mini: { label: "Minijob", color: "bg-blue-100 text-blue-700" },
