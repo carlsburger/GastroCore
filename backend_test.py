@@ -1305,6 +1305,462 @@ class GastroCoreAPITester:
         
         return settings_success
 
+    # ============== FULL QA AUDIT METHODS ==============
+    
+    def test_full_qa_audit_sprint1_auth_rbac(self):
+        """Full QA Audit - Sprint 1: Auth & RBAC"""
+        print("\n🔐 FULL QA AUDIT - Sprint 1: Auth & RBAC")
+        
+        auth_rbac_success = True
+        
+        # Test JWT Login for all 3 roles
+        for role, creds in self.credentials.items():
+            result = self.make_request("POST", "auth/login", creds, expected_status=200)
+            if result["success"] and "access_token" in result["data"]:
+                self.tokens[role] = result["data"]["access_token"]
+                self.log_test(f"JWT Login {role}", True, "Token received")
+            else:
+                self.log_test(f"JWT Login {role}", False, f"Status: {result['status_code']}")
+                auth_rbac_success = False
+        
+        # Test RBAC - Mitarbeiter CANNOT access reservations
+        result = self.make_request("GET", "reservations", token=self.tokens.get("mitarbeiter"), expected_status=403)
+        if result["success"]:
+            self.log_test("RBAC: Mitarbeiter blocked from reservations", True, "403 Forbidden as expected")
+        else:
+            self.log_test("RBAC: Mitarbeiter blocked from reservations", False, f"Expected 403, got {result['status_code']}")
+            auth_rbac_success = False
+        
+        # Test RBAC - Schichtleiter CAN access reservations
+        result = self.make_request("GET", "reservations", token=self.tokens.get("schichtleiter"), expected_status=200)
+        if result["success"]:
+            self.log_test("RBAC: Schichtleiter can access reservations", True)
+        else:
+            self.log_test("RBAC: Schichtleiter can access reservations", False, f"Status: {result['status_code']}")
+            auth_rbac_success = False
+        
+        # Test RBAC - Only Admin can manage users
+        result = self.make_request("GET", "users", token=self.tokens.get("schichtleiter"), expected_status=403)
+        if result["success"]:
+            self.log_test("RBAC: Schichtleiter blocked from user management", True, "403 Forbidden as expected")
+        else:
+            self.log_test("RBAC: Schichtleiter blocked from user management", False, f"Expected 403, got {result['status_code']}")
+            auth_rbac_success = False
+        
+        result = self.make_request("GET", "users", token=self.tokens.get("admin"), expected_status=200)
+        if result["success"]:
+            self.log_test("RBAC: Admin can manage users", True)
+        else:
+            self.log_test("RBAC: Admin can manage users", False, f"Status: {result['status_code']}")
+            auth_rbac_success = False
+        
+        return auth_rbac_success
+
+    def test_full_qa_audit_audit_logs(self):
+        """Full QA Audit - Audit Logs"""
+        print("\n📋 FULL QA AUDIT - Audit Logs")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Audit Logs", False, "Admin token not available")
+            return False
+        
+        # Test GET /api/audit-logs
+        result = self.make_request("GET", "audit-logs", {"limit": 100}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            logs = result["data"]
+            self.log_test("GET audit-logs", True, f"Retrieved {len(logs)} audit log entries")
+            
+            # Check if audit logs are being created
+            if len(logs) > 0:
+                self.log_test("Audit logs exist", True, "System is creating audit entries")
+                
+                # Check structure of audit logs
+                sample_log = logs[0]
+                required_fields = ["timestamp", "actor_id", "entity", "entity_id", "action"]
+                missing_fields = [field for field in required_fields if field not in sample_log]
+                
+                if not missing_fields:
+                    self.log_test("Audit log structure", True, "All required fields present")
+                else:
+                    self.log_test("Audit log structure", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Audit logs exist", False, "No audit entries found")
+                return False
+        else:
+            self.log_test("GET audit-logs", False, f"Status: {result['status_code']}")
+            return False
+        
+        return True
+
+    def test_full_qa_audit_sprint2_reservations(self):
+        """Full QA Audit - Sprint 2: Reservations End-to-End"""
+        print("\n📅 FULL QA AUDIT - Sprint 2: Reservations End-to-End")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Reservations E2E", False, "Schichtleiter token not available")
+            return False
+        
+        reservations_success = True
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # 1. Test POST /api/public/book - Online booking without auth
+        booking_data = {
+            "guest_name": "QA Test Kunde",
+            "guest_phone": "+49 170 9999001",
+            "guest_email": "qatest@example.de",
+            "party_size": 4,
+            "date": "2025-12-23",
+            "time": "18:00",
+            "occasion": "QA Test",
+            "notes": "Full QA Audit Test",
+            "language": "de"
+        }
+        
+        result = self.make_request("POST", "public/book", booking_data, expected_status=200)
+        if result["success"]:
+            booking_response = result["data"]
+            if booking_response.get("success"):
+                self.log_test("POST /api/public/book", True, "Online booking successful")
+                if not booking_response.get("waitlist"):
+                    self.test_data["qa_public_reservation_id"] = booking_response.get("reservation_id")
+            else:
+                self.log_test("POST /api/public/book", False, f"Booking failed: {booking_response}")
+                reservations_success = False
+        else:
+            self.log_test("POST /api/public/book", False, f"Status: {result['status_code']}")
+            reservations_success = False
+        
+        # 2. Test GET /api/public/availability
+        result = self.make_request("GET", "public/availability", {"date": "2025-12-23", "party_size": 2}, expected_status=200)
+        if result["success"]:
+            availability = result["data"]
+            if "available" in availability and "slots" in availability:
+                self.log_test("GET /api/public/availability", True, f"Available: {availability.get('available')}")
+            else:
+                self.log_test("GET /api/public/availability", False, "Missing required fields")
+                reservations_success = False
+        else:
+            self.log_test("GET /api/public/availability", False, f"Status: {result['status_code']}")
+            reservations_success = False
+        
+        # 3. Test POST /api/reservations - Internal reservation
+        internal_reservation = {
+            "guest_name": "QA Internal Test",
+            "guest_phone": "+49 170 9999002",
+            "guest_email": "qainternal@example.de",
+            "party_size": 2,
+            "date": today,
+            "time": "19:00",
+            "notes": "Internal reservation test"
+        }
+        
+        result = self.make_request("POST", "reservations", internal_reservation, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            reservation = result["data"]
+            self.log_test("POST /api/reservations", True, f"Internal reservation created: {reservation.get('id')}")
+            self.test_data["qa_internal_reservation_id"] = reservation.get("id")
+        else:
+            self.log_test("POST /api/reservations", False, f"Status: {result['status_code']}")
+            reservations_success = False
+        
+        # 4. Test POST /api/walk-ins - Walk-in creation
+        walk_in_data = {
+            "guest_name": "QA Walk-in Test",
+            "guest_phone": "+49 170 9999003",
+            "party_size": 3,
+            "notes": "Walk-in test"
+        }
+        
+        result = self.make_request("POST", "walk-ins", walk_in_data, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            walk_in = result["data"]
+            if walk_in.get("status") == "angekommen":
+                self.log_test("POST /api/walk-ins", True, f"Walk-in created with status 'angekommen'")
+                self.test_data["qa_walk_in_id"] = walk_in.get("id")
+            else:
+                self.log_test("POST /api/walk-ins", False, f"Expected status 'angekommen', got {walk_in.get('status')}")
+                reservations_success = False
+        else:
+            self.log_test("POST /api/walk-ins", False, f"Status: {result['status_code']}")
+            reservations_success = False
+        
+        # 5. Test status transitions
+        if "qa_internal_reservation_id" in self.test_data:
+            reservation_id = self.test_data["qa_internal_reservation_id"]
+            
+            # neu -> bestaetigt
+            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=bestaetigt", 
+                                     {}, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("Status transition: neu -> bestaetigt", True)
+            else:
+                self.log_test("Status transition: neu -> bestaetigt", False, f"Status: {result['status_code']}")
+                reservations_success = False
+            
+            # bestaetigt -> angekommen
+            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=angekommen", 
+                                     {}, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("Status transition: bestaetigt -> angekommen", True)
+            else:
+                self.log_test("Status transition: bestaetigt -> angekommen", False, f"Status: {result['status_code']}")
+                reservations_success = False
+            
+            # angekommen -> abgeschlossen
+            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=abgeschlossen", 
+                                     {}, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("Status transition: angekommen -> abgeschlossen", True)
+            else:
+                self.log_test("Status transition: angekommen -> abgeschlossen", False, f"Status: {result['status_code']}")
+                reservations_success = False
+            
+            # Test invalid transition: abgeschlossen -> neu (should fail)
+            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=neu", 
+                                     {}, self.tokens["schichtleiter"], expected_status=400)
+            if result["success"]:
+                self.log_test("Invalid status transition blocked", True, "abgeschlossen -> neu blocked as expected")
+            else:
+                self.log_test("Invalid status transition blocked", False, f"Expected 400, got {result['status_code']}")
+                reservations_success = False
+        
+        return reservations_success
+
+    def test_full_qa_audit_sprint2_waitlist(self):
+        """Full QA Audit - Sprint 2: Waitlist"""
+        print("\n📋 FULL QA AUDIT - Sprint 2: Waitlist")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Waitlist", False, "Schichtleiter token not available")
+            return False
+        
+        waitlist_success = True
+        
+        # 1. Test GET/POST /api/waitlist
+        waitlist_data = {
+            "guest_name": "QA Waitlist Test",
+            "guest_phone": "+49 170 9999004",
+            "guest_email": "qawaitlist@example.de",
+            "party_size": 6,
+            "date": "2025-12-23",
+            "preferred_time": "19:00",
+            "priority": 3,
+            "notes": "QA waitlist test",
+            "language": "de"
+        }
+        
+        result = self.make_request("POST", "waitlist", waitlist_data, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            waitlist_entry = result["data"]
+            if waitlist_entry.get("status") == "offen":
+                self.log_test("POST /api/waitlist", True, f"Waitlist entry created: {waitlist_entry.get('id')}")
+                self.test_data["qa_waitlist_id"] = waitlist_entry.get("id")
+            else:
+                self.log_test("POST /api/waitlist", False, f"Expected status 'offen', got {waitlist_entry.get('status')}")
+                waitlist_success = False
+        else:
+            self.log_test("POST /api/waitlist", False, f"Status: {result['status_code']}")
+            waitlist_success = False
+        
+        # 2. Test GET /api/waitlist
+        result = self.make_request("GET", "waitlist", {"date": "2025-12-23"}, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            waitlist_entries = result["data"]
+            self.log_test("GET /api/waitlist", True, f"Retrieved {len(waitlist_entries)} waitlist entries")
+        else:
+            self.log_test("GET /api/waitlist", False, f"Status: {result['status_code']}")
+            waitlist_success = False
+        
+        # 3. Test PATCH /api/waitlist/{id} - Status changes
+        if "qa_waitlist_id" in self.test_data:
+            waitlist_id = self.test_data["qa_waitlist_id"]
+            
+            # offen -> informiert
+            update_data = {"status": "informiert", "notes": "Gast wurde informiert"}
+            result = self.make_request("PATCH", f"waitlist/{waitlist_id}", update_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                updated_entry = result["data"]
+                if updated_entry.get("status") == "informiert":
+                    self.log_test("Waitlist status: offen -> informiert", True)
+                else:
+                    self.log_test("Waitlist status: offen -> informiert", False, 
+                                f"Expected 'informiert', got {updated_entry.get('status')}")
+                    waitlist_success = False
+            else:
+                self.log_test("Waitlist status: offen -> informiert", False, f"Status: {result['status_code']}")
+                waitlist_success = False
+            
+            # 4. Test POST /api/waitlist/{id}/convert - Convert to reservation
+            result = self.make_request("POST", f"waitlist/{waitlist_id}/convert", 
+                                     {"time": "20:00"}, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                converted_reservation = result["data"]
+                self.log_test("POST /api/waitlist/{id}/convert", True, 
+                            f"Converted to reservation: {converted_reservation.get('id')}")
+                self.test_data["qa_converted_reservation_id"] = converted_reservation.get("id")
+            else:
+                self.log_test("POST /api/waitlist/{id}/convert", False, f"Status: {result['status_code']}")
+                waitlist_success = False
+        
+        return waitlist_success
+
+    def test_full_qa_audit_sprint3_no_show_logic(self):
+        """Full QA Audit - Sprint 3: No-Show Logic"""
+        print("\n❌ FULL QA AUDIT - Sprint 3: No-Show Logic")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("No-Show Logic", False, "Schichtleiter token not available")
+            return False
+        
+        no_show_success = True
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Create test reservation for no-show
+        no_show_reservation = {
+            "guest_name": "QA No-Show Test",
+            "guest_phone": "+49 170 9999005",
+            "party_size": 2,
+            "date": today,
+            "time": "20:30",
+            "notes": "No-show test reservation"
+        }
+        
+        result = self.make_request("POST", "reservations", no_show_reservation, 
+                                 self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            reservation = result["data"]
+            reservation_id = reservation.get("id")
+            
+            # Mark as no-show
+            result = self.make_request("PATCH", f"reservations/{reservation_id}/status?new_status=no_show", 
+                                     {}, self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                self.log_test("Mark reservation as no_show", True, "No-show status set successfully")
+                
+                # Check if guest no_show_count is incremented (would need to check guest record)
+                # For now, just verify the status change worked
+                result = self.make_request("GET", f"reservations/{reservation_id}", 
+                                         token=self.tokens["schichtleiter"], expected_status=200)
+                if result["success"]:
+                    updated_reservation = result["data"]
+                    if updated_reservation.get("status") == "no_show":
+                        self.log_test("No-show status verification", True, "Status correctly updated to no_show")
+                    else:
+                        self.log_test("No-show status verification", False, 
+                                    f"Expected 'no_show', got {updated_reservation.get('status')}")
+                        no_show_success = False
+            else:
+                self.log_test("Mark reservation as no_show", False, f"Status: {result['status_code']}")
+                no_show_success = False
+        else:
+            self.log_test("Create no-show test reservation", False, f"Status: {result['status_code']}")
+            no_show_success = False
+        
+        return no_show_success
+
+    def test_full_qa_audit_guest_flags(self):
+        """Full QA Audit - Guest Flags (Greylist/Blacklist)"""
+        print("\n👥 FULL QA AUDIT - Guest Flags")
+        
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Guest Flags", False, "Schichtleiter token not available")
+            return False
+        
+        guest_flags_success = True
+        
+        # 1. Test GET /api/guests
+        result = self.make_request("GET", "guests", {}, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            guests = result["data"]
+            self.log_test("GET /api/guests", True, f"Retrieved {len(guests)} guests")
+        else:
+            self.log_test("GET /api/guests", False, f"Status: {result['status_code']}")
+            guest_flags_success = False
+        
+        # 2. Create test guest
+        guest_data = {
+            "phone": "+49 170 9999006",
+            "email": "qaguest@example.de",
+            "name": "QA Test Guest",
+            "flag": "none",
+            "no_show_count": 0,
+            "notes": "QA test guest"
+        }
+        
+        result = self.make_request("POST", "guests", guest_data, self.tokens["schichtleiter"], expected_status=200)
+        if result["success"]:
+            guest = result["data"]
+            self.log_test("POST /api/guests", True, f"Guest created: {guest.get('id')}")
+            self.test_data["qa_guest_id"] = guest.get("id")
+        else:
+            # Guest might already exist, try to find it
+            result = self.make_request("GET", "guests", {"search": "+49 170 9999006"}, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"] and result["data"]:
+                guest = result["data"][0]
+                self.log_test("Find existing guest", True, f"Found guest: {guest.get('id')}")
+                self.test_data["qa_guest_id"] = guest.get("id")
+            else:
+                self.log_test("Create/find guest", False, f"Status: {result['status_code']}")
+                guest_flags_success = False
+        
+        # 3. Test PATCH /api/guests/{id} - Set flag to greylist
+        if "qa_guest_id" in self.test_data:
+            guest_id = self.test_data["qa_guest_id"]
+            update_data = {"flag": "greylist", "notes": "QA test - marked as greylist"}
+            
+            result = self.make_request("PATCH", f"guests/{guest_id}", update_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                updated_guest = result["data"]
+                if updated_guest.get("flag") == "greylist":
+                    self.log_test("Set guest flag to greylist", True)
+                else:
+                    self.log_test("Set guest flag to greylist", False, 
+                                f"Expected 'greylist', got {updated_guest.get('flag')}")
+                    guest_flags_success = False
+            else:
+                self.log_test("Set guest flag to greylist", False, f"Status: {result['status_code']}")
+                guest_flags_success = False
+            
+            # 4. Test blacklist functionality - set to blacklist
+            update_data = {"flag": "blacklist", "notes": "QA test - marked as blacklist"}
+            result = self.make_request("PATCH", f"guests/{guest_id}", update_data, 
+                                     self.tokens["schichtleiter"], expected_status=200)
+            if result["success"]:
+                updated_guest = result["data"]
+                if updated_guest.get("flag") == "blacklist":
+                    self.log_test("Set guest flag to blacklist", True)
+                    
+                    # 5. Test that blacklisted guest cannot make reservation
+                    blacklist_reservation = {
+                        "guest_name": "QA Blacklist Test",
+                        "guest_phone": "+49 170 9999006",  # Same phone as blacklisted guest
+                        "party_size": 2,
+                        "date": "2025-12-23",
+                        "time": "21:00"
+                    }
+                    
+                    result = self.make_request("POST", "reservations", blacklist_reservation, 
+                                             self.tokens["schichtleiter"], expected_status=422)
+                    if result["success"]:
+                        self.log_test("Blacklisted guest reservation blocked", True, "Reservation blocked as expected")
+                    else:
+                        self.log_test("Blacklisted guest reservation blocked", False, 
+                                    f"Expected 422, got {result['status_code']}")
+                        guest_flags_success = False
+                else:
+                    self.log_test("Set guest flag to blacklist", False, 
+                                f"Expected 'blacklist', got {updated_guest.get('flag')}")
+                    guest_flags_success = False
+            else:
+                self.log_test("Set guest flag to blacklist", False, f"Status: {result['status_code']}")
+                guest_flags_success = False
+        
+        return guest_flags_success
+
     def test_seed_payment_rules(self):
         """Seed payment rules for testing"""
         print("\n💰 Seeding payment rules...")
