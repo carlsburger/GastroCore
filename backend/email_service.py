@@ -338,9 +338,10 @@ async def log_email(to_email: str, subject: str, template_type: str, status: str
 
 
 async def send_email(to_email: str, subject: str, html_body: str, text_body: str, template_type: str = "other") -> bool:
-    """Send email via SMTP"""
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning("SMTP credentials not configured, skipping email")
+    """Send email via SMTP with TLS/SSL support"""
+    if not is_smtp_configured():
+        logger.warning("SMTP nicht konfiguriert - E-Mail wird nur geloggt")
+        await log_email(to_email, subject, template_type, "skipped", "SMTP nicht konfiguriert")
         return False
     
     try:
@@ -354,15 +355,65 @@ async def send_email(to_email: str, subject: str, html_body: str, text_body: str
         
         context = ssl.create_default_context()
         
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
+        if SMTP_USE_TLS:
+            # STARTTLS (Port 587)
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.starttls(context=context)
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
+        else:
+            # SSL (Port 465)
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
         
-        logger.info(f"Email sent to {to_email}")
+        logger.info(f"E-Mail gesendet an {to_email}")
         await log_email(to_email, subject, template_type, "sent")
         return True
         
     except Exception as e:
+        error_msg = str(e)
+        # NEVER log passwords or sensitive data
+        if SMTP_PASSWORD in error_msg:
+            error_msg = error_msg.replace(SMTP_PASSWORD, "***")
+        logger.error(f"E-Mail-Versand fehlgeschlagen an {to_email}: {error_msg}")
+        await log_email(to_email, subject, template_type, "failed", error_msg)
+        return False
+
+
+async def send_test_email(to_email: str) -> dict:
+    """Send a test email to verify SMTP configuration"""
+    if not is_smtp_configured():
+        return {
+            "success": False,
+            "error": "SMTP nicht konfiguriert. Bitte SMTP_HOST, SMTP_USER und SMTP_PASSWORD setzen.",
+            "smtp_status": get_smtp_status()
+        }
+    
+    subject = "Carlsburg Cockpit - SMTP Testmail"
+    html_body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #005500;">✅ SMTP Konfiguration erfolgreich!</h2>
+        <p>Diese Testmail bestätigt, dass die E-Mail-Konfiguration für das Carlsburg Cockpit korrekt funktioniert.</p>
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+            Gesendet am: {datetime.now(timezone.utc).strftime('%d.%m.%Y %H:%M:%S')} UTC<br>
+            Von: {SMTP_FROM_NAME} &lt;{SMTP_FROM_EMAIL}&gt;
+        </p>
+    </body>
+    </html>
+    """
+    text_body = f"SMTP Konfiguration erfolgreich! Gesendet am {datetime.now(timezone.utc).strftime('%d.%m.%Y %H:%M:%S')} UTC"
+    
+    success = await send_email(to_email, subject, html_body, text_body, "test")
+    
+    return {
+        "success": success,
+        "recipient": to_email,
+        "smtp_status": get_smtp_status(),
+        "message": "Testmail erfolgreich gesendet" if success else "Testmail fehlgeschlagen - siehe Logs"
+    }
         logger.error(f"Failed to send email to {to_email}: {str(e)}")
         await log_email(to_email, subject, template_type, "failed", str(e))
         return False
