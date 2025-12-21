@@ -1765,16 +1765,26 @@ async def init_default_reminder_rules():
 # Import Events Module (Sprint 4 - ADDITIV)
 from events_module import events_router, public_events_router, seed_events
 
+# Import Payment Module (Sprint 4 - Zahlungen)
+from payment_module import payment_router, payment_webhook_router, seed_payment_rules
+
 # Add seed events endpoint BEFORE including routers
 @api_router.post("/seed-events", tags=["Admin"])
 async def seed_events_endpoint(user: dict = Depends(require_admin)):
     """Seed sample events (Kabarett + Gänseabend)"""
     return await seed_events()
 
+@api_router.post("/seed-payment-rules", tags=["Admin"])
+async def seed_payment_rules_endpoint(user: dict = Depends(require_admin)):
+    """Seed default payment rules"""
+    return await seed_payment_rules()
+
 app.include_router(api_router)
 app.include_router(public_router)
 app.include_router(events_router)
 app.include_router(public_events_router)
+app.include_router(payment_router)
+app.include_router(payment_webhook_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1789,7 +1799,7 @@ async def startup():
     """Initialize default settings and rules on startup"""
     await init_default_settings()
     await init_default_reminder_rules()
-    logger.info("GastroCore v4.0.0 started - Events Module enabled")
+    logger.info("GastroCore v4.1.0 started - Events + Payment Module enabled")
 
 @app.on_event("shutdown")
 async def shutdown():
