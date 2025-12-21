@@ -101,8 +101,29 @@ function App() {
             }
           />
 
-          {/* Public Cancellation Page */}
+          {/* Public Routes */}
           <Route path="/cancel/:reservationId" element={<CancelReservation />} />
+          <Route path="/book" element={<BookingWidget />} />
+
+          {/* Waitlist - Admin & Schichtleiter */}
+          <Route
+            path="/waitlist"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Waitlist />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Guests - Admin & Schichtleiter */}
+          <Route
+            path="/guests"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Guests />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
