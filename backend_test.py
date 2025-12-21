@@ -2493,25 +2493,24 @@ class GastroCoreAPITester:
 
     def run_all_tests(self):
         """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests - Sprint 5 Staff & Schedule Module Focus")
+        print("🚀 Starting GastroCore Backend API Tests - Sprint 6 Tax Office Export Module Focus")
         print("=" * 80)
         
-        # Test sequence - focused on Sprint 5 Staff & Schedule Module
+        # Test sequence - focused on Sprint 6 Tax Office Module
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # Sprint 5 Staff & Schedule Module tests - PRIMARY FOCUS
-        print("\n👥 SPRINT 5 STAFF & SCHEDULE MODULE TESTING:")
-        test_results.append(self.test_seed_staff_data())
-        test_results.append(self.test_sprint5_work_areas_crud())
-        test_results.append(self.test_sprint5_staff_members_crud())
-        test_results.append(self.test_sprint5_schedules_crud())
-        test_results.append(self.test_sprint5_shifts_crud())
-        test_results.append(self.test_sprint5_hours_overview())
-        test_results.append(self.test_sprint5_exports())
+        # Sprint 6 Tax Office Export Module tests - PRIMARY FOCUS
+        print("\n🏛️ SPRINT 6 TAX OFFICE EXPORT MODULE TESTING:")
+        test_results.append(self.test_sprint6_taxoffice_settings())
+        test_results.append(self.test_sprint6_taxoffice_export_jobs())
+        test_results.append(self.test_sprint6_taxoffice_downloads())
+        test_results.append(self.test_sprint6_staff_registration())
+        test_results.append(self.test_sprint6_staff_tax_fields())
+        test_results.append(self.test_sprint6_audit_logs())
         
         # Core functionality tests (reduced for focus)
         print("\n🏗️ CORE FUNCTIONALITY TESTING:")
