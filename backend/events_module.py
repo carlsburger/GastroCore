@@ -159,10 +159,31 @@ def create_entity(data: dict) -> dict:
     }
 
 
-async def get_event_booked_count(event_id: str) -> int:
-    """Get total booked party_size for an event"""
+async def get_event_booked_count(event_id: str, include_pending: bool = False) -> int:
+    """Get total booked party_size for an event
+    
+    Args:
+        event_id: Event ID
+        include_pending: If False, only count confirmed/paid bookings (prevents overbooking)
+                        If True, count all non-cancelled bookings (for display purposes)
+    """
+    if include_pending:
+        # For display: count all non-cancelled bookings
+        match_query = {"event_id": event_id, "status": {"$nin": ["cancelled"]}, "archived": False}
+    else:
+        # For capacity check: only count confirmed bookings OR paid bookings
+        # This prevents overbooking when multiple users book but don't pay
+        match_query = {
+            "event_id": event_id,
+            "archived": False,
+            "$or": [
+                {"status": "confirmed"},
+                {"payment_status": "paid"}
+            ]
+        }
+    
     pipeline = [
-        {"$match": {"event_id": event_id, "status": {"$nin": ["cancelled"]}, "archived": False}},
+        {"$match": match_query},
         {"$group": {"_id": None, "total": {"$sum": "$party_size"}}}
     ]
     result = await db.event_bookings.aggregate(pipeline).to_list(1)
