@@ -180,6 +180,7 @@ export const Dashboard = () => {
     notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [guestCache, setGuestCache] = useState({}); // Cache for guest flags
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -198,6 +199,19 @@ export const Dashboard = () => {
       ]);
       setReservations(resRes.data);
       setAreas(areasRes.data);
+      
+      // Fetch guest flags for reservations with phone numbers
+      const phonesToCheck = [...new Set(resRes.data.filter(r => r.guest_phone).map(r => r.guest_phone))];
+      const guestFlags = {};
+      for (const phone of phonesToCheck.slice(0, 20)) { // Limit to avoid too many requests
+        try {
+          const guestRes = await axios.get(`${BACKEND_URL}/api/guests/check/${encodeURIComponent(phone)}`, { headers });
+          guestFlags[phone] = guestRes.data;
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+      setGuestCache(guestFlags);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Fehler beim Laden der Daten");
     } finally {
