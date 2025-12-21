@@ -13,10 +13,14 @@ import {
   LogOut,
   Menu,
   X,
+  Clock,
+  UserX,
 } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: LayoutDashboard, label: "nav.dashboard", roles: ["admin", "schichtleiter"] },
+  { path: "/waitlist", icon: Clock, label: "nav.waitlist", roles: ["admin", "schichtleiter"] },
+  { path: "/guests", icon: UserX, label: "nav.guests", roles: ["admin", "schichtleiter"] },
   { path: "/areas", icon: MapPin, label: "nav.areas", roles: ["admin"] },
   { path: "/users", icon: Users, label: "nav.users", roles: ["admin"] },
   { path: "/audit", icon: FileText, label: "nav.auditLog", roles: ["admin"] },
