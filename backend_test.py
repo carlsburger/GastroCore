@@ -2119,6 +2119,7 @@ class GastroCoreAPITester:
         
         # Sprint 4 Payment Module tests - PRIMARY FOCUS
         print("\n💳 SPRINT 4 PAYMENT MODULE TESTING:")
+        test_results.append(self.test_seed_payment_rules())
         test_results.append(self.test_sprint4_payment_rules_crud())
         test_results.append(self.test_sprint4_payment_check_required())
         test_results.append(self.test_sprint4_payment_transactions_and_logs())
