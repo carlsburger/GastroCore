@@ -118,11 +118,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Public endpoints /api/public/availability and /api/public/book implemented"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/public/availability returns 21 available slots for 2025-12-23. POST /api/public/book successfully creates reservations. Both endpoints working correctly."
 
   - task: "Walk-In Quick Entry"
     implemented: true
@@ -130,11 +133,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/walk-ins creates reservation with status 'angekommen'"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/walk-ins correctly creates walk-in reservations with status 'angekommen'. Quick entry functionality working as expected."
 
   - task: "Waitlist Management"
     implemented: true
@@ -142,11 +148,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "CRUD endpoints for waitlist with status transitions"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All waitlist endpoints working - POST /api/waitlist creates entries, GET /api/waitlist retrieves entries, PATCH /api/waitlist/{id} updates status correctly. Status transitions working properly."
 
   - task: "Guest Management (Greylist/Blacklist)"
     implemented: true
@@ -154,11 +163,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Guest records with no_show_count and flag (none/greylist/blacklist)"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Guest management fully functional - GET /api/guests retrieves guests, POST /api/guests creates guests, PATCH /api/guests/{id} updates flags. Filtering by flag works correctly."
 
   - task: "PDF Table Plan Export"
     implemented: true
@@ -166,11 +178,14 @@ backend:
     file: "/app/backend/pdf_service.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/export/table-plan generates A4 PDF"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/export/table-plan?date=2025-12-21 successfully generates PDF (4644 bytes). PDF export working correctly."
 
   - task: "Email Service Multi-Language"
     implemented: true
@@ -183,6 +198,9 @@ backend:
       - working: true
         agent: "main"
         comment: "DE/EN/PL templates for confirmation, reminder, cancellation"
+      - working: true
+        agent: "testing"
+        comment: "Minor: Email sending fails due to SMTP authentication (535 Authentication credentials invalid), but email service structure and templates are correctly implemented. This is a configuration issue, not a code issue."
 
 frontend:
   - task: "Dashboard with Walk-In Button"
