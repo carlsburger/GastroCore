@@ -209,23 +209,29 @@ frontend:
     file: "/app/frontend/src/pages/Dashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added Walk-In button and PDF export button"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Dashboard loads successfully with Service-Terminal title. Walk-In button found and functional - dialog opens and form can be submitted. PDF Export button found and clickable. Navigation to Warteliste and Gäste working properly. All dashboard features working as expected."
 
   - task: "Online Booking Widget"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/pages/BookingWidget.jsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Public /book route with multi-step form"
+      - working: false
+        agent: "testing"
+        comment: "❌ TESTED: Public booking widget route /book is not accessible. Route appears to redirect to login page instead of showing the booking widget. The BookingWidget component exists but the public route is not properly configured or protected by authentication."
 
   - task: "Waitlist Page"
     implemented: true
@@ -233,11 +239,14 @@ frontend:
     file: "/app/frontend/src/pages/Waitlist.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Full CRUD with status transitions and conversion to reservation"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Waitlist page loads correctly with title 'Warteliste'. Navigation from dashboard works. 'Neuer Eintrag' button found and functional - dialog opens for creating new waitlist entries. Form can be filled and submitted. All waitlist functionality working as expected."
 
   - task: "Guests Page (No-Show Management)"
     implemented: true
@@ -245,11 +254,14 @@ frontend:
     file: "/app/frontend/src/pages/Guests.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Filter by flag (all/greylist/blacklist), edit guest flags"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Guests page loads correctly with title 'Gäste'. Navigation from dashboard works. All filter buttons (Alle/Greylist/Blacklist) are visible and functional. Guest management interface working as expected for no-show management."
 
 metadata:
   created_by: "main_agent"
