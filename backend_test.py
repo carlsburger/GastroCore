@@ -2107,28 +2107,25 @@ class GastroCoreAPITester:
 
     def run_all_tests(self):
         """Run all test suites"""
-        print("🚀 Starting GastroCore Backend API Tests - Sprint 4 Payment Module Focus")
-        print("=" * 70)
+        print("🚀 Starting GastroCore Backend API Tests - Sprint 5 Staff & Schedule Module Focus")
+        print("=" * 80)
         
-        # Test sequence - focused on Sprint 4 Payment Module
+        # Test sequence - focused on Sprint 5 Staff & Schedule Module
         test_results = []
         
         test_results.append(self.test_seed_data())
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
-        # Sprint 4 Payment Module tests - PRIMARY FOCUS
-        print("\n💳 SPRINT 4 PAYMENT MODULE TESTING:")
-        test_results.append(self.test_seed_payment_rules())
-        test_results.append(self.test_sprint4_payment_rules_crud())
-        test_results.append(self.test_sprint4_payment_check_required())
-        test_results.append(self.test_sprint4_payment_transactions_and_logs())
-        test_results.append(self.test_sprint4_payment_resend_link())
-        test_results.append(self.test_sprint4_payment_access_control())
-        
-        # Sprint 4 Events Module tests (already tested)
-        print("\n🎭 SPRINT 4 EVENTS MODULE TESTING:")
-        test_results.append(self.test_sprint4_events_authentication())
+        # Sprint 5 Staff & Schedule Module tests - PRIMARY FOCUS
+        print("\n👥 SPRINT 5 STAFF & SCHEDULE MODULE TESTING:")
+        test_results.append(self.test_seed_staff_data())
+        test_results.append(self.test_sprint5_work_areas_crud())
+        test_results.append(self.test_sprint5_staff_members_crud())
+        test_results.append(self.test_sprint5_schedules_crud())
+        test_results.append(self.test_sprint5_shifts_crud())
+        test_results.append(self.test_sprint5_hours_overview())
+        test_results.append(self.test_sprint5_exports())
         
         # Core functionality tests (reduced for focus)
         print("\n🏗️ CORE FUNCTIONALITY TESTING:")
@@ -2140,7 +2137,7 @@ class GastroCoreAPITester:
         self.cleanup_test_data()
         
         # Summary
-        print("\n" + "=" * 70)
+        print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
         print(f"Tests run: {self.tests_run}")
         print(f"Tests passed: {self.tests_passed}")
