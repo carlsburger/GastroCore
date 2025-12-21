@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Areas from "./pages/Areas";
 import Users from "./pages/Users";
 import AuditLog from "./pages/AuditLog";
+import CancelReservation from "./pages/CancelReservation";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
