@@ -1771,6 +1771,9 @@ from payment_module import payment_router, payment_webhook_router, seed_payment_
 # Import Staff Module (Sprint 5 - Mitarbeiter & Dienstplan)
 from staff_module import staff_router, seed_work_areas, seed_sample_staff
 
+# Import Tax Office Module (Sprint 6 - Steuerbüro Exporte)
+from taxoffice_module import taxoffice_router
+
 # Add seed events endpoint BEFORE including routers
 @api_router.post("/seed-events", tags=["Admin"])
 async def seed_events_endpoint(user: dict = Depends(require_admin)):
@@ -1799,6 +1802,7 @@ app.include_router(public_events_router)
 app.include_router(payment_router)
 app.include_router(payment_webhook_router)
 app.include_router(staff_router)
+app.include_router(taxoffice_router)
 
 app.add_middleware(
     CORSMiddleware,
