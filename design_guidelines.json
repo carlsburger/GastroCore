@@ -1,0 +1,133 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "GastroCore",
+      "archetype": "Organic & Earthy (The Modern Maître d')",
+      "vibe": "Tactile, Efficient, Elegant, High-Contrast",
+      "principles": [
+        "Fusion: Paper Ledger aesthetics x Real-time Speed",
+        "Contrast: Dark Ink (#00280b) on Cream Paper (#fafbed)",
+        "Space: Generous padding to prevent 'Data Claustrophobia'",
+        "Touch: Large targets for wet/busy hands"
+      ]
+    },
+    "typography": {
+      "fonts": {
+        "heading": "Playfair Display, serif",
+        "body": "Lato, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "usage": {
+        "h1": "font-serif text-5xl font-medium tracking-tight text-primary",
+        "h2": "font-serif text-3xl font-medium tracking-tight text-primary",
+        "h3": "font-serif text-2xl font-medium text-primary",
+        "body": "font-sans text-base leading-relaxed text-foreground",
+        "label": "font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground",
+        "data": "font-sans text-sm font-medium tabular-nums"
+      }
+    },
+    "colors": {
+      "palette": {
+        "background": "#fafbed",
+        "foreground": "#00280b",
+        "card": "#f3f6de",
+        "card_foreground": "#00280b",
+        "popover": "#fafbed",
+        "popover_foreground": "#00280b",
+        "primary": "#00280b",
+        "primary_foreground": "#fafbed",
+        "secondary": "#e8ebd4",
+        "secondary_foreground": "#00280b",
+        "muted": "#e3e6d0",
+        "muted_foreground": "#4a5d4e",
+        "accent": "#ffed00",
+        "accent_foreground": "#00280b",
+        "destructive": "#bc4749",
+        "destructive_foreground": "#fafbed",
+        "border": "#dce0c5",
+        "input": "#dce0c5",
+        "ring": "#00280b"
+      },
+      "status_colors": {
+        "neu": "bg-[#ffed00] text-[#00280b] border-[#e6d500]",
+        "bestaetigt": "bg-[#a2d2ff] text-[#00280b] border-[#8ecae6]",
+        "angekommen": "bg-[#00280b] text-[#fafbed] border-[#00280b]",
+        "abgeschlossen": "bg-[#e3e6d0] text-[#4a5d4e] border-[#dce0c5]",
+        "no_show": "bg-[#bc4749] text-[#fafbed] border-[#bc4749]"
+      }
+    },
+    "spacing": {
+      "container_padding": "p-8 md:p-12",
+      "card_padding": "p-6",
+      "section_gap": "gap-8",
+      "item_gap": "gap-4"
+    },
+    "radius": {
+      "default": "0.5rem",
+      "card": "0.75rem",
+      "button": "9999px"
+    },
+    "shadows": {
+      "card": "0 4px 6px -1px rgba(0, 40, 11, 0.05), 0 2px 4px -1px rgba(0, 40, 11, 0.03)",
+      "hover": "0 10px 15px -3px rgba(0, 40, 11, 0.1), 0 4px 6px -2px rgba(0, 40, 11, 0.05)",
+      "dropdown": "0 20px 25px -5px rgba(0, 40, 11, 0.1), 0 10px 10px -5px rgba(0, 40, 11, 0.04)"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-8 rounded-full font-sans font-bold tracking-wide shadow-md transition-transform active:scale-95",
+      "secondary": "bg-card text-card-foreground border border-border hover:bg-accent hover:text-accent-foreground h-10 px-6 rounded-full font-sans font-medium transition-colors",
+      "ghost": "hover:bg-muted hover:text-foreground rounded-full px-4"
+    },
+    "cards": {
+      "base": "bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden",
+      "interactive": "hover:shadow-hover hover:border-primary/20 transition-all duration-300 cursor-pointer group"
+    },
+    "inputs": {
+      "base": "bg-background border-input text-foreground rounded-md focus:ring-2 focus:ring-primary focus:border-transparent h-11 px-4 font-sans"
+    },
+    "layout": {
+      "dashboard_grid": "grid grid-cols-1 md:grid-cols-12 gap-6 p-6 md:p-10 bg-background min-h-screen",
+      "sidebar": "hidden md:flex col-span-2 flex-col gap-4 border-r border-border pr-6",
+      "main_content": "col-span-1 md:col-span-10 flex flex-col gap-8"
+    }
+  },
+  "assets": {
+    "images": {
+      "login_bg": {
+        "url": "https://images.unsplash.com/photo-1596226391997-5e7ea4805d03?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Elegant restaurant interior with warm lighting",
+        "usage": "Right side of login split screen, covered with subtle overlay"
+      },
+      "empty_state": {
+        "url": "https://images.unsplash.com/photo-1750943082012-efe6d2fd9e45?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Chef plating food detail",
+        "usage": "Dashboard empty states or welcome banner"
+      }
+    },
+    "icons": "lucide-react"
+  },
+  "instructions_to_main_agent": {
+    "setup": [
+      "Update /app/frontend/src/index.css with the CSS variables derived from the palette.",
+      "Install fonts: Lato and Playfair Display via Google Fonts or Fontsource.",
+      "Ensure all interactive elements have data-testid attributes."
+    ],
+    "layout_rules": [
+      "DO NOT center the main dashboard content. Use left alignment for lists.",
+      "Use the 'Bento' grid strategy: Mix wide cards (col-span-8) with tall cards (row-span-2).",
+      "Ensure the 'Service Terminal' view is dense but touch-friendly (min-height 44px for rows)."
+    ],
+    "component_overrides": [
+      "Customize Shadcn Card to use the #f3f6de background.",
+      "Customize Shadcn Button to be pill-shaped (rounded-full).",
+      "Use Sonner for toasts, styled with the cream/green palette."
+    ]
+  },
+  "universal_guidelines": [
+    "Avoid gradients for backgrounds; use solid colors or subtle noise textures.",
+    "Never use pure black (#000000); use the dark green (#00280b) instead.",
+    "Animations must be 'snappy' (duration-200 ease-out) for UI interactions.",
+    "Accessibility: Ensure text on the yellow accent is ALWAYS dark green."
+  ]
+}
