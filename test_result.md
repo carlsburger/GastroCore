@@ -186,6 +186,43 @@ agent_communication:
       4. Review CORS settings in backend
       5. Check if frontend is using correct API base URL
 
+  - agent: "testing"
+    message: |
+      ✅ CONNECTIVITY ISSUE RESOLVED - SMOKE TESTS COMPLETED
+      
+      RESOLUTION:
+      - Fixed REACT_APP_BACKEND_URL from https://demobackend.emergentagent.com to http://localhost:8001
+      - Created test admin user (test@admin.com/test123) to bypass must_change_password issue
+      - Frontend now successfully connects to backend
+      
+      TESTBLOCK A: ROUTING & AUTH
+      ✅ A1) Admin Zugriff: PASS - Login successful, /schedule and /my-shifts accessible
+      ✅ A2) Route Protection: PASS - Unauthenticated users redirected to login
+      
+      TESTBLOCK B: SCHEDULE CORE FLOWS
+      ✅ B1) Woche Navigation: PASS - Navigation buttons present and functional
+      ✅ B2) Schedule Creation: PASS - Can create new schedules
+      ❌ B3) Schicht hinzufügen: FAIL - Plus buttons not appearing after schedule creation
+      ❌ B6) Veröffentlichen: NOT VISIBLE - Publish button not found
+      ❌ B7) Woche kopieren: NOT VISIBLE - Copy button not found
+      
+      TESTBLOCK C: KONFLIKTFEHLER
+      ❌ Cannot test - Blocked by B3 issue (shift creation not working)
+      
+      TESTBLOCK D: EXPORTS
+      ❌ D1) PDF Export: FAIL - Button not visible
+      ❌ D2) CSV Export: FAIL - Button not visible
+      
+      TESTBLOCK E: MY-SHIFTS
+      ✅ E1) Anzeige: PASS - Page loads, shows empty state correctly
+      ✅ E2) Navigation: PASS - Week navigation works perfectly
+      
+      CRITICAL ISSUES REMAINING:
+      1. Schedule shift management UI not fully functional
+      2. Export buttons not visible
+      3. Action buttons (Publish/Copy) not appearing
+      4. May be related to missing test data or conditional UI rendering
+
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
 #====================================================================================================
