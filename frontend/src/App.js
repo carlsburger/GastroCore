@@ -43,6 +43,8 @@ import Unsubscribe from "./pages/Unsubscribe";
 import AIAssistant from "./pages/AIAssistant";
 // Reservation Config Module (Sprint: Reservierung Live-Ready)
 import ReservationConfig from "./pages/ReservationConfig";
+// Tischplan (Sprint: Service-Terminal Erweiterungen)
+import TablePlan from "./pages/TablePlan";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
