@@ -1,666 +1,392 @@
-# ============================================================
-# CARLSBURG COCKPIT - IST-STAND-REPORT
-# Stand: 21. Dezember 2025
-# ============================================================
+# =============================================
+# IST-STAND-REPORT – Carlsburg Cockpit / GastroCore
+# Stand: 2025-12-22 12:17 UTC
+# =============================================
 
-## 🚀 FIRST-RUN / INITIAL SETUP (Sprint 11)
+## 1) SESSION INTEGRITY CHECK
 
-Nach einem frischen Clone oder Deployment:
+### A) Git / Repository
+| Parameter | Wert |
+|-----------|------|
+| Repo-Pfad | `/app` |
+| Branch | `main` |
+| Commit Hash | `98ea4b03dc9559ebb4ae6644b916d026de88bbcf` |
+| Build-ID | `98ea4b03-20251222` |
+| git status | ✅ clean (nur yarn.lock untracked) |
 
-### 1. Seed ausführen (einmalig)
-```bash
-curl -X POST http://localhost:8001/internal/seed
+### B) API Status
+```json
+GET /api/health
+{
+  "status": "healthy",
+  "database": "connected",
+  "version": "3.0.0"
+}
+
+GET /api/version → Modules:
+  core: true, reservations: true, tables: true, events: true,
+  payments: true, staff: true, schedules: true, taxoffice: true,
+  loyalty: true, marketing: true, ai: true
 ```
 
-### 2. Verify prüfen
-```bash
-curl http://localhost:8001/internal/seed/verify
-# Erwartetes Ergebnis: "status": "READY"
+### C) Dateiliste (Backend)
+| Modul-Datei | Größe (Bytes) | LOC |
+|-------------|---------------|-----|
+| server.py | 87.488 | 2.242 |
+| staff_module.py | 69.682 | 1.871 |
+| events_module.py | 36.190 | 944 |
+| reservation_config_module.py | 36.721 | 1.081 |
+| table_module.py | 34.486 | ~900 |
+| payment_module.py | 34.736 | ~900 |
+| loyalty_module.py | 37.041 | ~950 |
+| marketing_module.py | 32.166 | ~850 |
+| taxoffice_module.py | 32.103 | ~850 |
+| opening_hours_module.py | 24.761 | ~650 |
+| system_settings_module.py | 7.734 | ~200 |
+| import_module.py | 34.262 | ~900 |
+| ai_assistant.py | 31.715 | ~800 |
+
+**Total Backend:** 17 Python-Dateien, ~15.000 LOC
+
+### D) Dateiliste (Frontend)
+| Seite | Größe (Bytes) | Funktion |
+|-------|---------------|----------|
+| ServiceTerminal.jsx | 50.929 | Tagesgeschäft Service |
+| TablePlan.jsx | 45.056 | Tischplan-Ansicht |
+| Dashboard.jsx | 42.311 | Übersicht/Statistiken |
+| AIAssistant.jsx | 39.135 | KI-Chat |
+| Marketing.jsx | 36.072 | Marketing-Tools |
+| OpeningHoursAdmin.jsx | 35.166 | Öffnungszeiten/Sperrtage |
+| Schedule.jsx | 27.151 | Dienstplan |
+| ReservationConfig.jsx | 28.763 | Reservierungs-Einstellungen |
+| Staff.jsx | 20.921 | Mitarbeiterliste |
+| Events.jsx | 18.605 | Events/Aktionen |
+| Settings.jsx | 23.517 | Einstellungen |
+
+**Total Frontend:** 36 JSX-Seiten, ~600 KB
+
+### E) Datenbank Collections
+| Collection | Count | Status |
+|------------|-------|--------|
+| users | 1 | ✅ Admin vorhanden |
+| staff_members | 12 | ✅ Importiert |
+| schedules | 1 | ✅ KW vorhanden |
+| shifts | 0 | ⚠️ Keine Schichten |
+| work_areas | 0 | ⚠️ Keine Arbeitsbereiche |
+| reservations | 0 | ⚠️ Keine Reservierungen |
+| guests | 0 | ⚪ On-demand |
+| events | 16 | ✅ 8 Veranstalt. + 8 Aktionen |
+| opening_hours_master | 4 | ✅ Perioden vorhanden |
+| closures | 5 | ✅ Sperrtage vorhanden |
+| tables | 0 | ⚠️ Keine Tische |
+| areas | 0 | ⚠️ Keine Bereiche |
+| system_settings | 1 | ✅ Company Profile |
+| audit_logs | 35 | ✅ Logging aktiv |
+
+---
+
+## 2) MODULE-STATUS
+
+| Modul | Status | Backend | Frontend | Bemerkung |
+|-------|--------|---------|----------|-----------|
+| **Core/Auth** | ✅ | server.py | Login.jsx | JWT Auth funktioniert |
+| **Reservierungen** | ⚠️ | server.py | ServiceTerminal.jsx | Endpoints OK, aber keine Testdaten |
+| **Tischplan** | ⚠️ | table_module.py | TablePlan.jsx, TableAdmin.jsx | UI vorhanden, keine Tische angelegt |
+| **Service-Terminal** | ✅ | server.py | ServiceTerminal.jsx | Optimiert für iPad |
+| **Events & Aktionen** | ✅ | events_module.py | Events.jsx | 3 Kategorien, 16 Events |
+| **Payments** | ⚠️ | payment_module.py | PaymentRules.jsx | Stripe-Integration, keine Config |
+| **Staff/Mitarbeiter** | ✅ | staff_module.py | Staff.jsx | 12 MA importiert |
+| **Schedules/Dienstplan** | ⚠️ | staff_module.py | Schedule.jsx | UI vorhanden, UX-Probleme |
+| **TaxOffice/Exporte** | ✅ | taxoffice_module.py | TaxOfficeExports.jsx | DATEV-Export |
+| **Loyalty/Kunden** | ⚠️ | loyalty_module.py | - | Backend vorhanden, kein Frontend |
+| **Marketing** | ⚠️ | marketing_module.py | Marketing.jsx | UI vorhanden, SMTP fehlt |
+| **KI-Assistent** | ✅ | ai_assistant.py | AIAssistant.jsx | GPT-Integration |
+| **Opening Hours** | ✅ | opening_hours_module.py | OpeningHoursAdmin.jsx | Perioden + Closures |
+| **System Settings** | ✅ | system_settings_module.py | SystemSettings.jsx | Company Profile |
+
+---
+
+## 3) WAS LÄUFT GUT? (Top 5)
+
+1. **Backend-Architektur** ✅
+   - Saubere Modul-Trennung, alle 11 Module aktiv
+   - Audit-Logging funktioniert (35 Einträge)
+   - REST-API vollständig dokumentiert
+
+2. **Events & Aktionen** ✅
+   - 3-Kategorien-System (Veranstaltung/Aktion/Menü-Aktion)
+   - 16 Events von Website importiert
+   - Menüauswahl-Logik implementiert
+
+3. **Mitarbeiter-Import** ✅
+   - 12 Mitarbeiter aus XLSX importiert
+   - Idempotente Upsert-Logik
+   - HR-Felder verschlüsselt
+
+4. **Öffnungszeiten-System** ✅
+   - Perioden mit Priority-Logik (Sommer/Winter)
+   - Recurring + One-off Sperrtage
+   - Effective Hours API für Reservierung & Dienstplan
+
+5. **UI/Corporate Design** ✅
+   - Neue Farben (#002f02, #ffed00) implementiert
+   - Klappbare Navigation
+   - Touch-optimiert für iPad
+
+---
+
+## 4) WAS LÄUFT NICHT GUT / RISIKEN (Top 10)
+
+| # | Problem | Impact | Ursache | Betroffene Datei |
+|---|---------|--------|---------|------------------|
+| 1 | **Keine Tische angelegt** | HOCH | Seed fehlt | table_module.py, TableAdmin.jsx |
+| 2 | **Keine Arbeitsbereiche (Work Areas)** | HOCH | Seed fehlt → Dienstplan unbenutzbar | staff_module.py |
+| 3 | **Keine Schichtarten konfigurierbar** | HOCH | Feature fehlt komplett | staff_module.py, Schedule.jsx |
+| 4 | **Dienstplan UX: KW statt Datum** | MITTEL | Kalender-Navigation umständlich | Schedule.jsx |
+| 5 | **SMTP nicht konfiguriert** | HOCH | Keine E-Mails möglich | Settings.jsx |
+| 6 | **Keine Areas (Restaurant/Terrasse)** | HOCH | Seed fehlt | Areas.jsx |
+| 7 | **Payment Rules leer** | MITTEL | Keine Anzahlungsregeln | payment_module.py |
+| 8 | **Loyalty-Frontend fehlt** | NIEDRIG | Backend vorhanden, UI fehlt | - |
+| 9 | **Reservierungs-Testdaten fehlen** | MITTEL | Kein Seed → Service-Terminal leer | server.py |
+| 10 | **Route /events → Service-Terminal Bug** | NIEDRIG | Routing-Konflikt | App.js |
+
+---
+
+## 5) WAS MÜSSEN WIR NACHARBEITEN?
+
+### KRITISCH (vor Go-Live)
+1. **Tische anlegen** – Seed-Script oder Admin-UI in TableAdmin.jsx
+2. **Areas anlegen** – Restaurant, Terrasse, Wintergarten in Areas.jsx
+3. **Work Areas anlegen** – Service, Küche, Bar für Dienstplan
+4. **SMTP konfigurieren** – .env Variablen + Settings.jsx
+5. **Schichtarten-System** – Neue Collection + Config-UI
+
+### WICHTIG (für Betrieb)
+6. **Dienstplan-Kalender** – Monat/Jahr schnell wählbar machen
+7. **Testdaten Reservierungen** – Seed für Service-Terminal-Tests
+8. **Payment Rules** – Anzahlungsregeln definieren
+9. **Reservation-Config** – Slot-Zeiten, Kapazitäten
+
+### OPTIONAL (Verbesserungen)
+10. **Loyalty-UI** – Punkte-System Frontend
+11. **Newsletter-Integration** – Marketing-Modul vervollständigen
+12. **KI-Assistent Prompts** – Feintuning für Carlsburg-Kontext
+
+---
+
+## 6) ROADMAP – Praktische Reihenfolge
+
+### Sprint 1: SEED & STAMMDATEN (1-2 Tage)
+**Ziel:** System betriebsbereit machen
+- [ ] Areas anlegen (Restaurant, Terrasse, Wintergarten, Event)
+- [ ] Tische anlegen (18 Tische lt. Carlsburg-Setup)
+- [ ] Work Areas anlegen (Service, Küche, Bar, Event)
+- [ ] Schichtarten-Config (Früh, Spät, Teildienst, Event)
+- [ ] Test-Reservierungen für heute/morgen
+
+**Begründung:** Ohne Stammdaten sind Service-Terminal und Dienstplan nicht nutzbar.
+
+### Sprint 2: DIENSTPLAN OPTIMIERUNG (2-3 Tage)
+**Ziel:** Dienstplan-UX deutlich verbessern
+- [ ] Kalender-Navigation (Monat/Jahr schnell wählen)
+- [ ] Wochenansicht mit "Heute" markiert
+- [ ] Schichtarten-Farben in UI
+- [ ] Schicht-Templates (Vorlagen)
+- [ ] Mitarbeiter-Verfügbarkeiten
+
+**Begründung:** Dienstplan ist täglich im Einsatz, UX-Probleme kosten Zeit.
+
+### Sprint 3: KOMMUNIKATION (1-2 Tage)
+**Ziel:** E-Mail/WhatsApp funktionsfähig
+- [ ] SMTP-Konfiguration UI
+- [ ] E-Mail-Templates prüfen
+- [ ] Reminder-System testen
+- [ ] WhatsApp-Integration (falls vorhanden)
+
+**Begründung:** Gäste-Kommunikation ist geschäftskritisch.
+
+### Sprint 4: RESERVIERUNG FEINSCHLIFF (2 Tage)
+**Ziel:** Reservierungsflow optimieren
+- [ ] Reservation-Config vollständig
+- [ ] Payment Rules für Events
+- [ ] Walk-in Flow testen
+- [ ] Tischzuweisung automatisch
+
+**Begründung:** Reservierungen sind Kerngeschäft.
+
+### Sprint 5: KI & MARKETING (optional, später)
+**Ziel:** Nur nach Stabilisierung
+- [ ] KI-Assistent Feintuning
+- [ ] Newsletter-Integration
+- [ ] Loyalty-UI
+
+**Begründung:** "Nice-to-have", keine Priorität vor Grundfunktionen.
+
+---
+
+## 7) DIENSTPLAN – DEEP DIVE
+
+### A) Ist-Stand
+
+**Collections:**
+- `schedules` – Wochenpläne (year, week, status)
+- `shifts` – Einzelne Schichten (schedule_id, member_id, date, start, end)
+- `work_areas` – Arbeitsbereiche (AKTUELL LEER!)
+- `staff_members` – 12 Mitarbeiter vorhanden
+
+**Endpoints (staff_module.py):**
+```
+GET  /api/staff/schedules           - Liste
+GET  /api/staff/schedules/{id}      - Detail mit Shifts
+POST /api/staff/schedules           - Neuer Wochenplan
+POST /api/staff/schedules/{id}/publish
+POST /api/staff/schedules/{id}/archive
+POST /api/staff/schedules/{id}/copy
+GET  /api/staff/shifts              - Schichten filtern
+POST /api/staff/shifts              - Schicht anlegen
+PATCH/DELETE /api/staff/shifts/{id}
+GET  /api/staff/my-shifts           - Eigene Schichten
+GET  /api/staff/hours-overview      - Stundenübersicht
 ```
 
-### 3. Login-Daten (Initial)
-| Rolle | Email | Passwort | Hinweis |
-|-------|-------|----------|---------|
-| Admin | admin@carlsburg.de | Carlsburg2025! | Passwort ändern erforderlich |
-| Schichtleiter | schichtleiter@carlsburg.de | Schicht2025! | Passwort ändern erforderlich |
-| Mitarbeiter | mitarbeiter@carlsburg.de | Mitarbeiter2025! | Passwort ändern erforderlich |
+**UI (Schedule.jsx):**
+- 741 LOC, funktionale Komponente
+- Wochenansicht mit 7 Spalten (Mo-So)
+- Schichten als Karten pro Tag
+- Dialog zum Erstellen/Bearbeiten
 
-### Wann Seed NICHT ausführen
-- Wenn Produktivdaten existieren (Seed prüft automatisch)
-- Zum Überschreiben: `?force=true` Parameter verwenden
+### B) UX-Probleme
 
-### Umgebungsvariablen für Seed
-```bash
-ADMIN_EMAIL=admin@carlsburg.de  # Optional: Custom Admin-Email
-ADMIN_PASSWORD=CustomPassword   # Optional: Custom Admin-Passwort
-FORCE_SEED=true                 # Optional: Seed trotz bestehender Daten
+1. **Navigation nach KW statt Datum**
+   - User muss KW-Nummer kennen
+   - Kein visueller Kalender
+   - "Heute" nicht sofort sichtbar
+
+2. **Kein schneller Monats-/Jahreswechsel**
+   - Nur +/- Woche möglich
+   - 2 Jahre voraus = 104 Klicks
+
+3. **Keine Schichtarten**
+   - Nur Start/Ende, keine Kategorisierung
+   - Keine Farben für Früh/Spät/etc.
+   - Keine Default-Zeiten
+
+4. **Work Areas fehlen**
+   - Ohne Work Areas keine Bereichszuordnung
+   - UI zeigt leere Bereiche
+
+### C) Fehlende Konfiguration
+
+**1) Schichtarten (NEU ANZULEGEN):**
+```javascript
+// Vorschlag: Collection "shift_types"
+{
+  id: uuid,
+  name: "Frühdienst",
+  short_name: "F",
+  color: "#4CAF50",
+  default_start: "06:00",
+  default_end: "14:00",
+  work_area_id: "service",
+  break_minutes: 30,
+  is_active: true
+}
+
+// Beispiel-Schichtarten:
+- Frühdienst (F) 06:00-14:00 grün
+- Spätdienst (S) 14:00-22:00 blau  
+- Teildienst (T) 10:00-14:00 + 17:00-22:00 orange
+- Event (E) flexibel lila
+- Küche (K) 08:00-16:00 rot
+```
+
+**2) Dienstplan-Ansicht (VERBESSERUNG):**
+```
++--------------------------------------------------+
+| < Jan 2026 >  [Heute] [Woche] [Monat]            |
++--------------------------------------------------+
+| Mo Di Mi Do Fr Sa So                              |
+| 5  6  7  8  9  10 11  ← aktuelle Woche           |
++--------------------------------------------------+
+|        | Mo 5. | Di 6. | Mi 7. | ...             |
++--------+-------+-------+-------+                  |
+| Service| [F]   | [S]   | -     |                  |
+|        | Tom   | Anna  |       |                  |
++--------+-------+-------+-------+                  |
+| Küche  | [K]   | [K]   | [K]   |                  |
+|        | Max   | Max   | Lisa  |                  |
++--------+-------+-------+-------+                  |
+```
+
+### D) Vorschlag: Minimal vs. Sauber
+
+**Quick Win (ohne Backend-Änderung):**
+- Kalender-Widget in Schedule.jsx hinzufügen
+- Heute-Button + Datum-Picker
+- Monat/Jahr Dropdown
+- Work Areas als Seed anlegen
+
+**Saubere Lösung (mit Backend):**
+1. Neue Collection `shift_types` 
+2. Neue Endpoints:
+   - `GET/POST/PATCH/DELETE /api/staff/shift-types`
+3. Shift-Model erweitern: `shift_type_id`
+4. UI: Schichtarten-Admin + Farben in Kalender
+
+### E) To-Do Liste Dienstplan (max 12 Punkte)
+
+| # | Task | Typ | Priorität |
+|---|------|-----|-----------|
+| 1 | Work Areas anlegen (Service, Küche, Bar, Event) | SEED | KRITISCH |
+| 2 | Kalender-Navigation in Schedule.jsx | UI | HOCH |
+| 3 | "Heute" Button + Datum-Picker | UI | HOCH |
+| 4 | Monat/Jahr Schnellwahl | UI | HOCH |
+| 5 | Collection `shift_types` anlegen | BACKEND | HOCH |
+| 6 | Endpoints für Schichtarten | BACKEND | HOCH |
+| 7 | Schichtarten-Admin UI | UI | MITTEL |
+| 8 | Farben in Schicht-Karten | UI | MITTEL |
+| 9 | Default-Zeiten aus Schichtart | LOGIK | MITTEL |
+| 10 | Closed-Days aus Opening Hours anzeigen | INTEGRATION | MITTEL |
+| 11 | Schicht-Vorlagen/Templates | FEATURE | NIEDRIG |
+| 12 | Mitarbeiter-Verfügbarkeiten | FEATURE | NIEDRIG |
+
+### F) Testliste Dienstplan
+
+1. [ ] Work Areas erscheinen in Dropdown
+2. [ ] Neue Schicht kann angelegt werden
+3. [ ] Schicht wird im Kalender angezeigt
+4. [ ] Wochenwechsel funktioniert (+/-)
+5. [ ] "Heute" springt zur aktuellen Woche
+6. [ ] Monat/Jahr kann schnell gewechselt werden
+7. [ ] Schichtarten werden mit Farbe angezeigt
+8. [ ] Geschlossene Tage sind markiert
+9. [ ] Mitarbeiter sieht eigene Schichten (/my-shifts)
+10. [ ] Stundenübersicht zeigt korrekte Summen
+
+---
+
+## 8) NEXT STEP EMPFEHLUNG
+
+```
+SOFORT (heute):
+1. Areas + Tische + Work Areas als Seed anlegen
+2. Dienstplan: Kalender-Navigation implementieren
+
+DIESE WOCHE:
+3. Schichtarten-System (Backend + Frontend)
+4. SMTP-Konfiguration
+
+NÄCHSTE WOCHE:
+5. Test-Reservierungen + Service-Terminal Durchlauf
+6. Payment Rules für Events
+
+NICHT ANFASSEN (vorerst):
+- KI-Assistent Feintuning
+- Marketing/Newsletter
+- Loyalty-System
 ```
 
 ---
 
-## ⚠️ VOR TAB SCHLIEßEN – BACKUP ERSTELLEN
-
-```bash
-cd /app && bash scripts/make_backup.sh
-```
-
-Dann **ZIP-Datei aus `/app/backups/` lokal herunterladen** und sicher aufbewahren!
-
----
-
-## 1) VERSION / ARCHITEKTUR
-
-### Modulstruktur
-| Modul | Status | Beschreibung |
-|-------|--------|--------------|
-| Core (Auth/RBAC) | ✅ FERTIG | JWT, 3 Rollen (admin, schichtleiter, mitarbeiter) |
-| Reservations | ✅ FERTIG | Online-Buchung, Walk-ins, Statusmaschine |
-| Service-Terminal | ✅ FERTIG | Tagesliste, Statuswechsel |
-| Events | ✅ FERTIG | Event-Verwaltung mit Buchungen & Produkten |
-| Payments | ✅ FERTIG | Stripe-Integration, Regeln, Manuelle Freigabe |
-| Staff | ✅ FERTIG | Mitarbeiterverwaltung mit HR-Feldern |
-| Schedules | ✅ FERTIG | Dienstplanung mit Schichten |
-| Tax Office Exports | ✅ FERTIG | CSV/PDF Exporte für Steuerbüro |
-| Customer/Loyalty | ✅ FERTIG | OTP-Login, Punkte-Ledger, Rewards |
-| Marketing | ❌ NICHT IMPLEMENTIERT | |
-| AI/KI-Module | ❌ NICHT IMPLEMENTIERT | |
-
-### Tech-Stack
-- **Backend**: FastAPI (Python 3.11)
-- **Frontend**: React 18 + Tailwind CSS + shadcn/ui
-- **Datenbank**: MongoDB
-- **Auth**: JWT (HS256, 24h Ablauf)
-- **Storage**: Lokales Dateisystem (/app/uploads)
-- **Email**: SMTP (konfigurierbar via ENV, aktuell nur geloggt)
-- **Encryption**: Fernet (AES-256) für HR-Sensitivdaten
-
----
-
-## 2) DATENMODELLE (Collections)
-
-### users (3 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | Primärschlüssel |
-| email | string | Login-Email |
-| password_hash | string | bcrypt Hash |
-| name | string | Anzeigename |
-| role | enum | admin/schichtleiter/mitarbeiter |
-| archived | bool | Soft Delete |
-| must_change_password | bool | Erzwingt Passwortänderung |
-| created_at | datetime | |
-**Status: ✅ FERTIG**
-
-### audit_logs (202 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| actor | object | {id, name, email, role} |
-| entity | string | Entitätstyp |
-| entity_id | string | |
-| action | string | create/update/delete/etc. |
-| before/after | object | Zustand vor/nach |
-| metadata | object | Zusätzliche Infos |
-| timestamp | datetime | |
-**Status: ✅ FERTIG**
-
-### reservations (33 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| guest_name | string | |
-| guest_phone | string | |
-| guest_email | string | optional |
-| party_size | int | |
-| date | string | YYYY-MM-DD |
-| time | string | HH:MM |
-| status | enum | neu/bestaetigt/angekommen/abgeschlossen/no_show/storniert |
-| area_id | UUID | Bereichszuordnung |
-| source | enum | online/phone/walk_in |
-| notes | string | optional |
-| cancel_token | string | Für Storno-Links |
-| reminder_sent | bool | |
-| payment_status | string | unpaid/pending/paid/failed |
-| payment_required | bool | |
-**Status: ✅ FERTIG**
-
-### guests (4 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| phone | string | Primärer Identifier |
-| name | string | |
-| email | string | optional |
-| no_show_count | int | |
-| visit_count | int | |
-| flag | enum | null/greylist/blacklist |
-| notes | string | Admin-Notizen |
-| vip | bool | |
-**Status: ✅ FERTIG**
-
-### waitlist (8 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| guest_name | string | |
-| guest_phone | string | |
-| party_size | int | |
-| date | string | |
-| status | enum | offen/informiert/eingeloest/erledigt |
-| converted_reservation_id | UUID | Nach Umwandlung |
-**Status: ✅ FERTIG**
-
-### areas (4 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| name | string | |
-| capacity | int | |
-| color | string | Hex-Farbe |
-| sort_order | int | |
-**Status: ✅ FERTIG**
-
-### opening_hours (7 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| day_of_week | int | 0-6 (Mo-So) |
-| is_closed | bool | |
-| slots | array | [{start, end}] |
-**Status: ✅ FERTIG**
-
-### payment_rules (3 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| name | string | |
-| trigger | enum | group_size/greylist/event |
-| trigger_value | int | z.B. 8 für Gruppengröße |
-| payment_type | enum | fixed_deposit/deposit_per_person/full_prepayment |
-| amount | float | |
-| is_active | bool | |
-**Status: ✅ FERTIG**
-
-### staff_members (5 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| first_name, last_name | string | |
-| email | string | |
-| phone, mobile_phone | string | |
-| role | enum | service/kitchen/bar/management |
-| employment_type | enum | vollzeit/teilzeit/minijob |
-| weekly_hours | float | |
-| entry_date | string | |
-| status | enum | aktiv/inaktiv/urlaub |
-| work_area_ids | array | |
-| user_id | UUID | Optional: Verknüpfung zu users |
-| **HR-Felder (verschlüsselt):** | | |
-| tax_id | string | ENC:... (11 Ziffern) |
-| social_security_number | string | ENC:... |
-| bank_iban | string | ENC:... |
-| health_insurance | string | |
-| street, zip_code, city | string | |
-| emergency_contact_name/phone | string | |
-**Status: ✅ FERTIG**
-
-### schedules (2 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| year | int | |
-| week | int | |
-| status | enum | entwurf/veroeffentlicht/archiviert |
-| notes | string | |
-**Status: ✅ FERTIG**
-
-### work_areas (4 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| name | string | Service/Küche/Bar/Event |
-| description | string | |
-| color | string | |
-| sort_order | int | |
-**Status: ✅ FERTIG**
-
-### export_jobs (8 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| export_type | enum | monthly_hours/shift_list/staff_registration |
-| status | enum | pending/generating/ready/sent/failed |
-| year, month | int | |
-| files | array | [{filename, size, content_type}] |
-| error | string | Bei Fehlern |
-**Status: ✅ FERTIG**
-
-### taxoffice_settings (1 Dokument)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| recipient_emails | array | |
-| sender_name | string | |
-| auto_send | bool | |
-| include_documents | array | |
-**Status: ✅ FERTIG**
-
-### customers (3 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| email | string | |
-| phone | string | |
-| name | string | |
-| points_balance | int | Aktueller Punktestand |
-| total_spent | float | Gesamtumsatz |
-| total_points_earned | int | |
-| created_at | datetime | |
-**Status: ✅ FERTIG**
-
-### loyalty_settings (1 Dokument)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| points_per_euro | float | 0.2 (= 20 Punkte pro 100€) |
-| max_points_per_transaction | int | 200 |
-| qr_validity_seconds | int | 90 |
-| rounding | string | floor |
-**Status: ✅ FERTIG**
-
-### rewards (1 Dokument)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| name | string | |
-| description | string | |
-| reward_type | string | |
-| points_cost | int | |
-| is_active | bool | |
-**Status: ✅ FERTIG**
-
-### reminder_rules (2 Dokumente)
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| id | UUID | |
-| name | string | |
-| hours_before | int | |
-| channel | enum | email/sms/whatsapp |
-| template | string | |
-| is_active | bool | |
-**Status: ✅ FERTIG**
-
-### NICHT VORHANDENE Collections:
-- marketing_content: ❌ NICHT IMPLEMENTIERT
-- ai_log: ❌ NICHT IMPLEMENTIERT
-- payment_transactions: ❌ NICHT IMPLEMENTIERT (nur payment_logs)
-- shifts (inline in schedules via API)
-
----
-
-## 3) API-ENDPOINTS (mit RBAC)
-
-### Auth
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| POST | /api/auth/login | Public | Login |
-| GET | /api/auth/me | Alle Auth | Aktueller Benutzer |
-| POST | /api/auth/change-password | Alle Auth | Passwort ändern |
-
-### Reservierungen
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET | /api/reservations | Admin, Schichtleiter | Liste (mit Filter) |
-| POST | /api/reservations | Admin, Schichtleiter | Neue Reservierung |
-| PATCH | /api/reservations/{id} | Admin, Schichtleiter | Update |
-| DELETE | /api/reservations/{id} | Admin, Schichtleiter | Stornieren |
-| PATCH | /api/reservations/{id}/status | Admin, Schichtleiter | Statuswechsel |
-| POST | /api/walk-ins | Admin, Schichtleiter | Walk-in erstellen |
-
-### Public (Widget)
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET | /api/public/availability | Public | Verfügbare Slots |
-| POST | /api/public/book | Public | Online-Buchung |
-| GET | /api/public/reservations/{id}/cancel-info | Public | Storno-Info |
-| POST | /api/public/reservations/{id}/cancel | Public (+Token) | Stornierung |
-| POST | /api/public/reservations/{id}/confirm | Public (+Token) | Bestätigung |
-
-### Events
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET | /api/events | Admin, Schichtleiter | Event-Liste |
-| POST | /api/events | Admin | Neues Event |
-| GET/PATCH/DELETE | /api/events/{id} | Admin | Event verwalten |
-| POST | /api/events/{id}/publish | Admin | Veröffentlichen |
-| GET/POST/PATCH/DELETE | /api/events/{id}/products | Admin | Produkte |
-| GET | /api/events/{id}/bookings | Admin, Schichtleiter | Buchungsliste |
-| GET | /api/public/events | Public | Öffentliche Events |
-| POST | /api/public/events/{id}/book | Public | Event buchen |
-
-### Payments
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET | /api/payments/rules | Admin | Regeln anzeigen |
-| POST | /api/payments/rules | Admin | Neue Regel |
-| PATCH/DELETE | /api/payments/rules/{id} | Admin | Regel verwalten |
-| GET | /api/payments/check-required | Admin, Schichtleiter | Prüfen ob Zahlung nötig |
-| POST | /api/payments/checkout/create | Admin, Schichtleiter | Stripe Checkout |
-| GET | /api/payments/checkout/status/{id} | Admin, Schichtleiter | Status |
-| POST | /api/payments/manual/{id} | Admin | Manuelle Freigabe |
-| POST | /api/payments/refund/{id} | Admin | Rückerstattung |
-| GET | /api/payments/transactions | Admin | Transaktionen |
-| GET | /api/payments/logs | Admin | Logs |
-| POST | /api/webhook/stripe | Public (Stripe) | Webhook |
-
-### Staff & Schedule
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET | /api/staff/members | Admin, Schichtleiter | Mitarbeiter (RBAC-gefiltert) |
-| POST | /api/staff/members | Admin | Neuer Mitarbeiter |
-| GET/PATCH/DELETE | /api/staff/members/{id} | Admin (Patch/Del), Manager (Get) | Verwaltung |
-| PATCH | /api/staff/members/{id}/hr-fields | Admin | HR-Felder (verschlüsselt) |
-| POST | /api/staff/members/{id}/reveal-field | Admin | Klartext anzeigen |
-| GET | /api/staff/completeness-overview | Admin | Vollständigkeits-Übersicht |
-| GET/POST | /api/staff/schedules | Admin | Dienstpläne |
-| POST | /api/staff/schedules/{id}/publish | Admin | Veröffentlichen |
-| POST | /api/staff/schedules/{id}/archive | Admin | Archivieren |
-| GET/POST/PATCH/DELETE | /api/staff/shifts | Admin | Schichten |
-| GET | /api/staff/hours-overview | Admin | Stundenübersicht |
-| GET | /api/staff/export/staff/csv | Admin | Staff CSV |
-| GET | /api/staff/export/shifts/csv | Admin | Shifts CSV |
-| GET/POST/PATCH/DELETE | /api/staff/work-areas | Admin, Schichtleiter | Arbeitsbereiche |
-
-### Tax Office (Steuerbüro)
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET/PATCH | /api/taxoffice/settings | Admin | Einstellungen |
-| GET/POST | /api/taxoffice/jobs | Admin | Export-Jobs |
-| GET | /api/taxoffice/jobs/{id}/download/{idx} | Admin | Download |
-| POST | /api/taxoffice/jobs/{id}/send | Admin | Per Email senden |
-| POST | /api/taxoffice/staff-registration/{id} | Admin | Personalmeldepaket |
-| PATCH | /api/taxoffice/staff/{id}/tax-fields | Admin | Steuerfelder |
-
-### Customer/Loyalty (Kunden-App)
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| POST | /api/customer/request-otp | Public | OTP anfordern |
-| POST | /api/customer/verify-otp | Public | OTP prüfen |
-| POST | /api/customer/request-magic-link | Public | Magic Link |
-| POST | /api/customer/verify-magic-link | Public | Magic Link prüfen |
-| GET | /api/customer/profile | Customer | Eigenes Profil |
-| GET | /api/customer/rewards | Customer | Verfügbare Prämien |
-| POST | /api/customer/redeem | Customer | Einlösen |
-| GET | /api/customer/points-history | Customer | Punktehistorie |
-| GET | /api/loyalty/settings | Admin | Loyalty-Einstellungen |
-| PATCH | /api/loyalty/settings | Admin | Einstellungen ändern |
-| GET/POST/PATCH/DELETE | /api/loyalty/rewards | Admin | Prämien verwalten |
-| POST | /api/loyalty/manual-points | Admin | Manuelle Punkte |
-| POST | /api/loyalty/generate-qr | Admin, Schichtleiter | QR generieren |
-| GET | /api/loyalty/customer-lookup | Admin | Kunden suchen |
-| GET | /api/loyalty/analytics | Admin | Statistiken |
-
-### Sonstige
-| Methode | Pfad | Rollen | Zweck |
-|---------|------|--------|-------|
-| GET | /api/users | Admin | Benutzerliste |
-| POST/DELETE | /api/users | Admin | Benutzer verwalten |
-| GET | /api/areas | Admin, Schichtleiter | Bereiche |
-| GET/POST | /api/opening-hours | Admin | Öffnungszeiten |
-| GET | /api/guests | Admin, Schichtleiter | Gästeliste |
-| PATCH | /api/guests/{id} | Admin, Schichtleiter | Gast-Flags setzen |
-| GET | /api/waitlist | Admin, Schichtleiter | Warteliste |
-| POST | /api/waitlist/{id}/convert | Admin, Schichtleiter | In Reservierung umwandeln |
-| GET | /api/audit-logs | Admin | Audit-Log |
-| GET | /api/message-logs | Admin | Email/SMS Logs |
-| GET | /api/settings | Admin | App-Einstellungen |
-| POST | /api/settings | Admin | Einstellungen speichern |
-| GET | /api/export/table-plan | Admin, Schichtleiter | Tischplan PDF |
-
----
-
-## 4) UI-SEITEN / ROUTEN
-
-| Route | Seite | Rollen | Status |
-|-------|-------|--------|--------|
-| /login | Login | Public | ✅ FERTIG |
-| /change-password | Passwort ändern | Auth | ✅ FERTIG |
-| / | Dashboard | Admin, Schichtleiter | ✅ FERTIG |
-| /areas | Bereiche | Admin | ✅ FERTIG |
-| /guests | Gästeverwaltung | Admin, Schichtleiter | ✅ FERTIG |
-| /waitlist | Warteliste | Admin, Schichtleiter | ✅ FERTIG |
-| /events-admin | Events (Admin) | Admin, Schichtleiter | ✅ FERTIG |
-| /events/:id | Event-Detail | Admin | ✅ FERTIG |
-| /events/:id/products | Event-Produkte | Admin | ✅ FERTIG |
-| /events/:id/bookings | Event-Buchungen | Admin, Schichtleiter | ✅ FERTIG |
-| /events-public | Events (Public) | Public | ✅ FERTIG |
-| /events/:id/book | Event buchen | Public | ✅ FERTIG |
-| /payments | Payment-Regeln | Admin | ✅ FERTIG |
-| /payments/transactions | Transaktionen | Admin | ✅ FERTIG |
-| /payment/success | Zahlung erfolgreich | Public | ✅ FERTIG |
-| /payment/cancel | Zahlung abgebrochen | Public | ✅ FERTIG |
-| /staff | Mitarbeiter-Liste | Admin, Schichtleiter | ✅ FERTIG |
-| /staff/:memberId | Mitarbeiter-Detail | Admin, Schichtleiter | ✅ FERTIG |
-| /schedule | Dienstplan | Admin, Schichtleiter | ✅ FERTIG |
-| /taxoffice | Steuerbüro-Exporte | Admin | ✅ FERTIG |
-| /users | Benutzerverwaltung | Admin | ✅ FERTIG |
-| /audit | Audit-Log | Admin | ✅ FERTIG |
-| /message-logs | Nachrichten-Log | Admin | ✅ FERTIG |
-| /settings | Einstellungen | Admin | ✅ FERTIG |
-| /book | Reservierungs-Widget | Public | ✅ FERTIG |
-| /confirm/:id | Reservierung bestätigen | Public | ✅ FERTIG |
-| /cancel/:id | Reservierung stornieren | Public | ✅ FERTIG |
-| /no-access | Kein Zugriff | Mitarbeiter | ✅ FERTIG |
-
-### NICHT IMPLEMENTIERTE UI-Seiten:
-- /customer-app (Kunden-App Frontend): ❌ NICHT IMPLEMENTIERT (nur API)
-- /marketing: ❌ NICHT IMPLEMENTIERT
-- /widget (standalone Widget): ❌ NICHT IMPLEMENTIERT (nur /book)
-- Service-Terminal (eigene View): ❌ NICHT IMPLEMENTIERT (Dashboard dient als Terminal)
-
----
-
-## 5) BUSINESS-REGELN (TATSÄCHLICH IMPLEMENTIERT)
-
-### Reservierungs-Statusmaschine
-| Von | Nach | Erlaubt |
-|-----|------|---------|
-| neu | bestaetigt, storniert, no_show | ✅ |
-| bestaetigt | angekommen, storniert, no_show | ✅ |
-| angekommen | abgeschlossen, no_show | ✅ |
-| abgeschlossen | (Terminal) | ✅ |
-| no_show | (Terminal) | ✅ |
-| storniert | (Terminal) | ✅ |
-**Status: ✅ IMPLEMENTIERT**
-
-### Warteliste-Statusmaschine
-| Von | Nach |
-|-----|------|
-| offen | informiert, erledigt |
-| informiert | eingeloest, erledigt |
-| eingeloest | erledigt |
-**Status: ✅ IMPLEMENTIERT**
-
-### Walk-ins
-- Erstellt Reservierung mit status="angekommen" und source="walk_in"
-**Status: ✅ IMPLEMENTIERT**
-
-### No-show Grey-/Blacklist Regeln
-- Greylist-Schwellenwert: **2 No-Shows**
-- Blacklist-Schwellenwert: **4 No-Shows**
-- Automatische Flag-Setzung bei No-Show
-- Blacklisted Gäste können nicht online buchen
-- Greylist erfordert Bestätigung (konfigurierbar)
-**Status: ✅ IMPLEMENTIERT**
-
-### Reminder-Regeln
-- Konfigurierbare Reminder-Templates
-- Channels: email, sms, whatsapp
-- Deep-Link-Generierung für WhatsApp
-- Reminder-Versand über Cron/Background-Job
-**Status: ✅ IMPLEMENTIERT** (Backend), Email-Versand nur geloggt (kein SMTP konfiguriert)
-
-### Storno-Links
-- Eindeutiger cancel_token pro Reservierung
-- Validierung des Tokens bei Storno
-- Storno-Deadline konfigurierbar (24h Standard)
-**Status: ✅ IMPLEMENTIERT**
-
-### Payment-Regeln
-- Trigger: group_size, greylist, event
-- Payment-Types: fixed_deposit, deposit_per_person, full_prepayment
-- Status: unpaid → pending → paid / failed / refunded
-- Manuelle Zahlungsfreigabe: Nur Admin, Begründung Pflicht
-- Stripe-Integration (Checkout Session)
-**Status: ✅ IMPLEMENTIERT** (Stripe erfordert API-Key)
-
-### Dienstplan Status
-| Status | Sichtbarkeit |
-|--------|--------------|
-| entwurf | Nur Admin |
-| veroeffentlicht | Admin, Schichtleiter |
-| archiviert | Nur Admin |
-**Status: ✅ IMPLEMENTIERT**
-
-### Soll-/Plan-/Ist-Berechnung
-- Soll: weekly_hours aus staff_member
-- Plan: Summe geplanter Schichten
-- Ist: Aus Zeiterfassung (placeholder)
-**Status: ✅ TEILWEISE** (Ist-Berechnung ohne echte Zeiterfassung)
-
-### Steuerbüro Export Jobs
-| Status | Beschreibung |
-|--------|--------------|
-| pending | Job erstellt |
-| generating | Wird generiert |
-| ready | Bereit zum Download |
-| sent | Per Email versandt |
-| failed | Fehler |
-**Status: ✅ IMPLEMENTIERT**
-
-### Loyalty Regeln
-- **points_per_euro: 0.2** (= 20 Punkte pro 100€)
-- **max_points_per_transaction: 200**
-- **QR-Gültigkeit: 90 Sekunden**
-- Keine direkten Saldoänderungen (nur über Ledger)
-- Manuelle Punktebuchung: Begründung Pflicht
-- Reward-Einlösung mit pending/confirmed Status
-**Status: ✅ IMPLEMENTIERT**
-
-### Marketing Freigabe/Auto-posting
-**Status: ❌ NICHT IMPLEMENTIERT**
-
----
-
-## 6) LOGS / AUDIT / SICHERHEIT
-
-### Audit-Log
-Aktiv für:
-- ✅ Reservierungen (create, update, status_change, delete)
-- ✅ Benutzer (create, delete)
-- ✅ Gäste (flag_change)
-- ✅ Staff Members (create, update, archive, HR-fields)
-- ✅ Schedules (create, publish, archive)
-- ✅ Payment Rules (create, update, delete)
-- ✅ Export Jobs (create, status_change)
-- ✅ Loyalty (manual_points, redemption)
-- ✅ Sensitive HR Field Reveal (reveal_sensitive_field)
-- ✅ SMTP Test (test_email)
-
-### Message/Email Log
-- ✅ Email-Versuche werden geloggt
-- ✅ Reminder-Versand wird geloggt
-- ✅ SMTP-Status abrufbar via `/api/smtp/status`
-- ✅ Testmail via `/api/smtp/test`
-
-### SMTP Konfiguration
-```bash
-# In backend/.env setzen:
-SMTP_HOST=smtp.example.com
-SMTP_PORT=465
-SMTP_USER=your-user
-SMTP_PASSWORD=your-password
-SMTP_FROM=reservierungen@carlsburg.de
-SMTP_FROM_NAME=Carlsburg Restaurant
-SMTP_USE_TLS=false  # true für Port 587 (STARTTLS)
-```
-
-**Verhalten:**
-- Wenn konfiguriert: Echte Mails werden gesendet
-- Wenn nicht konfiguriert: Log-only Modus, kein Crash
-
-### RBAC serverseitig
-- ✅ Alle Endpoints mit Depends(require_admin/require_manager)
-- ✅ Mitarbeiter hat keinen Zugriff auf Backoffice
-- ✅ Schichtleiter eingeschränkter Zugriff
-
-### HR-Sensitivfelder Absicherung
-- ✅ **Verschlüsselung at rest**: Fernet (AES-256)
-- ✅ **RBAC**: Nur Admin sieht sensitive Felder
-- ✅ **Maskierung**: tax_id, social_security_number, bank_iban
-- ✅ **Reveal-Endpoint**: Mit Audit-Logging
-- ✅ **Export**: Nur Admin kann Exporte erstellen
-
-### Public Endpoints
-| Endpoint | Liefert |
-|----------|---------|
-| /api/public/availability | Verfügbare Slots (keine Kundendaten) |
-| /api/public/book | Bestätigung (keine sensitiven Daten) |
-| /api/public/events | Öffentliche Event-Infos |
-| /api/public/events/{id}/book | Buchungsbestätigung |
-| /api/customer/request-otp | "Code gesendet" (keine Details) |
-
----
-
-## 7) KNOWN ISSUES / TODO
-
-### Bekannte Probleme
-1. **Email-Versand**: SMTP nicht konfiguriert, Emails werden nur geloggt
-2. **Stripe**: Erfordert API-Key Konfiguration
-3. **Kunden-App Frontend**: API vorhanden, aber kein separates Frontend
-4. **Service-Terminal**: Kein dediziertes Terminal-UI (Dashboard wird verwendet)
-5. **Zeiterfassung**: "Ist"-Stunden werden nicht erfasst (nur Plan/Soll)
-
-### TODO nach Priorität
-
-**HOCH:**
-1. SMTP konfigurieren für echten Email-Versand
-2. Stripe API-Key einrichten für Payments
-3. Kunden-App Frontend erstellen
-
-**MITTEL:**
-4. Service-Terminal als eigene Seite
-5. Zeiterfassung für Mitarbeiter
-6. Widget als standalone iFrame
-7. Tischplan-Grafik (aktuell nur PDF-Liste)
-
-**NIEDRIG:**
-8. Marketing-Modul
-9. AI/KI-Integrationen
-10. SMS-Versand (Twilio etc.)
-11. Push-Notifications
-
----
-
-## ABSCHLUSS
-
-### Was ist wirklich nutzbar im Betrieb heute?
-1. ✅ **Reservierungsverwaltung**: Online-Buchung, Walk-ins, Statusmaschine vollständig
-2. ✅ **Gästeverwaltung**: Grey-/Blacklist, No-Show Tracking, Gästehistorie
-3. ✅ **Warteliste**: Kompletter Workflow inkl. Umwandlung
-4. ✅ **Event-Management**: Events erstellen, Produkte, Buchungen
-5. ✅ **Mitarbeiterverwaltung**: Stammdaten, HR-Felder (verschlüsselt), Dokumente
-6. ✅ **Dienstplanung**: Wochenpläne, Schichten, Veröffentlichung
-7. ✅ **Steuerbüro-Exporte**: CSV/PDF generieren, Download
-8. ✅ **Loyalty-System**: Punkte, Prämien, QR-Code (Backend vollständig)
-9. ✅ **Payment-Regeln**: Konfiguration, Check (Stripe benötigt Key)
-10. ✅ **Audit-Trail**: Lückenlose Protokollierung aller Aktionen
-
-### Was fehlt noch für Sprint 9 / Reservierung Feinschliff?
-1. ❌ **Tischplan-Visualisierung**: Grafische Tischanordnung statt Liste
-2. ❌ **Drag & Drop**: Reservierungen auf Tische ziehen
-3. ❌ **Kapazitätsanzeige**: Echtzeit-Auslastung pro Bereich
-4. ❌ **SMS-Integration**: Für Reminder (aktuell nur Email/WhatsApp-Link)
-5. ❌ **Kunden-App Frontend**: Mobile App für Loyalty
-6. ❌ **Service-Terminal**: Dedizierte Touch-optimierte Ansicht
-7. ❌ **Wartezeit-Schätzung**: Automatische Berechnung
-8. ❌ **Google Reservierungen**: Integration
-9. ❌ **Online-Zahlung bei Buchung**: Stripe im Widget
-10. ❌ **Multi-Restaurant**: Mandantenfähigkeit
+*Report erstellt: 2025-12-22 12:17 UTC*
+*Nächstes Review: Nach Sprint 1 Abschluss*
