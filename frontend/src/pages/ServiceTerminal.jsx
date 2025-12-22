@@ -465,7 +465,7 @@ export const ServiceTerminal = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-[#005500]" />
+          <Loader2 className="h-12 w-12 animate-spin text-[#002f02]" />
         </div>
       </Layout>
     );
@@ -478,7 +478,7 @@ export const ServiceTerminal = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#005500] flex items-center gap-3">
+              <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#002f02] flex items-center gap-3">
                 <Utensils className="h-7 w-7" />
                 Service-Terminal
               </h1>
@@ -513,7 +513,7 @@ export const ServiceTerminal = () => {
             <Button variant="outline" onClick={() => fetchData(false)} disabled={refreshing} className="h-10">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
-            <Button onClick={() => setShowWalkInDialog(true)} className="h-10 bg-[#005500] hover:bg-[#004400]">
+            <Button onClick={() => setShowWalkInDialog(true)} className="h-10 bg-[#002f02] hover:bg-[#003d03]">
               <Footprints className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Walk-in</span>
             </Button>
@@ -534,11 +534,11 @@ export const ServiceTerminal = () => {
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <Button variant={isToday(parseISO(selectedDate)) ? "default" : "outline"} size="sm" onClick={goToToday}
-                  className={isToday(parseISO(selectedDate)) ? "bg-[#005500]" : ""}>
+                  className={isToday(parseISO(selectedDate)) ? "bg-[#002f02]" : ""}>
                   Heute
                 </Button>
                 <Button variant={isTomorrow(parseISO(selectedDate)) ? "default" : "outline"} size="sm" onClick={goToTomorrow}
-                  className={isTomorrow(parseISO(selectedDate)) ? "bg-[#005500]" : ""}>
+                  className={isTomorrow(parseISO(selectedDate)) ? "bg-[#002f02]" : ""}>
                   Morgen
                 </Button>
                 <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-36 h-9" />
@@ -578,13 +578,13 @@ export const ServiceTerminal = () => {
               {/* Area Tabs */}
               <div className="flex items-center gap-1">
                 <Button variant={selectedArea === "all" ? "default" : "ghost"} size="sm" onClick={() => setSelectedArea("all")}
-                  className={selectedArea === "all" ? "bg-[#005500]" : ""}>
+                  className={selectedArea === "all" ? "bg-[#002f02]" : ""}>
                   Alle
                 </Button>
                 {areas.map((area) => (
                   <Button key={area.id} variant={selectedArea === area.id ? "default" : "ghost"} size="sm"
                     onClick={() => setSelectedArea(area.id)}
-                    className={selectedArea === area.id ? "bg-[#005500]" : ""}>
+                    className={selectedArea === area.id ? "bg-[#002f02]" : ""}>
                     {area.name}
                   </Button>
                 ))}
@@ -608,9 +608,9 @@ export const ServiceTerminal = () => {
 
         {/* ===== STATS BAR ===== */}
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:hidden">
-          <Card className="bg-white border-[#005500]/20">
+          <Card className="bg-white border-[#002f02]/20">
             <CardContent className="p-2 text-center">
-              <p className="text-xl lg:text-2xl font-bold text-[#005500]">{stats.total}</p>
+              <p className="text-xl lg:text-2xl font-bold text-[#002f02]">{stats.total}</p>
               <p className="text-[10px] lg:text-xs text-stone-500">Gesamt</p>
             </CardContent>
           </Card>
@@ -675,7 +675,7 @@ export const ServiceTerminal = () => {
               return (
                 <Card key={res.id} 
                   className={`bg-white hover:shadow-lg transition-all cursor-pointer border-l-4 ${
-                    hasFlag ? (isBlacklist ? "border-l-rose-500" : "border-l-amber-400") : "border-l-[#005500]"
+                    hasFlag ? (isBlacklist ? "border-l-rose-500" : "border-l-amber-400") : "border-l-[#002f02]"
                   }`}
                   onClick={() => openDetailSheet(res)}>
                   <CardContent className="p-3 lg:p-4">
@@ -683,7 +683,7 @@ export const ServiceTerminal = () => {
                       {/* Tisch & Personen - GROSS */}
                       <div className="flex items-center gap-2 min-w-[140px] lg:min-w-[160px]">
                         {res.table_number ? (
-                          <div className="bg-[#005500] text-white rounded-lg px-3 py-2 text-center min-w-[60px] lg:min-w-[70px]">
+                          <div className="bg-[#002f02] text-white rounded-lg px-3 py-2 text-center min-w-[60px] lg:min-w-[70px]">
                             <p className="text-[9px] uppercase tracking-wider opacity-80">Tisch</p>
                             <p className="text-xl lg:text-2xl font-bold leading-tight">{res.table_number}</p>
                           </div>
@@ -701,7 +701,7 @@ export const ServiceTerminal = () => {
 
                       {/* Uhrzeit */}
                       <div className="text-center min-w-[55px] lg:min-w-[65px]">
-                        <p className="text-xl lg:text-2xl font-bold text-[#005500]">{res.time}</p>
+                        <p className="text-xl lg:text-2xl font-bold text-[#002f02]">{res.time}</p>
                         <p className="text-[10px] text-stone-400">Uhr</p>
                       </div>
 
@@ -759,7 +759,7 @@ export const ServiceTerminal = () => {
                       <div className="flex items-center gap-1 print:hidden" onClick={(e) => e.stopPropagation()}>
                         {/* Primary Quick Action - Large Touch Target */}
                         {statusConfig.actions.length > 0 && (
-                          <Button size="sm" className="h-10 lg:h-11 px-3 lg:px-4 bg-[#005500] hover:bg-[#004400] rounded-lg font-medium"
+                          <Button size="sm" className="h-10 lg:h-11 px-3 lg:px-4 bg-[#002f02] hover:bg-[#003d03] rounded-lg font-medium"
                             onClick={() => handleStatusChange(res, statusConfig.actions[0])}>
                             {statusConfig.actions[0] === "bestaetigt" && <><CheckCircle className="h-4 w-4 mr-1" />Bestätigen</>}
                             {statusConfig.actions[0] === "angekommen" && <><UserCheck className="h-4 w-4 mr-1" />Einchecken</>}
@@ -813,7 +813,7 @@ export const ServiceTerminal = () => {
           {selectedReservation && (
             <>
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-[#005500]">
+                <SheetTitle className="flex items-center gap-2 text-[#002f02]">
                   <Users className="h-5 w-5" />
                   Reservierung
                 </SheetTitle>
@@ -825,7 +825,7 @@ export const ServiceTerminal = () => {
               <div className="mt-6 space-y-5">
                 {/* Tisch prominent */}
                 {selectedReservation.table_number && (
-                  <div className="bg-[#005500] text-white rounded-xl p-4 text-center">
+                  <div className="bg-[#002f02] text-white rounded-xl p-4 text-center">
                     <p className="text-xs opacity-80 uppercase tracking-wider">Tisch</p>
                     <p className="text-4xl font-bold">{selectedReservation.table_number}</p>
                   </div>
@@ -919,7 +919,7 @@ export const ServiceTerminal = () => {
                     ) : (
                       <div className="space-y-1">
                         {auditLogs.map((log, idx) => (
-                          <div key={idx} className="text-xs border-l-2 border-[#005500]/30 pl-2 py-0.5">
+                          <div key={idx} className="text-xs border-l-2 border-[#002f02]/30 pl-2 py-0.5">
                             <p className="font-medium">{log.action}</p>
                             <p className="text-stone-400">{log.actor?.name} • {format(parseISO(log.timestamp), "dd.MM. HH:mm")}</p>
                           </div>
@@ -936,7 +936,7 @@ export const ServiceTerminal = () => {
                     <Button key={action}
                       variant={action === "no_show" || action === "storniert" ? "destructive" : "default"}
                       onClick={() => { handleStatusChange(selectedReservation, action); setShowDetailSheet(false); }}
-                      className={`h-12 ${action !== "no_show" && action !== "storniert" ? "bg-[#005500] hover:bg-[#004400]" : ""}`}>
+                      className={`h-12 ${action !== "no_show" && action !== "storniert" ? "bg-[#002f02] hover:bg-[#003d03]" : ""}`}>
                       {action === "bestaetigt" && <><CheckCircle className="h-4 w-4 mr-2" />Bestätigen</>}
                       {action === "angekommen" && <><UserCheck className="h-4 w-4 mr-2" />Einchecken</>}
                       {action === "abgeschlossen" && <><LogOut className="h-4 w-4 mr-2" />Abschließen</>}
@@ -975,7 +975,7 @@ export const ServiceTerminal = () => {
                         <p className="text-xs text-stone-500">{res.party_size} Pers. • {res.guest_phone}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-[#005500]">{res.time}</p>
+                        <p className="font-bold text-[#002f02]">{res.time}</p>
                         <p className="text-xs text-stone-400">Uhr</p>
                       </div>
                     </div>
@@ -992,7 +992,7 @@ export const ServiceTerminal = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Footprints className="h-5 w-5 text-[#005500]" />Walk-in
+              <Footprints className="h-5 w-5 text-[#002f02]" />Walk-in
             </DialogTitle>
             <DialogDescription>Gast ohne Reservierung</DialogDescription>
           </DialogHeader>
@@ -1021,7 +1021,7 @@ export const ServiceTerminal = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowWalkInDialog(false)}>Abbrechen</Button>
-            <Button onClick={handleCreateWalkIn} className="bg-[#005500] hover:bg-[#004400] h-11">Walk-in anlegen</Button>
+            <Button onClick={handleCreateWalkIn} className="bg-[#002f02] hover:bg-[#003d03] h-11">Walk-in anlegen</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1031,7 +1031,7 @@ export const ServiceTerminal = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-[#005500]" />Warteliste
+              <ClipboardList className="h-5 w-5 text-[#002f02]" />Warteliste
             </DialogTitle>
             <DialogDescription>Gast auf die Warteliste setzen</DialogDescription>
           </DialogHeader>
@@ -1065,7 +1065,7 @@ export const ServiceTerminal = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowWaitlistDialog(false)}>Abbrechen</Button>
-            <Button onClick={handleCreateWaitlist} className="bg-[#005500] hover:bg-[#004400] h-11">Zur Warteliste</Button>
+            <Button onClick={handleCreateWaitlist} className="bg-[#002f02] hover:bg-[#003d03] h-11">Zur Warteliste</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
