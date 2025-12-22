@@ -788,7 +788,7 @@ async def create_combination(
     return {
         "message": f"Kombination erstellt: {validation['table_numbers']}",
         "id": doc["id"],
-        "combination": doc
+        "combination": doc_clean
     }
 
 
