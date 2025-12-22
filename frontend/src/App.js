@@ -52,6 +52,8 @@ import SystemSettings from "./pages/SystemSettings";
 import OpeningHoursAdmin from "./pages/OpeningHoursAdmin";
 // Backup & Export Module
 import BackupExport from "./pages/BackupExport";
+// Table Import Module
+import TableImport from "./pages/TableImport";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
