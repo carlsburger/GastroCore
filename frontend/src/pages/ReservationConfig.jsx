@@ -109,15 +109,6 @@ export const ReservationConfig = () => {
     }
   }, [token]);
 
-  const fetchOpeningPeriods = async () => {
-    try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { headers });
-      setOpeningPeriods(res.data);
-    } catch (err) {
-      console.error("Fehler beim Laden der Öffnungszeiten-Perioden:", err);
-    }
-  };
-
   // Duration Settings Handlers
   const saveDurationSettings = async () => {
     setLoading(true);
