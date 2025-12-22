@@ -102,6 +102,7 @@ const navigationGroups = [
       { path: "/reservation-config", label: "Reservierungs-Einstellungen", icon: Settings, roles: ["admin"] },
       { path: "/table-plan", label: "Tischplan", icon: MapPin },
       { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties, roles: ["admin"] },
+      { path: "/admin/reservations/import", label: "Tisch-Import", icon: Upload, roles: ["admin"] },
     ],
   },
   {
