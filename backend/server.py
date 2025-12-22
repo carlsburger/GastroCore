@@ -2044,7 +2044,12 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    """Initialize default settings and rules on startup"""
+    """Initialize default settings, rules, and ensure admin exists on startup"""
+    # ADMIN-BOOTSTRAP: Sicherstellen, dass immer ein Admin existiert
+    admin_ready = await bootstrap_admin_on_startup()
+    if not admin_ready:
+        logger.warning("⚠ Admin-Bootstrap fehlgeschlagen - manueller Seed empfohlen")
+    
     await init_default_settings()
     await init_default_reminder_rules()
     logger.info("GastroCore v7.0.0 started - Events + Payment + Staff + TaxOffice + Loyalty Module enabled")
