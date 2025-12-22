@@ -1,17 +1,109 @@
 #====================================================================================================
-# Frontend Smoke Tests - Schedule & MyShifts
+# Frontend Smoke Tests - Schedule & MyShifts + System Settings & Opening Hours
 #====================================================================================================
 
 user_problem_statement: |
-  FRONTEND SMOKE TESTS – Schedule (/schedule) & MyShifts (/my-shifts)
+  SYSTEM SETTINGS & OPENING HOURS MASTER MODULE
   
-  TESTDATEN VORHANDEN:
+  Implementierte Features:
+  1. System Settings (Company Profile) - GET/PUT /api/system/settings
+  2. Opening Hours Periods - CRUD /api/opening-hours/periods
+  3. Closures (Sperrtage) - CRUD /api/closures
+  4. Effective Hours - GET /api/opening-hours/effective
+  5. Schedule Integration - Closed days banner
+  
+  TESTDATEN:
   - Admin: admin@carlsburg.de / Carlsburg2025!
-  - Schichtleiter: schichtleiter@gastrocore.de / Schicht2025!
-  - Mitarbeiter: mitarbeiter@gastrocore.de / Mitarbeiter2025!
-  - 4 Work Areas, 3 Staff Members, 1 Schedule (KW 52), 4+ Shifts
+  - Sommer 2026, Winter 2026 Perioden
+  - Recurring Closures: Heiligabend, Silvester
+  - One-off Closure: 15.04.2026 Betriebsausflug
+
+backend:
+  - task: "System Settings CRUD"
+    implemented: true
+    working: true
+    file: "system_settings_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/PUT /api/system/settings funktioniert. Company Profile (legal_name, address, phone, email, timezone) wird gespeichert und geladen."
+
+  - task: "Opening Hours Periods CRUD"
+    implemented: true
+    working: true
+    file: "opening_hours_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST/GET/PATCH/DELETE /api/opening-hours/periods funktioniert. Sommer/Winter Perioden mit Priority und rules_by_weekday erfolgreich getestet."
+
+  - task: "Closures CRUD"
+    implemented: true
+    working: true
+    file: "opening_hours_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST/GET/PATCH/DELETE /api/closures funktioniert. Recurring (Heiligabend, Silvester) und One-off (Betriebsausflug) Closures erfolgreich getestet."
+
+  - task: "Effective Hours Calculation"
+    implemented: true
+    working: true
+    file: "opening_hours_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/opening-hours/effective?from=&to= liefert korrekte Daten. Priority-Logik funktioniert, Closures überschreiben Perioden korrekt."
 
 frontend:
+  - task: "System Settings Page"
+    implemented: true
+    working: true
+    file: "SystemSettings.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Seite unter /admin/settings/system erstellt. Form mit Validierung und Save-Button."
+
+  - task: "Opening Hours Admin Page"
+    implemented: true
+    working: true
+    file: "OpeningHoursAdmin.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Seite unter /admin/settings/opening-hours erstellt. Tabs für Perioden und Sperrtage. Dialog für Erstellen/Bearbeiten."
+
+  - task: "Schedule Closure Integration"
+    implemented: true
+    working: true
+    file: "Schedule.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Schedule lädt effective hours und zeigt geschlossene Tage mit rotem Banner und Hinweis."
+
   - task: "TESTBLOCK A: Routing & Auth"
     implemented: true
     working: true
