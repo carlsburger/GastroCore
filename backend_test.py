@@ -1305,6 +1305,313 @@ class GastroCoreAPITester:
         
         return settings_success
 
+    def test_system_settings_master(self):
+        """Test System Settings & Opening Hours Master Endpoints - As per review request"""
+        print("\n🏢 Testing System Settings & Opening Hours Master Endpoints...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("System Settings Master", False, "Admin token not available")
+            return False
+        
+        master_success = True
+        
+        # ============== 1. SYSTEM SETTINGS TESTS ==============
+        print("  Testing System Settings...")
+        
+        # 1.1 GET /api/system/settings - sollte Company Profile zurückgeben
+        result = self.make_request("GET", "system/settings", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            settings_data = result["data"]
+            required_fields = ["legal_name", "address_street", "phone", "email", "timezone"]
+            missing_fields = [field for field in required_fields if field not in settings_data]
+            
+            if not missing_fields:
+                self.log_test("GET /api/system/settings", True, 
+                            f"Company Profile loaded: {settings_data.get('legal_name', 'N/A')}")
+            else:
+                self.log_test("GET /api/system/settings", False, f"Missing fields: {missing_fields}")
+                master_success = False
+        else:
+            self.log_test("GET /api/system/settings", False, f"Status: {result['status_code']}")
+            master_success = False
+        
+        # 1.2 PUT /api/system/settings - Update legal_name, address, phone, email testen
+        update_data = {
+            "legal_name": "Carlsburg Restaurant GmbH",
+            "address_street": "Musterstraße 123",
+            "address_zip": "12345",
+            "address_city": "Berlin",
+            "phone": "+49 30 12345678",
+            "email": "info@carlsburg.de"
+        }
+        
+        result = self.make_request("PUT", "system/settings", update_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            updated_settings = result["data"]
+            if (updated_settings.get("legal_name") == "Carlsburg Restaurant GmbH" and 
+                updated_settings.get("phone") == "+49 30 12345678"):
+                self.log_test("PUT /api/system/settings", True, "Company Profile updated successfully")
+            else:
+                self.log_test("PUT /api/system/settings", False, "Update not reflected correctly")
+                master_success = False
+        else:
+            self.log_test("PUT /api/system/settings", False, f"Status: {result['status_code']}")
+            master_success = False
+        
+        # ============== 2. OPENING HOURS PERIODS TESTS ==============
+        print("  Testing Opening Hours Periods...")
+        
+        # 2.1 GET /api/opening-hours/periods - Liste aller Perioden
+        result = self.make_request("GET", "opening-hours/periods", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            periods = result["data"]
+            self.log_test("GET /api/opening-hours/periods", True, f"Retrieved {len(periods)} periods")
+        else:
+            self.log_test("GET /api/opening-hours/periods", False, f"Status: {result['status_code']}")
+            master_success = False
+        
+        # 2.2 POST /api/opening-hours/periods - Neue Periode erstellen (mit rules_by_weekday)
+        period_data = {
+            "name": "Test Sommer 2026",
+            "start_date": "2026-04-01",
+            "end_date": "2026-09-30",
+            "active": True,
+            "priority": 10,
+            "rules_by_weekday": {
+                "monday": {
+                    "is_closed": True,
+                    "blocks": []
+                },
+                "tuesday": {
+                    "is_closed": False,
+                    "blocks": [
+                        {
+                            "start": "11:30",
+                            "end": "15:00",
+                            "reservable": True,
+                            "label": "Mittagsservice"
+                        },
+                        {
+                            "start": "17:30",
+                            "end": "22:00",
+                            "reservable": True,
+                            "label": "Abendservice"
+                        }
+                    ]
+                },
+                "wednesday": {
+                    "is_closed": False,
+                    "blocks": [
+                        {
+                            "start": "11:30",
+                            "end": "22:00",
+                            "reservable": True,
+                            "label": "Ganztags"
+                        }
+                    ]
+                }
+            }
+        }
+        
+        result = self.make_request("POST", "opening-hours/periods", period_data, 
+                                 self.tokens["admin"], expected_status=201)
+        if result["success"] and "id" in result["data"]:
+            period_id = result["data"]["id"]
+            self.test_data["test_period_id"] = period_id
+            self.log_test("POST /api/opening-hours/periods", True, 
+                        f"Period created with ID: {period_id}")
+        else:
+            self.log_test("POST /api/opening-hours/periods", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            master_success = False
+        
+        # 2.3 PATCH /api/opening-hours/periods/{id} - Priority oder active ändern
+        if "test_period_id" in self.test_data:
+            update_period_data = {
+                "priority": 20,
+                "active": False
+            }
+            
+            result = self.make_request("PATCH", f"opening-hours/periods/{self.test_data['test_period_id']}", 
+                                     update_period_data, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                updated_period = result["data"]
+                if (updated_period.get("priority") == 20 and 
+                    updated_period.get("active") == False):
+                    self.log_test("PATCH /api/opening-hours/periods/{id}", True, "Priority and active updated")
+                else:
+                    self.log_test("PATCH /api/opening-hours/periods/{id}", False, "Update not reflected")
+                    master_success = False
+            else:
+                self.log_test("PATCH /api/opening-hours/periods/{id}", False, f"Status: {result['status_code']}")
+                master_success = False
+        
+        # 2.4 DELETE /api/opening-hours/periods/{id} - Periode löschen
+        if "test_period_id" in self.test_data:
+            result = self.make_request("DELETE", f"opening-hours/periods/{self.test_data['test_period_id']}", 
+                                     token=self.tokens["admin"], expected_status=204)
+            if result["success"]:
+                self.log_test("DELETE /api/opening-hours/periods/{id}", True, "Period deleted successfully")
+            else:
+                self.log_test("DELETE /api/opening-hours/periods/{id}", False, f"Status: {result['status_code']}")
+                master_success = False
+        
+        # ============== 3. CLOSURES (SPERRTAGE) TESTS ==============
+        print("  Testing Closures (Sperrtage)...")
+        
+        # 3.1 GET /api/closures - Liste aller Sperrtage
+        result = self.make_request("GET", "closures", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            closures = result["data"]
+            self.log_test("GET /api/closures", True, f"Retrieved {len(closures)} closures")
+        else:
+            self.log_test("GET /api/closures", False, f"Status: {result['status_code']}")
+            master_success = False
+        
+        # 3.2 POST /api/closures - Recurring closure (type=recurring, recurring_rule={month,day})
+        recurring_closure_data = {
+            "type": "recurring",
+            "recurring_rule": {
+                "month": 12,
+                "day": 24
+            },
+            "scope": "full_day",
+            "reason": "Heiligabend (Test)",
+            "active": True
+        }
+        
+        result = self.make_request("POST", "closures", recurring_closure_data, 
+                                 self.tokens["admin"], expected_status=201)
+        if result["success"] and "id" in result["data"]:
+            recurring_closure_id = result["data"]["id"]
+            self.test_data["test_recurring_closure_id"] = recurring_closure_id
+            self.log_test("POST /api/closures (recurring)", True, 
+                        f"Recurring closure created: {recurring_closure_id}")
+        else:
+            self.log_test("POST /api/closures (recurring)", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            master_success = False
+        
+        # 3.3 POST /api/closures - One-off closure (type=one_off, one_off_rule={date})
+        one_off_closure_data = {
+            "type": "one_off",
+            "one_off_rule": {
+                "date": "2026-04-15"
+            },
+            "scope": "full_day",
+            "reason": "Betriebsausflug (Test)",
+            "active": True
+        }
+        
+        result = self.make_request("POST", "closures", one_off_closure_data, 
+                                 self.tokens["admin"], expected_status=201)
+        if result["success"] and "id" in result["data"]:
+            one_off_closure_id = result["data"]["id"]
+            self.test_data["test_one_off_closure_id"] = one_off_closure_id
+            self.log_test("POST /api/closures (one_off)", True, 
+                        f"One-off closure created: {one_off_closure_id}")
+        else:
+            self.log_test("POST /api/closures (one_off)", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            master_success = False
+        
+        # 3.4 PATCH /api/closures/{id} - Reason oder active ändern
+        if "test_recurring_closure_id" in self.test_data:
+            update_closure_data = {
+                "reason": "Heiligabend (Updated Test)",
+                "active": False
+            }
+            
+            result = self.make_request("PATCH", f"closures/{self.test_data['test_recurring_closure_id']}", 
+                                     update_closure_data, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                updated_closure = result["data"]
+                if (updated_closure.get("reason") == "Heiligabend (Updated Test)" and 
+                    updated_closure.get("active") == False):
+                    self.log_test("PATCH /api/closures/{id}", True, "Reason and active updated")
+                else:
+                    self.log_test("PATCH /api/closures/{id}", False, "Update not reflected")
+                    master_success = False
+            else:
+                self.log_test("PATCH /api/closures/{id}", False, f"Status: {result['status_code']}")
+                master_success = False
+        
+        # 3.5 DELETE /api/closures/{id} - Sperrtag löschen
+        if "test_one_off_closure_id" in self.test_data:
+            result = self.make_request("DELETE", f"closures/{self.test_data['test_one_off_closure_id']}", 
+                                     token=self.tokens["admin"], expected_status=204)
+            if result["success"]:
+                self.log_test("DELETE /api/closures/{id}", True, "Closure deleted successfully")
+            else:
+                self.log_test("DELETE /api/closures/{id}", False, f"Status: {result['status_code']}")
+                master_success = False
+        
+        # ============== 4. EFFECTIVE HOURS TESTS ==============
+        print("  Testing Effective Hours...")
+        
+        # 4.1 GET /api/opening-hours/effective?from=2026-04-14&to=2026-04-16 - Sollte Betriebsausflug am 15.04. zeigen
+        result = self.make_request("GET", "opening-hours/effective", 
+                                 {"from": "2026-04-14", "to": "2026-04-16"}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            effective_data = result["data"]
+            if "days" in effective_data and len(effective_data["days"]) == 3:
+                # Check if April 15th shows closure
+                april_15_data = None
+                for day in effective_data["days"]:
+                    if day.get("date") == "2026-04-15":
+                        april_15_data = day
+                        break
+                
+                if april_15_data:
+                    self.log_test("GET /api/opening-hours/effective (April 14-16)", True, 
+                                f"April 15th closure status: {april_15_data.get('is_closed_full_day', False)}")
+                else:
+                    self.log_test("GET /api/opening-hours/effective (April 14-16)", False, 
+                                "April 15th data not found")
+                    master_success = False
+            else:
+                self.log_test("GET /api/opening-hours/effective (April 14-16)", False, 
+                            "Invalid response structure")
+                master_success = False
+        else:
+            self.log_test("GET /api/opening-hours/effective (April 14-16)", False, 
+                        f"Status: {result['status_code']}")
+            master_success = False
+        
+        # 4.2 GET /api/opening-hours/effective?from=2026-12-24&to=2026-12-26 - Sollte Heiligabend als geschlossen zeigen
+        result = self.make_request("GET", "opening-hours/effective", 
+                                 {"from": "2026-12-24", "to": "2026-12-26"}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            effective_data = result["data"]
+            if "days" in effective_data and len(effective_data["days"]) == 3:
+                # Check if December 24th shows closure
+                dec_24_data = None
+                for day in effective_data["days"]:
+                    if day.get("date") == "2026-12-24":
+                        dec_24_data = day
+                        break
+                
+                if dec_24_data:
+                    self.log_test("GET /api/opening-hours/effective (Dec 24-26)", True, 
+                                f"Dec 24th closure status: {dec_24_data.get('is_closed_full_day', False)}")
+                else:
+                    self.log_test("GET /api/opening-hours/effective (Dec 24-26)", False, 
+                                "Dec 24th data not found")
+                    master_success = False
+            else:
+                self.log_test("GET /api/opening-hours/effective (Dec 24-26)", False, 
+                            "Invalid response structure")
+                master_success = False
+        else:
+            self.log_test("GET /api/opening-hours/effective (Dec 24-26)", False, 
+                        f"Status: {result['status_code']}")
+            master_success = False
+        
+        return master_success
+
     def test_security_enhancement_sprint72(self):
         """Test Security Enhancement (Sprint 7.2) - As per review request"""
         print("\n🔒 Testing Security Enhancement (Sprint 7.2)...")
