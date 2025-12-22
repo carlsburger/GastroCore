@@ -14,48 +14,63 @@ user_problem_statement: |
 frontend:
   - task: "TESTBLOCK A: Routing & Auth"
     implemented: true
-    working: "needs_testing"
+    working: false
     file: "Schedule.jsx, MyShifts.jsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
-    needs_retesting: true
-    status_history: []
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL: Frontend-Backend connectivity issue. Login requests to /api/auth/login hang indefinitely. Backend is running (curl works), but frontend proxy configuration appears broken. Submit button stuck in loading state. Network requests show POST to localhost:3000/api/auth/login but no response received."
 
   - task: "TESTBLOCK B: Schedule Core Flows"
     implemented: true
-    working: "needs_testing"
+    working: "NA"
     file: "Schedule.jsx"
     stuck_count: 0
     priority: "critical"
     needs_retesting: true
-    status_history: []
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by TESTBLOCK A login issue. Schedule page requires authentication."
 
   - task: "TESTBLOCK C: Konfliktfehler im UI"
     implemented: true
-    working: "needs_testing"
+    working: "NA"
     file: "Schedule.jsx"
     stuck_count: 0
     priority: "critical"
     needs_retesting: true
-    status_history: []
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by TESTBLOCK A login issue. Conflict testing requires authenticated access to schedule."
 
   - task: "TESTBLOCK D: Exports"
     implemented: true
-    working: "needs_testing"
+    working: "NA"
     file: "Schedule.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
-    status_history: []
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by TESTBLOCK A login issue. Export functionality requires authenticated access."
 
   - task: "TESTBLOCK E: MyShifts"
     implemented: true
-    working: "needs_testing"
+    working: "NA"
     file: "MyShifts.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
-    status_history: []
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by TESTBLOCK A login issue. MyShifts page requires authentication."
 
 metadata:
   created_by: "main_agent"
