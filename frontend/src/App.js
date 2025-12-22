@@ -326,6 +326,16 @@ function App() {
             }
           />
 
+          {/* Tisch-Stammdaten Admin (Sprint: Tischplan & Belegung) - Admin only */}
+          <Route
+            path="/table-admin"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <TableAdmin />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
