@@ -9,40 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
-// Carlsburg Logo Component
-const CarlsburgLogo = ({ size = 80, className = "" }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 100 100"
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    {/* Building with curved base */}
-    <path
-      d="M50 10 L70 30 L70 60 L30 60 L30 30 Z"
-      fill="currentColor"
-    />
-    {/* Roof peak */}
-    <path
-      d="M50 5 L75 30 L70 30 L50 10 L30 30 L25 30 Z"
-      fill="currentColor"
-    />
-    {/* Window */}
-    <rect x="42" y="35" width="16" height="12" fill="#005500" />
-    <line x1="50" y1="35" x2="50" y2="47" stroke="#FFFF00" strokeWidth="2" />
-    <line x1="42" y1="41" x2="58" y2="41" stroke="#FFFF00" strokeWidth="2" />
-    {/* Curved base */}
-    <path
-      d="M10 85 Q50 60 90 85"
-      stroke="currentColor"
-      strokeWidth="6"
-      fill="none"
-    />
-    {/* Door */}
-    <rect x="44" y="50" width="12" height="10" fill="#005500" />
-  </svg>
-);
+// Offizielles Carlsburg Logo (extern gehostet)
+const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-planner-4/artifacts/87kb0tcl_grafik.png";
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -77,11 +45,14 @@ export const Login = () => {
       {/* Left side - Login Form */}
       <div className="flex items-center justify-center p-8 bg-[#FAFBE0]">
         <div className="w-full max-w-md space-y-8">
+          {/* Logo und Titel */}
           <div className="text-center">
-            <CarlsburgLogo size={80} className="text-[#FFFF00] mx-auto mb-4" />
-            <h1 className="font-serif text-4xl font-bold text-[#005500]">Carlsburg</h1>
-            <p className="text-[#005500]/70 mt-1 text-lg">Cockpit</p>
-            <p className="text-[#005500]/50 mt-2 text-sm">Historisches Panoramarestaurant</p>
+            <img 
+              src={CARLSBURG_LOGO_URL} 
+              alt="Carlsburg Logo" 
+              className="h-24 mx-auto mb-4 object-contain"
+            />
+            <p className="text-[#005500]/70 mt-2 text-lg font-medium">Cockpit</p>
           </div>
 
           <Card className="border-[#005500]/20 shadow-lg bg-white">
@@ -157,43 +128,31 @@ export const Login = () => {
           </Card>
 
           <p className="text-center text-sm text-[#005500]/50">
-            Testbenutzer: admin@gastrocore.de / Admin123!
+            © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant
           </p>
         </div>
       </div>
 
       {/* Right side - Carlsburg Branding */}
-      <div className="hidden lg:block relative bg-[#005500]">
+      <div className="hidden lg:flex relative bg-black">
         <div className="absolute inset-0 flex flex-col items-center justify-center p-12">
-          <CarlsburgLogo size={200} className="text-[#FFFF00] mb-8" />
-          <h2 className="font-serif text-5xl font-bold text-[#FFFF00] mb-4 text-center">
-            Carlsburg
-          </h2>
-          <p className="text-xl text-[#FAFBE0] text-center mb-8">
-            Historisches Panoramarestaurant
-          </p>
-          <div className="text-[#FAFBE0]/70 text-center max-w-md">
-            <p className="text-lg mb-4">
+          {/* Großes offizielles Logo */}
+          <img 
+            src={CARLSBURG_LOGO_URL} 
+            alt="Carlsburg Logo" 
+            className="max-w-md w-full h-auto mb-8 object-contain"
+          />
+          
+          <div className="text-[#FAFBE0]/80 text-center max-w-md mt-8">
+            <p className="text-xl mb-4">
               Ihr Restaurant. Professionell verwaltet.
             </p>
-            <p className="text-sm">
-              Reservierungen, Personal und Service – alles in einer eleganten Oberfläche.
+            <p className="text-sm text-[#FAFBE0]/60">
+              Reservierungen, Tischplan, Personal und Service – 
+              alles in einer eleganten Oberfläche.
             </p>
           </div>
         </div>
-        {/* Decorative curved line at bottom */}
-        <svg 
-          className="absolute bottom-0 left-0 right-0 w-full h-32"
-          viewBox="0 0 100 20"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0 20 Q50 0 100 20"
-            stroke="#FFFF00"
-            strokeWidth="0.5"
-            fill="none"
-          />
-        </svg>
       </div>
     </div>
   );
