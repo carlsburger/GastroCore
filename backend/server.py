@@ -64,6 +64,17 @@ from reservation_config_module import (
     DEFAULT_DURATION_MINUTES
 )
 
+# Table Module (Sprint: Tischplan & Belegung)
+from table_module import (
+    table_router,
+    combination_router,
+    TableArea,
+    TableSubArea,
+    OccupancyStatus,
+    calculate_table_occupancy,
+    suggest_tables_for_party
+)
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
