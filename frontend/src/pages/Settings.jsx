@@ -167,6 +167,42 @@ export const Settings = () => {
           </p>
         </div>
 
+        {/* Quick Links to New Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link to="/admin/settings/system">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-[#005500]/20">
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#005500]/10">
+                    <Building2 className="h-5 w-5 text-[#005500]" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-[#005500]">System-Einstellungen</h3>
+                    <p className="text-sm text-muted-foreground">Geschäftsdaten & Stammdaten</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-[#005500]/50" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/admin/settings/opening-hours">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-[#005500]/20">
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#005500]/10">
+                    <CalendarClock className="h-5 w-5 text-[#005500]" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-[#005500]">Öffnungszeiten & Sperrtage</h3>
+                    <p className="text-sm text-muted-foreground">Perioden, Feiertage, Ruhetage</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-[#005500]/50" />
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
         <Tabs defaultValue="reminders" className="space-y-6">
           <TabsList className="bg-card border">
             <TabsTrigger value="reminders" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
