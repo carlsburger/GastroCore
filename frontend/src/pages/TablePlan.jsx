@@ -143,22 +143,22 @@ export const TablePlan = () => {
       
       const [tablesRes, occupancyRes, combinationsRes, reservationsRes] = await Promise.all([
         axios.get(`${BACKEND_URL}/api/tables`, { 
-          headers,
+          headers: getHeaders(),
           params: { active_only: true }
         }),
         axios.get(`${BACKEND_URL}/api/tables/occupancy/${selectedDate}`, {
-          headers,
+          headers: getHeaders(),
           params: { 
             time_slot: timeSlotParam,
             area: areaParam
           }
         }),
         axios.get(`${BACKEND_URL}/api/table-combinations/for-date/${selectedDate}`, {
-          headers,
+          headers: getHeaders(),
           params: { time_slot: timeSlotParam }
         }),
         axios.get(`${BACKEND_URL}/api/reservations`, {
-          headers,
+          headers: getHeaders(),
           params: { date: selectedDate }
         })
       ]);
@@ -310,7 +310,7 @@ export const TablePlan = () => {
       // Wenn Tisch ausgewählt, auch zuweisen
       if (selectedTable) {
         const resRes = await axios.get(`${BACKEND_URL}/api/reservations`, {
-          headers,
+          headers: getHeaders(),
           params: { date: format(new Date(), "yyyy-MM-dd") }
         });
         const newWalkIn = resRes.data.find(r => 
@@ -321,7 +321,7 @@ export const TablePlan = () => {
         
         if (newWalkIn) {
           await axios.post(`${BACKEND_URL}/api/tables/assign/${newWalkIn.id}`, null, {
-            headers,
+            headers: getHeaders(),
             params: { table_id: selectedTable.id }
           });
         }
@@ -371,7 +371,7 @@ export const TablePlan = () => {
   const handleLoadSuggestions = async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/api/tables/suggest`, {
-        headers,
+        headers: getHeaders(),
         params: {
           date: selectedDate,
           time: selectedTimeSlot.start,
@@ -396,7 +396,7 @@ export const TablePlan = () => {
             date: selectedDate,
             area_id: selectedArea !== "all" ? selectedArea : undefined,
           },
-          headers,
+          headers: getHeaders(),
           responseType: 'blob',
         }
       );
