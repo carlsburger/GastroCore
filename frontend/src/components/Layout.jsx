@@ -75,18 +75,21 @@ const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
   </div>
 );
 
-// Navigation Struktur - Hierarchisch gruppiert
+// Navigation Struktur - Hierarchisch gruppiert (Standard eingeklappt)
 const navigationGroups = [
   {
     id: "dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
     roles: ["admin", "schichtleiter"],
-    children: [
-      { path: "/", label: "Übersicht", icon: LayoutDashboard },
-      { path: "/analytics", label: "Kennzahlen", icon: BarChart3, disabled: true },
-      { path: "/comparisons", label: "Vergleiche", icon: TrendingUp, disabled: true },
-    ],
+    path: "/", // Direktlink
+  },
+  {
+    id: "service",
+    label: "Service-Terminal",
+    icon: Utensils,
+    roles: ["admin", "schichtleiter"],
+    path: "/service-terminal", // Direktlink
   },
   {
     id: "reservations",
@@ -94,25 +97,21 @@ const navigationGroups = [
     icon: BookOpen,
     roles: ["admin", "schichtleiter"],
     children: [
-      { path: "/reservations", label: "Reservierungsübersicht", icon: ClipboardList },
-      { path: "/service-terminal", label: "Service-Terminal", icon: Utensils },
+      { path: "/reservations", label: "Übersicht", icon: ClipboardList },
+      { path: "/reservation-config", label: "Reservierungs-Einstellungen", icon: Settings, roles: ["admin"] },
       { path: "/table-plan", label: "Tischplan", icon: MapPin },
       { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties, roles: ["admin"] },
-      { path: "/reservation-config", label: "Konfiguration", icon: Settings, roles: ["admin"] },
-      { path: "/waitlist", label: "Warteliste", icon: Clock },
-      { path: "/guests", label: "Gäste", icon: UserX },
     ],
   },
   {
     id: "events",
-    label: "Veranstaltungen",
+    label: "Veranstaltungen & Aktionen",
     icon: PartyPopper,
     roles: ["admin", "schichtleiter"],
     children: [
       { path: "/events", label: "Veranstaltungen", icon: Calendar },
       { path: "/aktionen", label: "Aktionen", icon: Gift },
       { path: "/menue-aktionen", label: "Menü-Aktionen", icon: UtensilsCrossed },
-      { path: "/events-bookings", label: "Buchungen", icon: Ticket, disabled: true },
     ],
   },
   {
@@ -123,7 +122,7 @@ const navigationGroups = [
     children: [
       { path: "/staff", label: "Mitarbeiter", icon: UserCog },
       { path: "/schedule", label: "Dienstplan", icon: CalendarClock },
-      { path: "/shifts", label: "Schichten", icon: CalendarCheck, disabled: true },
+      { path: "/my-shifts", label: "Meine Schichten", icon: CalendarCheck },
       { path: "/taxoffice", label: "Exporte Steuerbüro", icon: FileSpreadsheet, roles: ["admin"] },
     ],
   },
@@ -132,20 +131,7 @@ const navigationGroups = [
     label: "Marketing",
     icon: Megaphone,
     roles: ["admin", "schichtleiter"],
-    children: [
-      { path: "/marketing", label: "Übersicht", icon: Megaphone },
-      { path: "/newsletters", label: "Newsletter", icon: Newspaper, disabled: true },
-      { path: "/campaigns", label: "Kampagnen", icon: Send, disabled: true },
-      { path: "/social", label: "Social Posts", icon: Share2, disabled: true },
-      { path: "/customers", label: "Kunden", icon: Contact, disabled: true },
-    ],
-  },
-  {
-    id: "ai",
-    label: "KI-Assistent",
-    icon: Bot,
-    roles: ["admin", "schichtleiter"],
-    path: "/ai-assistant", // Direktlink ohne Children
+    path: "/marketing", // Direktlink
   },
   {
     id: "settings",
@@ -153,12 +139,11 @@ const navigationGroups = [
     icon: Settings,
     roles: ["admin"],
     children: [
+      { path: "/admin/settings/system", label: "System", icon: Cog },
+      { path: "/admin/settings/opening-hours", label: "Öffnungszeiten", icon: Clock },
+      { path: "/settings", label: "E-Mail / Reminders", icon: Mail },
       { path: "/areas", label: "Bereiche", icon: MapPin },
-      { path: "/settings", label: "System", icon: Cog },
       { path: "/users", label: "Benutzer", icon: Users },
-      { path: "/audit", label: "Audit-Log", icon: FileText },
-      { path: "/message-logs", label: "Nachrichten-Log", icon: Mail },
-      { path: "/payments", label: "Zahlungen", icon: CreditCard },
     ],
   },
 ];
