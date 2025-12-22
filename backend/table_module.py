@@ -626,7 +626,6 @@ async def suggest_tables(
     Gibt Empfehlungen zurück - KEINE automatische Zuweisung.
     """
     suggestions = await suggest_tables_for_party(
-        date,
         date_str,
         time,
         party_size,
