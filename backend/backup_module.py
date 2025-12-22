@@ -317,10 +317,10 @@ async def export_events_actions_json(user: dict = Depends(require_admin)):
     # Audit log
     await create_audit_log(
         actor={"id": user['id'], "email": user['email']},
-        action="backup_export_events_json",
-        entity_type="backup",
+        entity="backup",
         entity_id=filename,
-        new_value={"events_count": len(events), "actions_count": len(actions)}
+        action="backup_export_events_json",
+        after={"events_count": len(events), "actions_count": len(actions)}
     )
     
     return StreamingResponse(
