@@ -74,7 +74,9 @@ export const ReservationConfig = () => {
   const fetchDurationSettings = async () => {
     if (!token) return;
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/duration-settings`, { headers });
+      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/duration-settings`, { 
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setDurationSettings(res.data);
     } catch (err) {
       console.error("Fehler beim Laden der Aufenthaltsdauer:", err);
@@ -84,7 +86,10 @@ export const ReservationConfig = () => {
   const fetchTimeSlotConfigs = async () => {
     if (!token) return;
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/time-slots`, { headers });
+      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/time-slots`, { 
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log("TimeSlotConfigs loaded:", res.data);
       setTimeSlotConfigs(res.data);
     } catch (err) {
       console.error("Fehler beim Laden der Zeitslot-Konfiguration:", err);
@@ -94,7 +99,9 @@ export const ReservationConfig = () => {
   const fetchOpeningPeriods = async () => {
     if (!token) return;
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { headers });
+      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { 
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setOpeningPeriods(res.data);
     } catch (err) {
       console.error("Fehler beim Laden der Öffnungszeiten-Perioden:", err);
