@@ -707,6 +707,7 @@ export const ReservationConfig = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </Layout>
   );
 };
 
