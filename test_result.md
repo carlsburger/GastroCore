@@ -44,6 +44,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "PARTIAL: Schedule page loads and basic functionality works. Week navigation buttons present but selectors not working properly. Schedule creation works. However, shift management features not fully functional - plus buttons for adding shifts not appearing after schedule creation. Export buttons (PDF/CSV) and action buttons (Publish/Copy) not visible, suggesting UI rendering issues or missing data."
+      - working: false
+        agent: "testing"
+        comment: "PARTIAL PASS: Schedule page loads correctly with week navigation working (KW 8 ↔ KW 7). Schedule creation button available but creation may fail silently. Plus buttons (1 found) for shift addition present but shift dialog does not open when clicked. Action buttons (CSV, PDF, Kopieren, Veröffentlichen) not visible - likely conditional on schedule having shifts or specific status. Core navigation and display working, but shift management functionality incomplete."
 
   - task: "TESTBLOCK C: Konfliktfehler im UI"
     implemented: true
