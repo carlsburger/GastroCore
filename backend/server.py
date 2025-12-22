@@ -1598,6 +1598,7 @@ async def get_version():
         "modules": {
             "core": True,
             "reservations": True,
+            "tables": True,  # Sprint: Tischplan & Belegung
             "events": True,
             "payments": True,
             "staff": True,
