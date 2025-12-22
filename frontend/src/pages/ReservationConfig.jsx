@@ -48,7 +48,10 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 const DAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
 export const ReservationConfig = () => {
-  const { token } = useAuth();
+  const { user } = useAuth();
+  
+  // Token aus localStorage holen (AuthContext speichert ihn dort)
+  const token = localStorage.getItem("token");
 
   // State
   const [activeTab, setActiveTab] = useState("duration");
