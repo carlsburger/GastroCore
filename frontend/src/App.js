@@ -50,6 +50,8 @@ import TableAdmin from "./pages/TableAdmin";
 // System Settings & Opening Hours Master Module
 import SystemSettings from "./pages/SystemSettings";
 import OpeningHoursAdmin from "./pages/OpeningHoursAdmin";
+// Backup & Export Module
+import BackupExport from "./pages/BackupExport";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
