@@ -780,7 +780,10 @@ async def create_combination(
     
     doc = create_entity(comb_data)
     await db.table_combinations.insert_one(doc)
-    await create_audit_log(current_user, "table_combination", doc["id"], "create", None, safe_dict_for_audit(doc))
+    
+    # Entferne _id für Audit und Response
+    doc_clean = {k: v for k, v in doc.items() if k != "_id"}
+    await create_audit_log(current_user, "table_combination", doc["id"], "create", None, safe_dict_for_audit(doc_clean))
     
     return {
         "message": f"Kombination erstellt: {validation['table_numbers']}",
