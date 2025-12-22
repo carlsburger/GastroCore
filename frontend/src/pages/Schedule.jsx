@@ -196,6 +196,51 @@ export const Schedule = () => {
     }
   };
 
+  // CSV Export (Sprint: Dienstplan Live-Ready)
+  const handleExportCSV = async () => {
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/staff/export/shifts/csv?year=${year}&week=${week}`,
+        { headers, responseType: "blob" }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `schichten_kw${week}_${year}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("CSV heruntergeladen");
+    } catch (err) {
+      toast.error("Fehler beim CSV-Export");
+    }
+  };
+
+  // Woche kopieren (Sprint: Dienstplan Live-Ready)
+  const handleCopyWeek = async () => {
+    if (!schedule) return;
+    if (!window.confirm(`Dienstplan in die nächste Woche (KW ${week >= 52 ? 1 : week + 1}) kopieren?`)) {
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/staff/schedules/${schedule.id}/copy`,
+        {},
+        { headers }
+      );
+      toast.success(`${response.data.message} (${response.data.shifts_copied} Schichten)`);
+      // Zur neuen Woche wechseln
+      if (week >= 52) {
+        setYear(year + 1);
+        setWeek(1);
+      } else {
+        setWeek(week + 1);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Kopieren");
+    }
+  };
+
   const openShiftDialog = (date, shift = null) => {
     setSelectedDate(date);
     if (shift) {
