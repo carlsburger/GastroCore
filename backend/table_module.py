@@ -652,9 +652,12 @@ async def create_table(
     
     doc = create_entity(table_data)
     await db.tables.insert_one(doc)
-    await create_audit_log(current_user, "table", doc["id"], "create", None, safe_dict_for_audit(doc))
     
-    return {"message": f"Tisch {data.table_number} erstellt", "id": doc["id"], "table": doc}
+    # Entferne _id für Audit und Response
+    doc_clean = {k: v for k, v in doc.items() if k != "_id"}
+    await create_audit_log(current_user, "table", doc["id"], "create", None, safe_dict_for_audit(doc_clean))
+    
+    return {"message": f"Tisch {data.table_number} erstellt", "id": doc["id"], "table": doc_clean}
 
 
 @table_router.patch("/{table_id}")
