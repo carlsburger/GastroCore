@@ -98,6 +98,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "PASS: MyShifts page loads correctly. Week navigation (Vorwoche/Nächste Woche) works properly. Loading states and empty states display correctly. Page shows KW 52/2025 with 0 Schichten and 0.0h Stunden. UI is responsive and functional."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: MyShifts functionality fully working for all user roles. Admin and Employee can access page showing KW 52/2025 with proper week navigation (Vorwoche/Nächste Woche buttons working). Displays shift count (0 Schichten) and hours (0.0h Stunden) correctly. Empty state shows 'Lade Schichten...' then 'Keine Schichten in dieser Woche geplant' with calendar icon. Navigation between weeks works smoothly. UI is clean and responsive."
 
 metadata:
   created_by: "main_agent"
