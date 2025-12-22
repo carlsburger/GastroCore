@@ -218,6 +218,16 @@ function App() {
             }
           />
 
+          {/* Backup & Export - Admin only */}
+          <Route
+            path="/admin/settings/backup"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <BackupExport />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Message Logs - Admin only */}
           <Route
             path="/message-logs"
