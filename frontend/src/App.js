@@ -302,6 +302,16 @@ function App() {
             }
           />
 
+          {/* Reservation Config Module (Sprint: Reservierung Live-Ready) - Admin only */}
+          <Route
+            path="/reservation-config"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <ReservationConfig />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
