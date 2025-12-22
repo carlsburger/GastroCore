@@ -858,7 +858,6 @@ async def assign_reservation_to_combination(
     if not res:
         raise NotFoundException("Reservierung")
     
-    before = safe_dict_for_audit(comb)
     await db.table_combinations.update_one(
         {"id": combination_id},
         {"$set": {"reservation_id": reservation_id, "updated_at": now_iso()}}
