@@ -96,6 +96,7 @@ const STATUS_LABELS = {
 
 export const TablePlan = () => {
   const token = localStorage.getItem("token");
+  const getHeaders = () => ({ Authorization: `Bearer ${token}` });
 
   // State
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
