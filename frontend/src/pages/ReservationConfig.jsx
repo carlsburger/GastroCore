@@ -49,11 +49,11 @@ const DAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "S
 
 export const ReservationConfig = () => {
   const { token } = useAuth();
-  const headers = { Authorization: `Bearer ${token}` };
 
   // State
   const [activeTab, setActiveTab] = useState("duration");
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   
   // Duration Settings
   const [durationSettings, setDurationSettings] = useState({
@@ -71,51 +71,62 @@ export const ReservationConfig = () => {
   const [editingPeriod, setEditingPeriod] = useState(null);
   const [showPeriodDialog, setShowPeriodDialog] = useState(false);
 
-  const fetchDurationSettings = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/duration-settings`, { 
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setDurationSettings(res.data);
-    } catch (err) {
-      console.error("Fehler beim Laden der Aufenthaltsdauer:", err);
-    }
-  };
-
-  const fetchTimeSlotConfigs = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/time-slots`, { 
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log("TimeSlotConfigs loaded:", res.data);
-      setTimeSlotConfigs(res.data);
-    } catch (err) {
-      console.error("Fehler beim Laden der Zeitslot-Konfiguration:", err);
-    }
-  };
-
-  const fetchOpeningPeriods = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { 
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setOpeningPeriods(res.data);
-    } catch (err) {
-      console.error("Fehler beim Laden der Öffnungszeiten-Perioden:", err);
-    }
-  };
+  // Headers für API-Aufrufe
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
   // Fetch data when token is available
   useEffect(() => {
-    if (token) {
-      fetchDurationSettings();
-      fetchTimeSlotConfigs();
-      fetchOpeningPeriods();
-    }
+    const loadData = async () => {
+      if (!token) return;
+      
+      try {
+        // Fetch Duration Settings
+        const durationRes = await axios.get(`${BACKEND_URL}/api/reservation-config/duration-settings`, { 
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDurationSettings(durationRes.data);
+        
+        // Fetch Time Slot Configs
+        const slotsRes = await axios.get(`${BACKEND_URL}/api/reservation-config/time-slots`, { 
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTimeSlotConfigs(slotsRes.data);
+        
+        // Fetch Opening Periods
+        const periodsRes = await axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { 
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setOpeningPeriods(periodsRes.data);
+        
+        setDataLoaded(true);
+      } catch (err) {
+        console.error("Fehler beim Laden der Daten:", err);
+      }
+    };
+    
+    loadData();
   }, [token]);
+
+  // Refresh functions for button
+  const refreshData = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const [durationRes, slotsRes, periodsRes] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/reservation-config/duration-settings`, { headers }),
+        axios.get(`${BACKEND_URL}/api/reservation-config/time-slots`, { headers }),
+        axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { headers })
+      ]);
+      setDurationSettings(durationRes.data);
+      setTimeSlotConfigs(slotsRes.data);
+      setOpeningPeriods(periodsRes.data);
+      toast.success("Daten aktualisiert");
+    } catch (err) {
+      toast.error("Fehler beim Aktualisieren");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Duration Settings Handlers
   const saveDurationSettings = async () => {
