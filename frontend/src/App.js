@@ -228,10 +228,26 @@ function App() {
 
           {/* Events Management - Admin & Schichtleiter */}
           <Route
-            path="/events-admin"
+            path="/events"
             element={
               <ProtectedRoute roles={["admin", "schichtleiter"]}>
                 <Events />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/aktionen"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Events category="AKTION" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/menue-aktionen"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Events category="AKTION_MENUE" />
               </ProtectedRoute>
             }
           />
