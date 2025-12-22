@@ -135,8 +135,37 @@ export const Schedule = () => {
           { headers }
         );
         setSchedule(scheduleRes.data);
+        
+        // Load effective hours for the week to show closures
+        try {
+          const effectiveRes = await axios.get(
+            `${BACKEND_URL}/api/opening-hours/effective`,
+            { 
+              headers, 
+              params: { 
+                from: scheduleRes.data.week_start, 
+                to: scheduleRes.data.week_end 
+              } 
+            }
+          );
+          // Create a map of closed days
+          const closedMap = {};
+          effectiveRes.data.days?.forEach((day) => {
+            if (day.is_closed_full_day) {
+              closedMap[day.date] = {
+                reason: day.closure_reason || "Geschlossen",
+                closures: day.closures || []
+              };
+            }
+          });
+          setClosedDays(closedMap);
+        } catch (effErr) {
+          console.log("Could not load effective hours:", effErr);
+          setClosedDays({});
+        }
       } else {
         setSchedule(null);
+        setClosedDays({});
       }
 
       // Get hours overview
