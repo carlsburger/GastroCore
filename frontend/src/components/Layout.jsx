@@ -210,6 +210,24 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
   const [isOpen, setIsOpen] = useState(false);
   const Icon = group.icon;
   
+  // Prüfe ob ein Child aktiv ist
+  const hasActiveChild = group.children?.some(child => 
+    location.pathname === child.path || 
+    (child.path !== "/" && location.pathname.startsWith(child.path))
+  );
+
+  // Auto-open wenn ein Child aktiv ist (useEffect muss vor conditional returns kommen)
+  useEffect(() => {
+    if (hasActiveChild && !collapsed) {
+      setIsOpen(true);
+    }
+  }, [hasActiveChild, collapsed]);
+
+  // Filter children by role
+  const visibleChildren = group.children?.filter(child => 
+    !child.roles || child.roles.some(role => hasRole(role))
+  ) || [];
+
   // Prüfe ob User Rolle hat
   if (!group.roles.some(role => hasRole(role))) {
     return null;
@@ -239,24 +257,6 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
       </Link>
     );
   }
-
-  // Prüfe ob ein Child aktiv ist
-  const hasActiveChild = group.children?.some(child => 
-    location.pathname === child.path || 
-    (child.path !== "/" && location.pathname.startsWith(child.path))
-  );
-
-  // Auto-open wenn ein Child aktiv ist
-  useEffect(() => {
-    if (hasActiveChild && !collapsed) {
-      setIsOpen(true);
-    }
-  }, [hasActiveChild, collapsed]);
-
-  // Filter children by role
-  const visibleChildren = group.children?.filter(child => 
-    !child.roles || child.roles.some(role => hasRole(role))
-  ) || [];
 
   if (visibleChildren.length === 0) return null;
 
