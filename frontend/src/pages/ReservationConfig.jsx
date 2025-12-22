@@ -292,12 +292,8 @@ export const ReservationConfig = () => {
             Aufenthaltsdauer, Durchgänge, Sperrzeiten und Öffnungszeiten
           </p>
         </div>
-        <Button onClick={() => {
-          fetchDurationSettings();
-          fetchTimeSlotConfigs();
-          fetchOpeningPeriods();
-        }} variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
+        <Button onClick={refreshData} variant="outline" disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Aktualisieren
         </Button>
       </div>
