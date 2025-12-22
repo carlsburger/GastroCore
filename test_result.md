@@ -1,106 +1,148 @@
 #====================================================================================================
-# Service-Terminal Testing - Sprint 8
+# Dienstplan Live-Ready Testing - Sprint 9
 #====================================================================================================
 
 user_problem_statement: |
-  ADD-ON: Dediziertes Service-Terminal Frontend
+  SPRINT: DIENSTPLAN – LIVE-READY (ADDITIV)
+  - Konflikterkennung (Doppelbelegung, Ruhezeit 11h)
+  - Audit-Logs für Schichten
+  - Woche kopieren
+  - Mitarbeiter-Selbstansicht
+  - CSV-Export
 
 backend:
-  - task: "Reservierungen laden (Tagesliste)"
+  - task: "Konflikterkennung Doppelbelegung"
     implemented: true
-    working: true
-    file: "server.py"
+    working: "needs_testing"
+    file: "staff_module.py"
     stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ PASS - GET /api/reservations?date=2025-12-21 works for Admin (20 reservations) and Schichtleiter (20 reservations). Mitarbeiter correctly blocked with 403."
+    priority: "critical"
+    needs_retesting: true
+    status_history: []
 
-  - task: "Statuswechsel mit Audit-Log"
+  - task: "Konflikterkennung Ruhezeit 11h"
     implemented: true
-    working: true
-    file: "server.py"
+    working: "needs_testing"
+    file: "staff_module.py"
     stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ PASS - PATCH /api/reservations/{id}/status?new_status=bestaetigt works. Audit log correctly created for status changes (GET /api/audit-logs?entity=reservation&limit=1)."
+    priority: "critical"
+    needs_retesting: true
+    status_history: []
 
-  - task: "Walk-in anlegen"
+  - task: "Audit-Logs Schicht Create/Update/Delete"
     implemented: true
-    working: true
-    file: "server.py"
+    working: "needs_testing"
+    file: "staff_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ PASS - POST /api/walk-ins creates walk-in with status='angekommen' and source='walk-in' as expected."
+    needs_retesting: true
+    status_history: []
 
-  - task: "Warteliste anlegen"
+  - task: "Woche kopieren POST /schedules/{id}/copy"
     implemented: true
-    working: true
-    file: "server.py"
+    working: "needs_testing"
+    file: "staff_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ PASS - POST /api/waitlist creates waitlist entry with status='offen' as expected."
+    needs_retesting: true
+    status_history: []
 
-  - task: "Bereiche laden"
+  - task: "My-Shifts GET /staff/my-shifts"
     implemented: true
-    working: true
-    file: "server.py"
+    working: "needs_testing"
+    file: "staff_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ PASS - GET /api/areas returns 4 areas for filter dropdown functionality."
+    needs_retesting: true
+    status_history: []
+
+  - task: "CSV-Export GET /staff/export/shifts/csv"
+    implemented: true
+    working: "needs_testing"
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history: []
 
 frontend:
-  - task: "Service-Terminal UI"
+  - task: "Schedule UI mit Kopieren/CSV Buttons"
     implemented: true
-    working: true
-    file: "App.js"
+    working: "needs_testing"
+    file: "Schedule.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: "NA"
-        agent: "testing"
-        comment: "Frontend testing not performed as per system limitations. Backend APIs are fully functional."
-      - working: true
-        agent: "testing"
-        comment: "✅ COMPREHENSIVE FRONTEND TESTING COMPLETED - All 5 test scenarios PASSED: 1) Login & Navigation: Successfully logged in as admin@gastrocore.de and navigated to /service-terminal, 2) Daily List Components: Stats bar (6 cards), filters (date, search), reservation list (22 reservations) all working, 3) Status Changes: Successfully changed status from 'Neu' to 'Bestätigt' with toast confirmation, 4) Walk-in Creation: Dialog opens, form submission works, success toast appears, 5) Detail Sheet: Opens with guest info, details, WhatsApp links, and audit logs. No console errors detected. UI is fully functional and responsive."
+    needs_retesting: true
+    status_history: []
+
+  - task: "MyShifts Seite"
+    implemented: true
+    working: "needs_testing"
+    file: "MyShifts.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history: []
 
 metadata:
   created_by: "main_agent"
-  version: "8.0"
-  test_sequence: 11
+  version: "9.0"
+  test_sequence: 1
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Service-Terminal UI"
-    - "Statuswechsel"
-    - "Walk-in & Warteliste"
+    - "Konflikterkennung"
+    - "Audit-Logs"
+    - "Woche kopieren"
+    - "My-Shifts"
+    - "CSV-Export"
   stuck_tasks: []
   test_all: true
-  test_priority: "high_first"
+  test_priority: "critical_first"
 
 agent_communication:
   - agent: "main"
-    message: "Service-Terminal implementiert. Teste: 1) RBAC (nur Admin/Schichtleiter), 2) Tagesliste lädt, 3) Statuswechsel, 4) Walk-in anlegen, 5) Audit-Log. Login: admin@gastrocore.de / Admin123!"
-  - agent: "testing"
-    message: "✅ ALL SERVICE-TERMINAL BACKEND APIs WORKING PERFECTLY! All 5 test cases passed: 1) RBAC works (Admin/Schichtleiter can access reservations, Mitarbeiter gets 403), 2) Reservations loading with date filter works, 3) Status changes work with audit logging, 4) Walk-ins created with correct status/source, 5) Waitlist and areas loading work. 25/25 tests passed (100% success rate). Ready for production!"
-  - agent: "testing"
-    message: "✅ FRONTEND TESTING COMPLETE - Service Terminal UI fully functional! All 5 test scenarios passed: Login/Navigation ✅, Daily List Components ✅, Status Changes ✅, Walk-in Creation ✅, Detail Sheet ✅. Stats bar shows 22 reservations with proper filtering, status changes work with toast notifications, walk-in dialog functions correctly, detail sheets display all required information including audit logs. No console errors. Ready for production use!"
+    message: |
+      DIENSTPLAN LIVE-READY SMOKE TESTS
+      
+      Login: admin@carlsburg.de / Carlsburg2025! (oder admin@gastrocore.de / Admin123!)
+      
+      KRITISCHE TESTS:
+      1. KONFLIKTERKENNUNG DOPPELBELEGUNG:
+         - Erstelle Schedule für aktuelle KW falls nötig: POST /api/staff/schedules
+         - Erstelle Schicht: POST /api/staff/shifts (staff_member_id, shift_date, start_time: "10:00", end_time: "18:00")
+         - Versuche GLEICHE Schicht nochmal → MUSS 409 mit "Konflikt: Mitarbeiter ist bereits eingeplant" zurückgeben
+      
+      2. KONFLIKTERKENNUNG RUHEZEIT:
+         - Erstelle Schicht am Tag X: 18:00-23:00
+         - Erstelle Schicht am Tag X+1: 06:00-14:00 (nur 7h Abstand!)
+         - → MUSS 409 mit "Ruhezeit von 11h unterschritten" zurückgeben
+      
+      3. AUDIT-LOGS:
+         - Nach Schicht-Create: GET /api/audit-logs?entity_type=shift&limit=1 → Muss "create" Action zeigen
+         - Nach Schicht-Update: PATCH Schicht → Audit-Log mit "update"
+         - Nach Schicht-Delete: DELETE Schicht → Audit-Log mit "archive"
+      
+      4. WOCHE KOPIEREN:
+         - POST /api/staff/schedules/{schedule_id}/copy
+         - → Neuer Schedule in nächster KW mit Status "entwurf"
+         - → Alle Schichten mitkopiert
+      
+      5. MY-SHIFTS:
+         - Login als Mitarbeiter (falls vorhanden) oder Admin
+         - GET /api/staff/my-shifts?date_from=2025-01-01&date_to=2025-12-31
+         - → Nur eigene Schichten zurück
+      
+      6. CSV-EXPORT:
+         - GET /api/staff/export/shifts/csv?year=2025&week=52
+         - → CSV-Datei mit Schichtdaten
+
+#====================================================================================================
+# Testing Protocol (DO NOT EDIT)
+#====================================================================================================
+# 1. Read test_result.md before testing
+# 2. Update status_history after each test
+# 3. Set working: true/false based on results
+# 4. Report stuck_count if same issue persists
+# 5. Focus on current_focus tasks first
