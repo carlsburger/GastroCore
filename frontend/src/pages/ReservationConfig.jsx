@@ -262,6 +262,7 @@ export const ReservationConfig = () => {
   };
 
   return (
+    <Layout>
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
