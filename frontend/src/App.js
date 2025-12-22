@@ -87,6 +87,16 @@ function App() {
             }
           />
 
+          {/* Meine Schichten - Für alle authentifizierten Benutzer */}
+          <Route
+            path="/my-shifts"
+            element={
+              <ProtectedRoute>
+                <MyShifts />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Dashboard - Admin & Schichtleiter */}
           <Route
             path="/"
