@@ -1255,6 +1255,16 @@ async def create_shift(data: ShiftCreate, user: dict = Depends(require_manager))
     if not area:
         raise NotFoundException("Arbeitsbereich")
     
+    # KONFLIKT-PRÜFUNG (Sprint: Dienstplan Live-Ready)
+    conflict = await check_shift_conflicts(
+        staff_member_id=data.staff_member_id,
+        shift_date=data.shift_date,
+        start_time=data.start_time,
+        end_time=data.end_time
+    )
+    if conflict["has_conflict"]:
+        raise HTTPException(status_code=409, detail=conflict["message"])
+    
     # Calculate hours
     hours = calculate_shift_hours(data.start_time, data.end_time)
     
