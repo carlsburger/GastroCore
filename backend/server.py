@@ -64,6 +64,21 @@ from reservation_config_module import (
     DEFAULT_DURATION_MINUTES
 )
 
+# System Settings Module (Sprint: System Settings & Opening Hours Master)
+from system_settings_module import (
+    system_settings_router,
+    get_system_timezone,
+    get_company_info
+)
+
+# Opening Hours Master Module (Sprint: System Settings & Opening Hours Master)
+from opening_hours_module import (
+    opening_hours_router,
+    calculate_effective_hours,
+    is_date_closed,
+    get_reservable_slots_for_date
+)
+
 # Table Module (Sprint: Tischplan & Belegung)
 from table_module import (
     table_router,
