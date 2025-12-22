@@ -80,12 +80,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Schedule UI"
-    - "MyShifts UI"
-    - "Konfliktfehler-Handling"
-    - "Exports"
-  stuck_tasks: []
-  test_all: true
+    - "Frontend-Backend Connectivity Fix"
+    - "Login Authentication Flow"
+    - "Proxy Configuration"
+  stuck_tasks:
+    - "TESTBLOCK A: Routing & Auth"
+  test_all: false
   test_priority: "critical_first"
 
 agent_communication:
@@ -132,6 +132,44 @@ agent_communication:
       - Bei Fehlern: Screenshot + Console Logs
       - 409 Fehler = ERWARTET bei Konflikttests
       - Klare PASS/FAIL Bewertung pro Test
+
+  - agent: "testing"
+    message: |
+      🚨 CRITICAL ISSUE FOUND: Frontend-Backend Connectivity Broken
+      
+      PROBLEM ANALYSIS:
+      - Backend is running correctly (curl tests pass)
+      - Frontend loads but login requests hang indefinitely
+      - Network requests show POST to localhost:3000/api/auth/login with no response
+      - Submit button stuck in loading state
+      - Proxy configuration in package.json appears correct ("proxy": "http://localhost:8001")
+      
+      VERIFIED CREDENTIALS (from seed system):
+      - Admin: admin@carlsburg.de / Carlsburg2025!
+      - Schichtleiter: schichtleiter@carlsburg.de / Schicht2025!
+      - Mitarbeiter: mitarbeiter@carlsburg.de / Mitarbeiter2025!
+      
+      BACKEND VERIFICATION:
+      ✅ Backend API responds correctly via curl
+      ✅ Seed system created test users successfully
+      ✅ Authentication works when tested directly
+      
+      FRONTEND ISSUES:
+      ❌ Login form submits but requests hang
+      ❌ No error messages displayed to user
+      ❌ Proxy not forwarding requests to backend
+      
+      IMPACT:
+      - All test blocks blocked (A, B, C, D, E)
+      - Cannot test any authenticated functionality
+      - Schedule and MyShifts pages inaccessible
+      
+      RECOMMENDED ACTIONS:
+      1. Check frontend proxy configuration
+      2. Verify REACT_APP_BACKEND_URL environment variable
+      3. Check network connectivity between frontend/backend containers
+      4. Review CORS settings in backend
+      5. Check if frontend is using correct API base URL
 
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
