@@ -119,7 +119,7 @@ export const Schedule = () => {
       // Try to get existing schedule
       const schedulesRes = await axios.get(`${BACKEND_URL}/api/staff/schedules`, {
         headers,
-        params: { year, status: "all" },
+        params: { year },
       });
       
       const existingSchedule = schedulesRes.data.find(
