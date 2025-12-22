@@ -296,6 +296,16 @@ function App() {
             }
           />
 
+          {/* Reservierungsübersicht - Weiterleitung zu Service-Terminal */}
+          <Route
+            path="/reservations"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <ServiceTerminal />
+              </ProtectedRoute>
+            }
+          />
+
           {/* AI Assistant Module (Sprint 9) - Admin & Schichtleiter */}
           <Route
             path="/ai-assistant"
