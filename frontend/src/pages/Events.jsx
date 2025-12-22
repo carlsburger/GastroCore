@@ -81,12 +81,24 @@ const CATEGORY_CONFIG = {
   },
 };
 
-export const Events = () => {
+export const Events = ({ category: propCategory }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Determine category from prop or URL path
+  const getCategory = () => {
+    if (propCategory) return propCategory;
+    if (location.pathname === "/aktionen") return "AKTION";
+    if (location.pathname === "/menue-aktionen") return "AKTION_MENUE";
+    return "VERANSTALTUNG";
+  };
+  
+  const currentCategory = getCategory();
+  const categoryConfig = CATEGORY_CONFIG[currentCategory];
+  
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryTab, setCategoryTab] = useState("VERANSTALTUNG");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [submitting, setSubmitting] = useState(false);
