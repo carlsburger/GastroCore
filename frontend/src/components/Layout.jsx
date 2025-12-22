@@ -52,49 +52,21 @@ import {
   PanelLeft,
 } from "lucide-react";
 
-// Carlsburg Logo - Vollständig mit Schriftzug
+// Offizielles Carlsburg Logo URL
+const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-planner-4/artifacts/87kb0tcl_grafik.png";
+
+// Carlsburg Logo - Mit offiziellem Bild
 const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
   <div className={`flex items-center gap-3 ${className}`}>
-    {/* Logo Icon */}
-    <svg
-      width={collapsed ? 36 : 44}
-      height={collapsed ? 36 : 44}
-      viewBox="0 0 100 100"
-      xmlns="http://www.w3.org/2000/svg"
-      className="flex-shrink-0"
-    >
-      {/* Gelber Hintergrund-Kreis */}
-      <circle cx="50" cy="50" r="48" fill="#FFCC00" />
-      {/* Gebäude */}
-      <path
-        d="M50 15 L72 35 L72 65 L28 65 L28 35 Z"
-        fill="#005500"
-      />
-      {/* Dach */}
-      <path
-        d="M50 8 L78 35 L72 35 L50 15 L28 35 L22 35 Z"
-        fill="#005500"
-      />
-      {/* Fenster oben */}
-      <rect x="40" y="38" width="20" height="14" fill="#FFCC00" rx="1" />
-      <line x1="50" y1="38" x2="50" y2="52" stroke="#005500" strokeWidth="2" />
-      <line x1="40" y1="45" x2="60" y2="45" stroke="#005500" strokeWidth="2" />
-      {/* Tür */}
-      <rect x="43" y="52" width="14" height="13" fill="#FFCC00" rx="1" />
-      {/* Geschwungene Basis */}
-      <path
-        d="M15 82 Q50 58 85 82"
-        stroke="#005500"
-        strokeWidth="5"
-        fill="none"
-      />
-    </svg>
+    {/* Offizielles Logo */}
+    <img 
+      src={CARLSBURG_LOGO_URL}
+      alt="Carlsburg"
+      className={`object-contain flex-shrink-0 ${collapsed ? "h-9 w-9" : "h-11"}`}
+    />
     {/* Schriftzug */}
     {!collapsed && (
       <div className="flex flex-col leading-none">
-        <span className="font-serif text-xl font-bold text-[#FFCC00] tracking-wide">
-          Carlsburg
-        </span>
         <span className="text-[10px] text-[#FAFBE0]/70 tracking-widest uppercase">
           Cockpit
         </span>
