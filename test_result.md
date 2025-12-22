@@ -30,6 +30,9 @@ backend:
       - working: true
         agent: "main"
         comment: "GET/PUT /api/system/settings funktioniert. Company Profile (legal_name, address, phone, email, timezone) wird gespeichert und geladen."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: GET /api/system/settings returns complete Company Profile with all required fields (legal_name, address_street, phone, email, timezone). PUT /api/system/settings successfully updates legal_name='Carlsburg Restaurant GmbH', address, phone='+49 30 12345678', email='info@carlsburg.de'. All changes reflected correctly in response. Admin authentication working with admin@carlsburg.de / Carlsburg2025!."
 
   - task: "Opening Hours Periods CRUD"
     implemented: true
@@ -42,6 +45,9 @@ backend:
       - working: true
         agent: "main"
         comment: "POST/GET/PATCH/DELETE /api/opening-hours/periods funktioniert. Sommer/Winter Perioden mit Priority und rules_by_weekday erfolgreich getestet."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: All CRUD operations working perfectly. GET /api/opening-hours/periods retrieves 3 existing periods. POST /api/opening-hours/periods creates new period 'Test Sommer 2026' with complex rules_by_weekday structure (monday closed, tuesday/wednesday with multiple time blocks). PATCH /api/opening-hours/periods/{id} successfully updates priority=20 and active=false. DELETE /api/opening-hours/periods/{id} performs soft delete (204 status). All operations include proper audit logging."
 
   - task: "Closures CRUD"
     implemented: true
@@ -54,6 +60,9 @@ backend:
       - working: true
         agent: "main"
         comment: "POST/GET/PATCH/DELETE /api/closures funktioniert. Recurring (Heiligabend, Silvester) und One-off (Betriebsausflug) Closures erfolgreich getestet."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: All Closures (Sperrtage) operations working perfectly. GET /api/closures retrieves 3 existing closures. POST /api/closures with type='recurring' creates Heiligabend closure (month=12, day=24). POST /api/closures with type='one_off' creates Betriebsausflug closure (date='2026-04-15'). PATCH /api/closures/{id} updates reason and active status. DELETE /api/closures/{id} performs soft delete. Both recurring and one-off closure types working correctly."
 
   - task: "Effective Hours Calculation"
     implemented: true
@@ -66,6 +75,9 @@ backend:
       - working: true
         agent: "main"
         comment: "GET /api/opening-hours/effective?from=&to= liefert korrekte Daten. Priority-Logik funktioniert, Closures überschreiben Perioden korrekt."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: Effective Hours calculation working perfectly. GET /api/opening-hours/effective?from=2026-04-14&to=2026-04-16 correctly shows April 15th as closed (Betriebsausflug). GET /api/opening-hours/effective?from=2026-12-24&to=2026-12-26 correctly shows December 24th as closed (Heiligabend). Response structure includes proper 'days' array with 3 entries, each day showing correct closure status. Priority logic and closure override functionality working as expected."
 
 frontend:
   - task: "System Settings Page"
