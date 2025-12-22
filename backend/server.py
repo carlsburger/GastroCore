@@ -52,6 +52,16 @@ from import_module import (
     import_predefined_carlsburg_data
 )
 
+# Reservation Config Module (Sprint: Reservierung Live-Ready)
+from reservation_config_module import (
+    reservation_config_router,
+    get_default_duration,
+    get_available_slots_for_date,
+    get_opening_hours_for_date,
+    check_capacity_with_duration,
+    DEFAULT_DURATION_MINUTES
+)
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
