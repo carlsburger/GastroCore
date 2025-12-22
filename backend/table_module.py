@@ -440,18 +440,21 @@ async def calculate_table_occupancy(
                         # Event Cut-Off berücksichtigen (Standard: 120 Min)
                         cutoff_minutes = event.get("last_alacarte_reservation_minutes", 
                                                    event.get("last_alacarte_minutes_before", 120))
-                    event_dt = datetime.strptime(f"{date_str} {event_start}", "%Y-%m-%d %H:%M")
-                    block_start = event_dt - timedelta(minutes=cutoff_minutes)
-                    
-                    if start_dt >= block_start:
-                        status = OccupancyStatus.GESPERRT
-                        res_data = {
-                            "blocked_by": "event",
-                            "event_id": event.get("id"),
-                            "event_name": event.get("title", event.get("name")),
-                            "message": f"Event ab {event_start}"
-                        }
-                        break
+                        block_start = event_dt - timedelta(minutes=cutoff_minutes)
+                        
+                        if start_dt >= block_start:
+                            status = OccupancyStatus.GESPERRT
+                            event_time_str = event_dt.strftime("%H:%M") if hasattr(event_dt, 'strftime') else str(event_start)
+                            res_data = {
+                                "blocked_by": "event",
+                                "event_id": event.get("id"),
+                                "event_name": event.get("title", event.get("name")),
+                                "message": f"Event ab {event_time_str}"
+                            }
+                            break
+                    except (ValueError, TypeError):
+                        # Wenn Event-Zeit nicht parsbar ist, ignorieren
+                        pass
         
         occupancy_list.append(TableOccupancy(
             table_id=table_id,
