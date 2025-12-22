@@ -6,39 +6,39 @@
 
 @layer base {
     :root {
-        /* Carlsburg Branding Colors */
-        --background: 55 45% 96%;
-        --foreground: 140 100% 10%;
-        --card: 55 40% 93%;
-        --card-foreground: 140 100% 10%;
-        --popover: 55 45% 96%;
-        --popover-foreground: 140 100% 10%;
-        --primary: 140 100% 17%;
-        --primary-foreground: 55 100% 95%;
-        --secondary: 55 60% 90%;
-        --secondary-foreground: 140 100% 10%;
-        --muted: 55 30% 88%;
-        --muted-foreground: 140 30% 35%;
-        --accent: 50 100% 50%;
-        --accent-foreground: 140 100% 10%;
+        /* Carlsburg Corporate Colors */
+        --background: 56 47% 96%;           /* #fafbed */
+        --foreground: 133 100% 9%;          /* #002f02 */
+        --card: 64 43% 91%;                 /* #f3f6de */
+        --card-foreground: 133 100% 9%;
+        --popover: 56 47% 96%;
+        --popover-foreground: 133 100% 9%;
+        --primary: 133 100% 9%;             /* #002f02 */
+        --primary-foreground: 56 47% 96%;
+        --secondary: 56 40% 90%;
+        --secondary-foreground: 133 100% 9%;
+        --muted: 56 30% 88%;
+        --muted-foreground: 133 30% 30%;
+        --accent: 55 100% 53%;              /* #ffed00 */
+        --accent-foreground: 133 100% 9%;
         --destructive: 0 57% 51%;
-        --destructive-foreground: 55 100% 95%;
-        --border: 55 25% 82%;
-        --input: 55 25% 82%;
-        --ring: 140 100% 17%;
+        --destructive-foreground: 56 47% 96%;
+        --border: 56 25% 82%;
+        --input: 56 25% 82%;
+        --ring: 133 100% 9%;
         --radius: 0.5rem;
-        --chart-1: 50 100% 50%;
-        --chart-2: 140 100% 17%;
+        --chart-1: 55 100% 53%;
+        --chart-2: 133 100% 9%;
         --chart-3: 197 37% 24%;
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
         
         /* Carlsburg Brand Colors (direct hex) */
-        --carlsburg-green: #005500;
-        --carlsburg-dark-green: #002f02;
-        --carlsburg-yellow: #FFFF00;
-        --carlsburg-cream: #FAFBE0;
-        --carlsburg-cream-light: #F3F6DE;
+        --carlsburg-green: #002f02;
+        --carlsburg-dark-green: #001f01;
+        --carlsburg-yellow: #ffed00;
+        --carlsburg-cream: #fafbed;
+        --carlsburg-cream-dark: #f3f6de;
     }
 }
 
