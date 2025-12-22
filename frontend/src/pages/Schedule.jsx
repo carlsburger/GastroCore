@@ -21,6 +21,12 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../components/ui/tooltip";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -37,6 +43,8 @@ import {
   Trash2,
   Check,
   FileText,
+  Copy,
+  AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
 
