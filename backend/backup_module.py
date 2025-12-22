@@ -263,10 +263,10 @@ async def export_xlsx(user: dict = Depends(require_admin)):
     # Audit log
     await create_audit_log(
         actor={"id": user['id'], "email": user['email']},
-        action="backup_export_xlsx",
-        entity_type="backup",
+        entity="backup",
         entity_id=filename,
-        new_value={"staff_count": len(staff_members), "tables_count": len(tables)}
+        action="backup_export_xlsx",
+        after={"staff_count": len(staff_members), "tables_count": len(tables)}
     )
     
     return StreamingResponse(
