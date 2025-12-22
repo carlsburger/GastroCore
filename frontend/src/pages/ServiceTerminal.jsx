@@ -155,6 +155,17 @@ export const ServiceTerminal = () => {
   const [showWalkInDialog, setShowWalkInDialog] = useState(false);
   const [showWaitlistDialog, setShowWaitlistDialog] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
+  
+  // Sprint: Service-Terminal Erweiterungen
+  const [showNewReservationsPopover, setShowNewReservationsPopover] = useState(false);
+  const [showPhoneMode, setShowPhoneMode] = useState(false);
+  const [phoneReservationData, setPhoneReservationData] = useState({
+    guest_name: "",
+    guest_phone: "",
+    party_size: 2,
+    time: format(new Date(), "HH:mm"),
+    notes: "",
+  });
 
   // Walk-in form
   const [walkInData, setWalkInData] = useState({
@@ -172,6 +183,11 @@ export const ServiceTerminal = () => {
   });
 
   const pollingRef = useRef(null);
+  
+  // Sprint: Berechne neue Reservierungen (Status "neu" für heute)
+  const newReservations = reservations.filter(r => 
+    r.status === "neu" && r.date === selectedDate
+  );
 
   // Fetch data
   const fetchData = useCallback(async (showLoader = true) => {
