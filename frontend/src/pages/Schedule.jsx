@@ -357,15 +357,23 @@ export const Schedule = () => {
             <h1 className="font-serif text-3xl font-medium text-primary">Dienstplan</h1>
             <p className="text-muted-foreground">Wochenübersicht und Schichtplanung</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={fetchData} className="rounded-full">
               <RefreshCw className="h-4 w-4" />
             </Button>
             {schedule && (
               <>
+                <Button variant="outline" onClick={handleExportCSV} className="rounded-full">
+                  <FileText className="h-4 w-4 mr-2" />
+                  CSV
+                </Button>
                 <Button variant="outline" onClick={handleExportPDF} className="rounded-full">
                   <Download className="h-4 w-4 mr-2" />
                   PDF
+                </Button>
+                <Button variant="outline" onClick={handleCopyWeek} className="rounded-full">
+                  <Copy className="h-4 w-4 mr-2" />
+                  Kopieren
                 </Button>
                 {schedule.status === "entwurf" && (
                   <Button onClick={handlePublish} className="rounded-full">
