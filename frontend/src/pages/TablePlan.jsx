@@ -178,7 +178,7 @@ export const TablePlan = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, selectedTimeSlot, selectedArea, headers]);
+  }, [selectedDate, selectedTimeSlot, selectedArea, token]);
 
   useEffect(() => {
     fetchData();
