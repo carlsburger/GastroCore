@@ -876,6 +876,13 @@ export const ServiceTerminal = () => {
                 {/* Reservation Details */}
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Details</h3>
+                  {/* Tischnummer prominent */}
+                  {selectedReservation.table_number && (
+                    <div className="bg-[#005500] text-white rounded-lg p-4 text-center">
+                      <p className="text-sm opacity-80">Tisch</p>
+                      <p className="text-3xl font-bold">{selectedReservation.table_number}</p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="bg-muted/50 rounded-lg p-3">
                       <p className="text-muted-foreground text-xs">Datum</p>
