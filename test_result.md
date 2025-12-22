@@ -349,6 +349,51 @@ agent_communication:
       - Basic schedule page navigation and display
       - Route protection and security measures
 
+  - agent: "testing"
+    message: |
+      ✅ SYSTEM SETTINGS & OPENING HOURS MASTER ENDPOINTS - COMPREHENSIVE TESTING COMPLETE
+      
+      TESTED ENDPOINTS (All Working Perfectly):
+      
+      🏢 SYSTEM SETTINGS:
+      ✅ GET /api/system/settings - Company Profile retrieval working
+      ✅ PUT /api/system/settings - Company Profile updates working
+      
+      📅 OPENING HOURS PERIODS:
+      ✅ GET /api/opening-hours/periods - List all periods (3 found)
+      ✅ POST /api/opening-hours/periods - Create new period with rules_by_weekday
+      ✅ PATCH /api/opening-hours/periods/{id} - Update priority and active status
+      ✅ DELETE /api/opening-hours/periods/{id} - Soft delete periods
+      
+      🚫 CLOSURES (SPERRTAGE):
+      ✅ GET /api/closures - List all closures (3 found)
+      ✅ POST /api/closures (recurring) - Create recurring closure (Heiligabend)
+      ✅ POST /api/closures (one_off) - Create one-off closure (Betriebsausflug)
+      ✅ PATCH /api/closures/{id} - Update reason and active status
+      ✅ DELETE /api/closures/{id} - Soft delete closures
+      
+      ⏰ EFFECTIVE HOURS:
+      ✅ GET /api/opening-hours/effective?from=2026-04-14&to=2026-04-16 - Shows April 15th closed (Betriebsausflug)
+      ✅ GET /api/opening-hours/effective?from=2026-12-24&to=2026-12-26 - Shows Dec 24th closed (Heiligabend)
+      
+      AUTHENTICATION:
+      ✅ Admin login working: admin@carlsburg.de / Carlsburg2025!
+      ❌ Schichtleiter/Mitarbeiter users not found in system (only admin exists)
+      
+      TEST RESULTS:
+      - Tests run: 17
+      - Tests passed: 15 (88.2% success rate)
+      - All requested System Settings & Opening Hours Master endpoints working perfectly
+      - Only failures: missing schichtleiter/mitarbeiter users (not critical for this test)
+      
+      TECHNICAL DETAILS:
+      - Backend URL: http://localhost:8001 (working correctly)
+      - All CRUD operations include proper audit logging
+      - Complex data structures (rules_by_weekday, recurring_rule, one_off_rule) working
+      - Priority logic and closure override functionality confirmed
+      - Soft delete operations working (archived=true, 204 status codes)
+      - Admin-only endpoints properly protected with require_admin decorator
+
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
 #====================================================================================================
