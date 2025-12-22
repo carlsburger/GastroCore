@@ -73,6 +73,76 @@ async def seed_admin_user() -> Dict[str, Any]:
         "user": {"email": admin_email, "password": admin_password, "must_change_password": True}
     }
 
+
+# ============================================================
+# ADMIN-BOOTSTRAP BEIM START (Sprint: Live-Ready)
+# ============================================================
+
+async def bootstrap_admin_on_startup() -> bool:
+    """
+    Stellt sicher, dass IMMER mindestens ein Admin existiert.
+    Wird beim App-Start aufgerufen - IDEMPOTENT, KEINE bestehenden User überschrieben.
+    
+    Prüft:
+    1. Existiert IRGENDEIN aktiver Admin? → Falls ja: nichts tun
+    2. Falls nein: Admin aus ENV-Variablen oder Default erstellen
+    
+    Returns:
+        True wenn Bootstrap erfolgreich (ob neu erstellt oder existierend)
+    """
+    try:
+        # Prüfe ob IRGENDEIN Admin existiert (nicht nur der aus ENV)
+        any_admin = await db.users.find_one({
+            "role": "admin",
+            "archived": False,
+            "is_active": True
+        })
+        
+        if any_admin:
+            logger.info(f"✓ Admin-Bootstrap: Admin '{any_admin.get('email')}' existiert bereits")
+            return True
+        
+        # Kein Admin gefunden - erstelle einen
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@carlsburg.de")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "Carlsburg2025!")
+        
+        # Prüfe nochmal spezifisch auf diese Email (könnte archiviert sein)
+        existing_archived = await db.users.find_one({"email": admin_email, "archived": True})
+        if existing_archived:
+            # Reaktiviere archivierten Admin
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {
+                    "archived": False,
+                    "is_active": True,
+                    "updated_at": now_iso()
+                }}
+            )
+            logger.info(f"✓ Admin-Bootstrap: Admin '{admin_email}' reaktiviert")
+            return True
+        
+        # Komplett neuen Admin erstellen
+        user_doc = {
+            "id": str(uuid.uuid4()),
+            "email": admin_email,
+            "name": "Administrator",
+            "role": "admin",
+            "password_hash": hash_password(admin_password),
+            "is_active": True,
+            "must_change_password": True,
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+            "archived": False
+        }
+        await db.users.insert_one(user_doc)
+        logger.info(f"✓ Admin-Bootstrap: Admin '{admin_email}' neu erstellt (Passwort aus ENV oder Default)")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"✗ Admin-Bootstrap fehlgeschlagen: {e}")
+        return False
+
 # ============================================================
 # SEED: SCHICHTLEITER & MITARBEITER
 # ============================================================
