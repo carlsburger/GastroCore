@@ -587,6 +587,13 @@ async def create_reservation(
     if not capacity["available"]:
         raise CapacityExceededException(f"Keine Kapazität verfügbar. Verfügbare Plätze: {capacity['available_seats']}")
     
+    # Sprint: Tisch-Doppelbelegungsprüfung
+    if data.table_number:
+        duration = data.duration_minutes or await get_default_duration()
+        table_check = await check_table_conflict(data.date, data.time, data.table_number, duration)
+        if not table_check["available"]:
+            raise ConflictException(table_check.get("message", f"Tisch {data.table_number} ist bereits belegt"))
+    
     reservation = create_entity(
         data.model_dump(exclude_none=True),
         {"status": "neu", "reminder_sent": False, "source": data.source or "intern"}
