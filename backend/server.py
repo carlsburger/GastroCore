@@ -2224,6 +2224,8 @@ app.include_router(table_router, prefix="/api")
 app.include_router(combination_router, prefix="/api")
 # Backup Module (Sprint: Admin Backup/Export)
 app.include_router(backup_router)
+# Table Import & Seed Router
+app.include_router(import_router)
 
 app.add_middleware(
     CORSMiddleware,
