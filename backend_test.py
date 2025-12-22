@@ -5338,6 +5338,41 @@ class GastroCoreAPITester:
         
         return service_terminal_success
 
+    def run_system_settings_tests(self):
+        """Run System Settings & Opening Hours Master Tests - As per review request"""
+        print("🚀 Starting System Settings & Opening Hours Master Tests")
+        print("=" * 80)
+        
+        # Test sequence for System Settings & Opening Hours Master
+        test_results = []
+        
+        # Authentication first
+        test_results.append(self.test_authentication())
+        
+        # Main System Settings & Opening Hours Master Tests
+        print("\n🏢 SYSTEM SETTINGS & OPENING HOURS MASTER TESTING:")
+        test_results.append(self.test_system_settings_master())
+        
+        # System health
+        print("\n🏥 SYSTEM HEALTH:")
+        test_results.append(self.test_health_endpoint())
+        
+        # Summary
+        print("\n" + "=" * 80)
+        print(f"🏁 TESTING COMPLETE")
+        print(f"Tests run: {self.tests_run}")
+        print(f"Tests passed: {self.tests_passed}")
+        print(f"Success rate: {(self.tests_passed/self.tests_run*100):.1f}%")
+        
+        if self.failed_tests:
+            print(f"\n❌ FAILED TESTS ({len(self.failed_tests)}):")
+            for test in self.failed_tests:
+                print(f"  • {test['name']}: {test['details']}")
+        else:
+            print("\n✅ ALL TESTS PASSED!")
+        
+        return all(test_results)
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
