@@ -598,6 +598,34 @@ async def get_tables_by_area(
     return {"tables": tables, "total": len(tables)}
 
 
+@table_router.get("/suggest")
+async def suggest_tables(
+    date: str,
+    time: str,
+    party_size: int = Query(..., ge=1, le=50),
+    area: Optional[TableArea] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    KI-Vorschläge für passende Tische.
+    Gibt Empfehlungen zurück - KEINE automatische Zuweisung.
+    """
+    suggestions = await suggest_tables_for_party(
+        date,
+        time,
+        party_size,
+        area=area.value if area else None
+    )
+    
+    return {
+        "date": date,
+        "time": time,
+        "party_size": party_size,
+        "suggestions": suggestions,
+        "message": "KI-Vorschläge - bitte manuell auswählen"
+    }
+
+
 @table_router.get("/{table_id}")
 async def get_table(
     table_id: str,
