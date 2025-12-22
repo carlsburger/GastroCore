@@ -2194,6 +2194,9 @@ app.include_router(marketing_router)
 app.include_router(marketing_public_router)
 app.include_router(ai_router)
 app.include_router(reservation_config_router, prefix="/api")  # Sprint: Reservierung Live-Ready
+# Table Module (Sprint: Tischplan & Belegung)
+app.include_router(table_router, prefix="/api")
+app.include_router(combination_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
