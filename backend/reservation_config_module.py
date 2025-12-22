@@ -523,6 +523,88 @@ async def get_available_tables_for_slot(
 reservation_config_router = APIRouter(prefix="/reservation-config", tags=["Reservation Config"])
 
 
+# --- Zentrale Reservierungs-Einstellungen ---
+
+class ReservationSettingsUpdate(BaseModel):
+    """Zentrale Reservierungs-Einstellungen"""
+    default_duration_minutes: Optional[int] = Field(None, ge=30, le=360)
+    buffer_minutes: Optional[int] = Field(None, ge=0, le=60)
+    max_advance_days: Optional[int] = Field(None, ge=1, le=365)
+    min_advance_hours: Optional[int] = Field(None, ge=0, le=48)
+    max_party_size: Optional[int] = Field(None, ge=1, le=100)
+    max_total_capacity: Optional[int] = Field(None, ge=1, le=1000)
+
+
+@reservation_config_router.get("")
+async def get_reservation_settings(current_user: dict = Depends(get_current_user)):
+    """Hole alle Reservierungs-Einstellungen"""
+    # Standard-Werte
+    defaults = {
+        "default_duration_minutes": 110,
+        "buffer_minutes": 10,
+        "max_advance_days": 90,
+        "min_advance_hours": 2,
+        "max_party_size": 20,
+        "max_total_capacity": 150
+    }
+    
+    # Lade gespeicherte Settings
+    settings_docs = await db.settings.find(
+        {"key": {"$in": list(defaults.keys())}},
+        {"_id": 0}
+    ).to_list(20)
+    
+    settings_dict = {doc["key"]: doc.get("value") for doc in settings_docs}
+    
+    # Merge mit Defaults
+    result = {}
+    for key, default in defaults.items():
+        value = settings_dict.get(key)
+        if value is not None:
+            try:
+                result[key] = int(value)
+            except (ValueError, TypeError):
+                result[key] = default
+        else:
+            result[key] = default
+    
+    return result
+
+
+@reservation_config_router.put("")
+async def update_reservation_settings(
+    data: ReservationSettingsUpdate,
+    current_user: dict = Depends(require_admin)
+):
+    """Aktualisiere Reservierungs-Einstellungen (Admin only)"""
+    updated = []
+    
+    for field, value in data.model_dump(exclude_none=True).items():
+        # Upsert jedes Setting
+        await db.settings.update_one(
+            {"key": field},
+            {
+                "$set": {
+                    "key": field,
+                    "value": str(value),
+                    "updated_at": now_iso()
+                },
+                "$setOnInsert": {
+                    "created_at": now_iso()
+                }
+            },
+            upsert=True
+        )
+        updated.append(field)
+    
+    await create_audit_log(current_user, "settings", "reservation_config", "update", None, data.model_dump(exclude_none=True))
+    
+    return {
+        "message": f"{len(updated)} Einstellungen aktualisiert",
+        "updated": updated
+    }
+
+
 # --- Zeitslot-Konfiguration (Durchgänge & Sperrzeiten) ---
 
 @reservation_config_router.get("/time-slots")
