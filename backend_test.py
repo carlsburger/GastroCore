@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 class GastroCoreAPITester:
-    def __init__(self, base_url: str = "https://continue-github-1.preview.emergentagent.com"):
+    def __init__(self, base_url: str = "https://demobackend.emergentagent.com"):
         self.base_url = base_url
         self.tokens = {}
         self.test_data = {}
@@ -19,11 +19,11 @@ class GastroCoreAPITester:
         self.tests_passed = 0
         self.failed_tests = []
         
-        # Test credentials from requirements
+        # Test credentials from requirements - Updated for Carlsburg
         self.credentials = {
-            "admin": {"email": "admin@gastrocore.de", "password": "Admin123!"},
-            "schichtleiter": {"email": "schichtleiter@gastrocore.de", "password": "Schicht123!"},
-            "mitarbeiter": {"email": "mitarbeiter@gastrocore.de", "password": "Mitarbeiter123!"}
+            "admin": {"email": "admin@carlsburg.de", "password": "Carlsburg2025!"},
+            "schichtleiter": {"email": "schichtleiter@carlsburg.de", "password": "Schicht2025!"},
+            "mitarbeiter": {"email": "mitarbeiter@carlsburg.de", "password": "Mitarbeiter2025!"}
         }
 
     def log_test(self, name: str, success: bool, details: str = ""):
