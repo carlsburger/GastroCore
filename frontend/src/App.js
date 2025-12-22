@@ -47,6 +47,9 @@ import ReservationConfig from "./pages/ReservationConfig";
 import TablePlan from "./pages/TablePlan";
 // Tisch-Stammdaten Admin (Sprint: Tischplan & Belegung)
 import TableAdmin from "./pages/TableAdmin";
+// System Settings & Opening Hours Master Module
+import SystemSettings from "./pages/SystemSettings";
+import OpeningHoursAdmin from "./pages/OpeningHoursAdmin";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
