@@ -142,6 +142,7 @@ const navigationGroups = [
     children: [
       { path: "/admin/settings/system", label: "System", icon: Cog },
       { path: "/admin/settings/opening-hours", label: "Öffnungszeiten", icon: Clock },
+      { path: "/admin/settings/backup", label: "Backup / Export", icon: HardDrive },
       { path: "/settings", label: "E-Mail / Reminders", icon: Mail },
       { path: "/areas", label: "Bereiche", icon: MapPin },
       { path: "/users", label: "Benutzer", icon: Users },
