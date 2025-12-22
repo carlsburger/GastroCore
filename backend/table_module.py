@@ -938,34 +938,6 @@ async def get_table_occupancy(
     }
 
 
-@table_router.get("/suggest")
-async def suggest_tables(
-    date: str,
-    time: str,
-    party_size: int = Query(..., ge=1, le=50),
-    area: Optional[TableArea] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    KI-Vorschläge für passende Tische.
-    Gibt Empfehlungen zurück - KEINE automatische Zuweisung.
-    """
-    suggestions = await suggest_tables_for_party(
-        date,
-        time,
-        party_size,
-        area=area.value if area else None
-    )
-    
-    return {
-        "date": date,
-        "time": time,
-        "party_size": party_size,
-        "suggestions": suggestions,
-        "message": "KI-Vorschläge - bitte manuell auswählen"
-    }
-
-
 # ============== TISCH-ZUWEISUNG FÜR RESERVIERUNGEN ==============
 
 @table_router.post("/assign/{reservation_id}")
