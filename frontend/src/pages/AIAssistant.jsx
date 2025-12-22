@@ -306,7 +306,7 @@ export default function AIAssistant() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-[#005500]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#002f02]" />
       </div>
     );
   }
@@ -329,7 +329,7 @@ export default function AIAssistant() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-[#005500] flex items-center gap-3">
+          <h1 className="text-3xl font-serif font-bold text-[#002f02] flex items-center gap-3">
             <Bot className="w-8 h-8" />
             KI-Assistent
           </h1>
@@ -375,7 +375,7 @@ export default function AIAssistant() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-[#005500]">
+                  <p className="text-2xl font-bold text-[#002f02]">
                     {status.statistics.total_suggestions}
                   </p>
                   <p className="text-sm text-muted-foreground">Vorschläge gesamt</p>
@@ -411,11 +411,11 @@ export default function AIAssistant() {
           {/* Feature Cards */}
           <div className="grid md:grid-cols-3 gap-6">
             {/* Schedule AI */}
-            <Card className={`border-[#005500]/20 ${!status?.features?.schedule ? "opacity-60" : ""}`}>
+            <Card className={`border-[#002f02]/20 ${!status?.features?.schedule ? "opacity-60" : ""}`}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-[#005500]" />
+                    <Calendar className="w-5 h-5 text-[#002f02]" />
                     Dienstplan-KI
                   </div>
                   {isAdmin && scheduleConfig && (
@@ -440,7 +440,7 @@ export default function AIAssistant() {
                 <Button
                   onClick={requestScheduleSuggestion}
                   disabled={!status?.features?.schedule || generatingSuggestion}
-                  className="w-full bg-[#005500] hover:bg-[#003300]"
+                  className="w-full bg-[#002f02] hover:bg-[#003300]"
                 >
                   {generatingSuggestion ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -463,10 +463,10 @@ export default function AIAssistant() {
             </Card>
 
             {/* Reservation AI */}
-            <Card className={`border-[#005500]/20 ${!status?.features?.reservation ? "opacity-60" : ""}`}>
+            <Card className={`border-[#002f02]/20 ${!status?.features?.reservation ? "opacity-60" : ""}`}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-[#005500]" />
+                  <Users className="w-5 h-5 text-[#002f02]" />
                   Reservierungs-KI
                 </CardTitle>
                 <CardDescription>
@@ -514,7 +514,7 @@ export default function AIAssistant() {
                 <Button
                   onClick={requestReservationSuggestion}
                   disabled={!status?.features?.reservation || generatingSuggestion}
-                  className="w-full bg-[#005500] hover:bg-[#003300]"
+                  className="w-full bg-[#002f02] hover:bg-[#003300]"
                 >
                   {generatingSuggestion ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -532,10 +532,10 @@ export default function AIAssistant() {
             </Card>
 
             {/* Marketing AI */}
-            <Card className={`border-[#005500]/20 ${!status?.features?.marketing ? "opacity-60" : ""}`}>
+            <Card className={`border-[#002f02]/20 ${!status?.features?.marketing ? "opacity-60" : ""}`}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="w-5 h-5 text-[#005500]" />
+                  <Megaphone className="w-5 h-5 text-[#002f02]" />
                   Marketing-KI
                 </CardTitle>
                 <CardDescription>
@@ -581,7 +581,7 @@ export default function AIAssistant() {
                 <Button
                   onClick={requestMarketingSuggestion}
                   disabled={!status?.features?.marketing || generatingSuggestion}
-                  className="w-full bg-[#005500] hover:bg-[#003300]"
+                  className="w-full bg-[#002f02] hover:bg-[#003300]"
                 >
                   {generatingSuggestion ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -610,12 +610,12 @@ export default function AIAssistant() {
             logs.map((log) => {
               const FeatureIcon = FEATURE_ICONS[log.feature] || Bot;
               return (
-                <Card key={log.id} className="border-[#005500]/20">
+                <Card key={log.id} className="border-[#002f02]/20">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <div className="p-2 bg-[#005500]/10 rounded-lg">
-                          <FeatureIcon className="w-5 h-5 text-[#005500]" />
+                        <div className="p-2 bg-[#002f02]/10 rounded-lg">
+                          <FeatureIcon className="w-5 h-5 text-[#002f02]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -657,7 +657,7 @@ export default function AIAssistant() {
 
         {isAdmin && (
           <TabsContent value="settings" className="space-y-6">
-            <Card className="border-[#005500]/20">
+            <Card className="border-[#002f02]/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="w-5 h-5" />
@@ -684,7 +684,7 @@ export default function AIAssistant() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-[#005500]" />
+                      <Calendar className="w-5 h-5 text-[#002f02]" />
                       <div>
                         <p className="font-medium">Dienstplan-KI</p>
                         <p className="text-sm text-muted-foreground">
@@ -701,7 +701,7 @@ export default function AIAssistant() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Users className="w-5 h-5 text-[#005500]" />
+                      <Users className="w-5 h-5 text-[#002f02]" />
                       <div>
                         <p className="font-medium">Reservierungs-KI</p>
                         <p className="text-sm text-muted-foreground">
@@ -718,7 +718,7 @@ export default function AIAssistant() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Megaphone className="w-5 h-5 text-[#005500]" />
+                      <Megaphone className="w-5 h-5 text-[#002f02]" />
                       <div>
                         <p className="font-medium">Marketing-KI</p>
                         <p className="text-sm text-muted-foreground">
@@ -750,7 +750,7 @@ export default function AIAssistant() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#005500]" />
+              <Sparkles className="w-5 h-5 text-[#002f02]" />
               KI-Vorschlag: {currentSuggestion && FEATURE_LABELS[currentSuggestion.type]}
             </DialogTitle>
           </DialogHeader>
@@ -761,7 +761,7 @@ export default function AIAssistant() {
                 <Badge variant="outline">Nur Vorschlag</Badge>
               </div>
 
-              <Card className="bg-[#005500]/5 border-[#005500]/20">
+              <Card className="bg-[#002f02]/5 border-[#002f02]/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Vorschlag</CardTitle>
                 </CardHeader>
@@ -801,7 +801,7 @@ export default function AIAssistant() {
             </Button>
             <Button
               onClick={() => handleDecision(true)}
-              className="bg-[#005500] hover:bg-[#003300]"
+              className="bg-[#002f02] hover:bg-[#003300]"
             >
               <ThumbsUp className="w-4 h-4 mr-2" />
               Als hilfreich markieren
@@ -815,7 +815,7 @@ export default function AIAssistant() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-[#005500]" />
+              <Settings className="w-5 h-5 text-[#002f02]" />
               Dienstplan-KI Konfiguration
             </DialogTitle>
           </DialogHeader>
@@ -1023,7 +1023,7 @@ export default function AIAssistant() {
             <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={saveScheduleConfig} className="bg-[#005500] hover:bg-[#003300]">
+            <Button onClick={saveScheduleConfig} className="bg-[#002f02] hover:bg-[#003300]">
               Speichern
             </Button>
           </DialogFooter>

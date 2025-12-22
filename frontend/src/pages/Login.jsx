@@ -53,12 +53,12 @@ export const Login = () => {
               className="h-24 mx-auto mb-4 object-contain"
               style={{ filter: 'brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(1500%) hue-rotate(90deg) brightness(0.7)' }}
             />
-            <p className="text-[#005500] mt-2 text-3xl font-bold tracking-wide">Cockpit</p>
+            <p className="text-[#002f02] mt-2 text-3xl font-bold tracking-wide">Cockpit</p>
           </div>
 
-          <Card className="border-[#005500]/20 shadow-lg bg-white">
+          <Card className="border-[#002f02]/20 shadow-lg bg-white">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-serif text-[#005500]">{t("auth.login")}</CardTitle>
+              <CardTitle className="text-2xl font-serif text-[#002f02]">{t("auth.login")}</CardTitle>
               <CardDescription>
                 Melden Sie sich mit Ihren Zugangsdaten an
               </CardDescription>
@@ -111,7 +111,7 @@ export const Login = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 rounded-full font-bold bg-[#005500] hover:bg-[#003300] text-[#FAFBE0]"
+                  className="w-full h-11 rounded-full font-bold bg-[#002f02] hover:bg-[#003300] text-[#FAFBE0]"
                   disabled={loading}
                   data-testid="login-submit"
                 >
@@ -128,14 +128,14 @@ export const Login = () => {
             </CardContent>
           </Card>
 
-          <p className="text-center text-sm text-[#005500]/50">
+          <p className="text-center text-sm text-[#002f02]/50">
             © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant
           </p>
         </div>
       </div>
 
       {/* Right side - Carlsburg Branding */}
-      <div className="hidden lg:flex relative bg-[#005500]">
+      <div className="hidden lg:flex relative bg-[#002f02]">
         <div className="absolute inset-0 flex flex-col items-center justify-center p-12">
           {/* Großes offizielles Logo */}
           <img 

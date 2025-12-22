@@ -409,7 +409,7 @@ export default function OpeningHoursAdmin() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-[#005500]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#002f02]" />
         </div>
       </Layout>
     );
@@ -427,27 +427,27 @@ export default function OpeningHoursAdmin() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-serif font-bold text-[#005500]">
+              <h1 className="text-2xl font-serif font-bold text-[#002f02]">
                 Öffnungszeiten & Sperrtage
               </h1>
-              <p className="text-[#005500]/70">Master-Konfiguration für Reservierungen & Dienstplan</p>
+              <p className="text-[#002f02]/70">Master-Konfiguration für Reservierungen & Dienstplan</p>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-[#005500]/10">
+          <TabsList className="bg-[#002f02]/10">
             <TabsTrigger 
               value="periods" 
-              className="data-[state=active]:bg-[#005500] data-[state=active]:text-white"
+              className="data-[state=active]:bg-[#002f02] data-[state=active]:text-white"
             >
               <Clock className="h-4 w-4 mr-2" />
               Öffnungszeiten-Perioden
             </TabsTrigger>
             <TabsTrigger 
               value="closures"
-              className="data-[state=active]:bg-[#005500] data-[state=active]:text-white"
+              className="data-[state=active]:bg-[#002f02] data-[state=active]:text-white"
             >
               <CalendarX className="h-4 w-4 mr-2" />
               Sperrtage
@@ -457,22 +457,22 @@ export default function OpeningHoursAdmin() {
           {/* PERIODS TAB */}
           <TabsContent value="periods" className="space-y-4">
             <div className="flex justify-between items-center">
-              <p className="text-sm text-[#005500]/70">
+              <p className="text-sm text-[#002f02]/70">
                 Definieren Sie Zeiträume mit unterschiedlichen Öffnungszeiten (z.B. Sommer/Winter).
                 Bei Überlappungen gewinnt die höhere Priorität.
               </p>
-              <Button onClick={() => openPeriodDialog()} className="bg-[#005500] hover:bg-[#004400]">
+              <Button onClick={() => openPeriodDialog()} className="bg-[#002f02] hover:bg-[#003d03]">
                 <Plus className="h-4 w-4 mr-2" />
                 Neue Periode
               </Button>
             </div>
 
             {periods.length === 0 ? (
-              <Card className="border-[#005500]/20">
+              <Card className="border-[#002f02]/20">
                 <CardContent className="py-12 text-center">
-                  <Clock className="h-12 w-12 mx-auto text-[#005500]/30 mb-4" />
-                  <p className="text-[#005500]/70">Keine Öffnungszeiten-Perioden definiert.</p>
-                  <p className="text-sm text-[#005500]/50 mt-1">
+                  <Clock className="h-12 w-12 mx-auto text-[#002f02]/30 mb-4" />
+                  <p className="text-[#002f02]/70">Keine Öffnungszeiten-Perioden definiert.</p>
+                  <p className="text-sm text-[#002f02]/50 mt-1">
                     Erstellen Sie eine Periode für Ihre Standard-Öffnungszeiten.
                   </p>
                 </CardContent>
@@ -480,7 +480,7 @@ export default function OpeningHoursAdmin() {
             ) : (
               <div className="grid gap-4">
                 {periods.map((period) => (
-                  <Card key={period.id} className={`border-[#005500]/20 ${!period.active ? 'opacity-60' : ''}`}>
+                  <Card key={period.id} className={`border-[#002f02]/20 ${!period.active ? 'opacity-60' : ''}`}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -489,13 +489,13 @@ export default function OpeningHoursAdmin() {
                           ) : period.name.toLowerCase().includes("winter") ? (
                             <Snowflake className="h-5 w-5 text-blue-500" />
                           ) : (
-                            <Calendar className="h-5 w-5 text-[#005500]" />
+                            <Calendar className="h-5 w-5 text-[#002f02]" />
                           )}
-                          <CardTitle className="text-lg text-[#005500]">{period.name}</CardTitle>
+                          <CardTitle className="text-lg text-[#002f02]">{period.name}</CardTitle>
                           <Badge variant={period.active ? "default" : "secondary"} className={period.active ? "bg-green-100 text-green-800" : ""}>
                             {period.active ? "Aktiv" : "Inaktiv"}
                           </Badge>
-                          <Badge variant="outline" className="border-[#005500]/30">
+                          <Badge variant="outline" className="border-[#002f02]/30">
                             Priorität: {period.priority || 0}
                           </Badge>
                         </div>
@@ -525,7 +525,7 @@ export default function OpeningHoursAdmin() {
                           return (
                             <div 
                               key={day.key} 
-                              className={`px-3 py-2 rounded-lg text-sm ${isClosed ? 'bg-red-100 text-red-800' : 'bg-[#005500]/10 text-[#005500]'}`}
+                              className={`px-3 py-2 rounded-lg text-sm ${isClosed ? 'bg-red-100 text-red-800' : 'bg-[#002f02]/10 text-[#002f02]'}`}
                             >
                               <span className="font-medium">{day.short}:</span>{" "}
                               {isClosed ? (
@@ -549,27 +549,27 @@ export default function OpeningHoursAdmin() {
           {/* CLOSURES TAB */}
           <TabsContent value="closures" className="space-y-4">
             <div className="flex justify-between items-center">
-              <p className="text-sm text-[#005500]/70">
+              <p className="text-sm text-[#002f02]/70">
                 Definieren Sie Sperrtage (einmalig oder jährlich wiederkehrend).
               </p>
-              <Button onClick={() => openClosureDialog()} className="bg-[#005500] hover:bg-[#004400]">
+              <Button onClick={() => openClosureDialog()} className="bg-[#002f02] hover:bg-[#003d03]">
                 <Plus className="h-4 w-4 mr-2" />
                 Neuer Sperrtag
               </Button>
             </div>
 
             {closures.length === 0 ? (
-              <Card className="border-[#005500]/20">
+              <Card className="border-[#002f02]/20">
                 <CardContent className="py-12 text-center">
-                  <CalendarX className="h-12 w-12 mx-auto text-[#005500]/30 mb-4" />
-                  <p className="text-[#005500]/70">Keine Sperrtage definiert.</p>
-                  <p className="text-sm text-[#005500]/50 mt-1">
+                  <CalendarX className="h-12 w-12 mx-auto text-[#002f02]/30 mb-4" />
+                  <p className="text-[#002f02]/70">Keine Sperrtage definiert.</p>
+                  <p className="text-sm text-[#002f02]/50 mt-1">
                     Fügen Sie Feiertage oder Betriebsferien hinzu.
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-[#005500]/20">
+              <Card className="border-[#002f02]/20">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -628,7 +628,7 @@ export default function OpeningHoursAdmin() {
         <Dialog open={showPeriodDialog} onOpenChange={setShowPeriodDialog}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-[#005500]">
+              <DialogTitle className="text-[#002f02]">
                 {editingPeriod?.id ? "Periode bearbeiten" : "Neue Periode erstellen"}
               </DialogTitle>
               <DialogDescription>
@@ -689,16 +689,16 @@ export default function OpeningHoursAdmin() {
 
               {/* Weekday Rules */}
               <div className="space-y-4">
-                <Label className="text-lg font-semibold text-[#005500]">Öffnungszeiten pro Wochentag</Label>
+                <Label className="text-lg font-semibold text-[#002f02]">Öffnungszeiten pro Wochentag</Label>
                 {WEEKDAYS.map((day) => {
                   const rules = periodForm.rules_by_weekday[day.key] || { is_closed: false, blocks: [] };
                   
                   return (
-                    <Card key={day.key} className="border-[#005500]/20">
+                    <Card key={day.key} className="border-[#002f02]/20">
                       <CardContent className="py-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium text-[#005500] w-24">{day.label}</span>
+                            <span className="font-medium text-[#002f02] w-24">{day.label}</span>
                             <div className="flex items-center gap-2">
                               <Switch
                                 checked={rules.is_closed}
@@ -773,7 +773,7 @@ export default function OpeningHoursAdmin() {
               <Button 
                 onClick={savePeriod} 
                 disabled={savingPeriod}
-                className="bg-[#005500] hover:bg-[#004400]"
+                className="bg-[#002f02] hover:bg-[#003d03]"
               >
                 {savingPeriod ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Speichern...</>
@@ -789,7 +789,7 @@ export default function OpeningHoursAdmin() {
         <Dialog open={showClosureDialog} onOpenChange={setShowClosureDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-[#005500]">
+              <DialogTitle className="text-[#002f02]">
                 {editingClosure?.id ? "Sperrtag bearbeiten" : "Neuer Sperrtag"}
               </DialogTitle>
               <DialogDescription>
@@ -932,7 +932,7 @@ export default function OpeningHoursAdmin() {
               <Button 
                 onClick={saveClosure} 
                 disabled={savingClosure}
-                className="bg-[#005500] hover:bg-[#004400]"
+                className="bg-[#002f02] hover:bg-[#003d03]"
               >
                 {savingClosure ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Speichern...</>

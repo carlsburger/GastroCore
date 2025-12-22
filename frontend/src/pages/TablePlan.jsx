@@ -545,7 +545,7 @@ export const TablePlan = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <h1 className="font-serif text-3xl font-bold text-[#005500] flex items-center gap-3">
+            <h1 className="font-serif text-3xl font-bold text-[#002f02] flex items-center gap-3">
               <MapPin className="h-8 w-8" />
               Tischplan
             </h1>
@@ -606,7 +606,7 @@ export const TablePlan = () => {
                 <Button variant="outline" onClick={fetchData} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
-                <Button onClick={handlePrintPDF} className="bg-[#005500] hover:bg-[#003300]">
+                <Button onClick={handlePrintPDF} className="bg-[#002f02] hover:bg-[#003300]">
                   <Printer className="h-4 w-4 mr-2" />
                   PDF
                 </Button>
@@ -755,7 +755,7 @@ export const TablePlan = () => {
         {/* Tischplan Grid */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-12 w-12 animate-spin text-[#005500]" />
+            <RefreshCw className="h-12 w-12 animate-spin text-[#002f02]" />
           </div>
         ) : tables.length === 0 ? (
           <Card className="p-12 text-center">
@@ -1029,7 +1029,7 @@ export const TablePlan = () => {
               <Button variant="outline" onClick={() => setShowWalkInDialog(false)}>
                 Abbrechen
               </Button>
-              <Button onClick={handleCreateWalkIn} className="bg-[#005500] hover:bg-[#003300]">
+              <Button onClick={handleCreateWalkIn} className="bg-[#002f02] hover:bg-[#003300]">
                 Walk-in erstellen
               </Button>
             </DialogFooter>

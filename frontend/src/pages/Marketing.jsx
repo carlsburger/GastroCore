@@ -363,7 +363,7 @@ export default function Marketing() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-[#005500]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#002f02]" />
       </div>
     );
   }
@@ -372,7 +372,7 @@ export default function Marketing() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-[#005500]">Marketing</h1>
+          <h1 className="text-3xl font-serif font-bold text-[#002f02]">Marketing</h1>
           <p className="text-muted-foreground">Newsletter & Social Media verwalten</p>
         </div>
         <div className="flex gap-2">
@@ -382,7 +382,7 @@ export default function Marketing() {
               Scheduler
             </Button>
           )}
-          <Button onClick={() => { resetForm(); setCreateDialogOpen(true); }} className="bg-[#005500] hover:bg-[#003300]">
+          <Button onClick={() => { resetForm(); setCreateDialogOpen(true); }} className="bg-[#002f02] hover:bg-[#003300]">
             <Plus className="w-4 h-4 mr-2" />
             Neu erstellen
           </Button>
@@ -391,7 +391,7 @@ export default function Marketing() {
 
       {/* Config Status */}
       {configStatus && (
-        <Card className="border-[#005500]/20">
+        <Card className="border-[#002f02]/20">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -474,12 +474,12 @@ export default function Marketing() {
               filteredContent.map((item) => {
                 const TypeIcon = TYPE_ICONS[item.content_type] || FileText;
                 return (
-                  <Card key={item.id} className="border-[#005500]/20">
+                  <Card key={item.id} className="border-[#002f02]/20">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
-                          <div className="p-2 bg-[#005500]/10 rounded-lg">
-                            <TypeIcon className="w-5 h-5 text-[#005500]" />
+                          <div className="p-2 bg-[#002f02]/10 rounded-lg">
+                            <TypeIcon className="w-5 h-5 text-[#002f02]" />
                           </div>
                           <div>
                             <h3 className="font-medium">{item.title}</h3>
@@ -566,7 +566,7 @@ export default function Marketing() {
                               </Button>
                               <Button
                                 size="sm"
-                                className="bg-[#005500] hover:bg-[#003300]"
+                                className="bg-[#002f02] hover:bg-[#003300]"
                                 onClick={() => handleSendNow(item)}
                               >
                                 <Send className="w-4 h-4 mr-1" />
@@ -624,7 +624,7 @@ export default function Marketing() {
               </Card>
             ) : (
               jobs.map((job) => (
-                <Card key={job.id} className="border-[#005500]/20">
+                <Card key={job.id} className="border-[#002f02]/20">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -784,7 +784,7 @@ export default function Marketing() {
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleCreate} className="bg-[#005500] hover:bg-[#003300]">
+            <Button onClick={handleCreate} className="bg-[#002f02] hover:bg-[#003300]">
               Erstellen
             </Button>
           </DialogFooter>
@@ -829,7 +829,7 @@ export default function Marketing() {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleUpdate} className="bg-[#005500] hover:bg-[#003300]">
+            <Button onClick={handleUpdate} className="bg-[#002f02] hover:bg-[#003300]">
               Speichern
             </Button>
           </DialogFooter>
@@ -902,7 +902,7 @@ export default function Marketing() {
             <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleSchedule} className="bg-[#005500] hover:bg-[#003300]">
+            <Button onClick={handleSchedule} className="bg-[#002f02] hover:bg-[#003300]">
               Planen
             </Button>
           </DialogFooter>
@@ -934,7 +934,7 @@ export default function Marketing() {
             <Button variant="outline" onClick={() => setTestSendDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleTestSend} className="bg-[#005500] hover:bg-[#003300]">
+            <Button onClick={handleTestSend} className="bg-[#002f02] hover:bg-[#003300]">
               Test senden
             </Button>
           </DialogFooter>

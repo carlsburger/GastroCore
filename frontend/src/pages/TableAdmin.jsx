@@ -231,7 +231,7 @@ export const TableAdmin = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <h1 className="font-serif text-3xl font-bold text-[#005500] flex items-center gap-3">
+            <h1 className="font-serif text-3xl font-bold text-[#002f02] flex items-center gap-3">
               <Settings className="h-8 w-8" />
               Tisch-Stammdaten
             </h1>
@@ -250,7 +250,7 @@ export const TableAdmin = () => {
                 resetForm();
                 setShowDialog(true);
               }}
-              className="bg-[#005500] hover:bg-[#003300]"
+              className="bg-[#002f02] hover:bg-[#003300]"
             >
               <Plus className="h-4 w-4 mr-2" />
               Neuer Tisch
@@ -609,7 +609,7 @@ export const TableAdmin = () => {
               <Button variant="outline" onClick={() => setShowDialog(false)}>
                 Abbrechen
               </Button>
-              <Button onClick={handleSave} className="bg-[#005500] hover:bg-[#003300]">
+              <Button onClick={handleSave} className="bg-[#002f02] hover:bg-[#003300]">
                 {selectedTable ? "Speichern" : "Erstellen"}
               </Button>
             </DialogFooter>

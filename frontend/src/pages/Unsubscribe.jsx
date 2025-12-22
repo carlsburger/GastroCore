@@ -58,19 +58,19 @@ export default function Unsubscribe() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAFBE0] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#005500]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#002f02]" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#FAFBE0] flex items-center justify-center p-4">
-      <Card className="max-w-md w-full border-[#005500]/20">
+      <Card className="max-w-md w-full border-[#002f02]/20">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 rounded-full bg-[#005500] mx-auto flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-[#002f02] mx-auto flex items-center justify-center mb-4">
             <Mail className="w-8 h-8 text-[#FFFF00]" />
           </div>
-          <CardTitle className="font-serif text-2xl text-[#005500]">
+          <CardTitle className="font-serif text-2xl text-[#002f02]">
             Newsletter Abmeldung
           </CardTitle>
         </CardHeader>
@@ -110,7 +110,7 @@ export default function Unsubscribe() {
               <Button
                 onClick={handleUnsubscribe}
                 disabled={verifying}
-                className="bg-[#005500] hover:bg-[#003300]"
+                className="bg-[#002f02] hover:bg-[#003300]"
               >
                 {verifying ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

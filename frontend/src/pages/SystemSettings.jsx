@@ -125,7 +125,7 @@ export default function SystemSettings() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-[#005500]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#002f02]" />
         </div>
       </Layout>
     );
@@ -142,17 +142,17 @@ export default function SystemSettings() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-serif font-bold text-[#005500]">
+            <h1 className="text-2xl font-serif font-bold text-[#002f02]">
               System-Einstellungen
             </h1>
-            <p className="text-[#005500]/70">Geschäftsdaten und Stammdaten verwalten</p>
+            <p className="text-[#002f02]/70">Geschäftsdaten und Stammdaten verwalten</p>
           </div>
         </div>
 
         {/* Company Profile Card */}
-        <Card className="border-[#005500]/20">
+        <Card className="border-[#002f02]/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#005500]">
+            <CardTitle className="flex items-center gap-2 text-[#002f02]">
               <Building2 className="h-5 w-5" />
               Geschäftsprofil
             </CardTitle>
@@ -163,7 +163,7 @@ export default function SystemSettings() {
           <CardContent className="space-y-6">
             {/* Legal Name */}
             <div className="space-y-2">
-              <Label htmlFor="legal_name" className="text-[#005500] font-medium">
+              <Label htmlFor="legal_name" className="text-[#002f02] font-medium">
                 Geschäftsbezeichnung *
               </Label>
               <Input
@@ -171,7 +171,7 @@ export default function SystemSettings() {
                 value={settings.legal_name}
                 onChange={(e) => handleChange("legal_name", e.target.value)}
                 placeholder="z.B. Carlsburg Restaurant GmbH"
-                className={errors.legal_name ? "border-red-500" : "border-[#005500]/30"}
+                className={errors.legal_name ? "border-red-500" : "border-[#002f02]/30"}
               />
               {errors.legal_name && (
                 <p className="text-sm text-red-500">{errors.legal_name}</p>
@@ -180,7 +180,7 @@ export default function SystemSettings() {
 
             {/* Address */}
             <div className="space-y-4">
-              <Label className="text-[#005500] font-medium flex items-center gap-2">
+              <Label className="text-[#002f02] font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Adresse
               </Label>
@@ -190,26 +190,26 @@ export default function SystemSettings() {
                     value={settings.address_street}
                     onChange={(e) => handleChange("address_street", e.target.value)}
                     placeholder="Straße und Hausnummer"
-                    className="border-[#005500]/30"
+                    className="border-[#002f02]/30"
                   />
                 </div>
                 <Input
                   value={settings.address_zip}
                   onChange={(e) => handleChange("address_zip", e.target.value)}
                   placeholder="PLZ"
-                  className="border-[#005500]/30"
+                  className="border-[#002f02]/30"
                 />
                 <Input
                   value={settings.address_city}
                   onChange={(e) => handleChange("address_city", e.target.value)}
                   placeholder="Stadt"
-                  className="border-[#005500]/30"
+                  className="border-[#002f02]/30"
                 />
                 <Input
                   value={settings.address_country}
                   onChange={(e) => handleChange("address_country", e.target.value)}
                   placeholder="Land"
-                  className="border-[#005500]/30"
+                  className="border-[#002f02]/30"
                 />
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function SystemSettings() {
             {/* Contact */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-[#005500] font-medium flex items-center gap-2">
+                <Label htmlFor="phone" className="text-[#002f02] font-medium flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   Telefon
                 </Label>
@@ -226,7 +226,7 @@ export default function SystemSettings() {
                   value={settings.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   placeholder="+49 123 456789"
-                  className={errors.phone ? "border-red-500" : "border-[#005500]/30"}
+                  className={errors.phone ? "border-red-500" : "border-[#002f02]/30"}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone}</p>
@@ -234,7 +234,7 @@ export default function SystemSettings() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#005500] font-medium flex items-center gap-2">
+                <Label htmlFor="email" className="text-[#002f02] font-medium flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   E-Mail
                 </Label>
@@ -244,7 +244,7 @@ export default function SystemSettings() {
                   value={settings.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   placeholder="info@restaurant.de"
-                  className={errors.email ? "border-red-500" : "border-[#005500]/30"}
+                  className={errors.email ? "border-red-500" : "border-[#002f02]/30"}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email}</p>
@@ -255,7 +255,7 @@ export default function SystemSettings() {
             {/* Website & Timezone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="website" className="text-[#005500] font-medium flex items-center gap-2">
+                <Label htmlFor="website" className="text-[#002f02] font-medium flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   Website
                 </Label>
@@ -264,12 +264,12 @@ export default function SystemSettings() {
                   value={settings.website}
                   onChange={(e) => handleChange("website", e.target.value)}
                   placeholder="https://www.restaurant.de"
-                  className="border-[#005500]/30"
+                  className="border-[#002f02]/30"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label className="text-[#005500] font-medium flex items-center gap-2">
+                <Label className="text-[#002f02] font-medium flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Zeitzone
                 </Label>
@@ -277,7 +277,7 @@ export default function SystemSettings() {
                   value={settings.timezone}
                   onValueChange={(value) => handleChange("timezone", value)}
                 >
-                  <SelectTrigger className="border-[#005500]/30">
+                  <SelectTrigger className="border-[#002f02]/30">
                     <SelectValue placeholder="Zeitzone wählen" />
                   </SelectTrigger>
                   <SelectContent>
@@ -298,7 +298,7 @@ export default function SystemSettings() {
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="bg-[#005500] hover:bg-[#004400] text-white"
+            className="bg-[#002f02] hover:bg-[#003d03] text-white"
           >
             {saving ? (
               <>
