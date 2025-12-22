@@ -83,6 +83,7 @@ export const Schedule = () => {
   const [staffMembers, setStaffMembers] = useState([]);
   const [workAreas, setWorkAreas] = useState([]);
   const [hoursOverview, setHoursOverview] = useState(null);
+  const [closedDays, setClosedDays] = useState({}); // Map of date -> closure info
   const [loading, setLoading] = useState(true);
   const [showShiftDialog, setShowShiftDialog] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
