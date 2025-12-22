@@ -80,6 +80,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "FAIL: PDF and CSV export buttons not visible in the schedule interface. Expected buttons with text 'PDF' and 'CSV' not found. May be conditional on schedule having shifts or specific status."
+      - working: false
+        agent: "testing"
+        comment: "FAIL: PDF and CSV export buttons not visible even after attempting schedule creation. Buttons appear to be conditional on schedule status or having shifts. Export functionality exists in code but UI buttons not rendered in current state. May require published schedule with shifts to become visible."
 
   - task: "TESTBLOCK E: MyShifts"
     implemented: true
