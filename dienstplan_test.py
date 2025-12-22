@@ -21,8 +21,8 @@ class DienstplanTester:
         
         # Test credentials from requirements
         self.credentials = [
-            {"email": "admin@carlsburg.de", "password": "Carlsburg2025!"},
-            {"email": "admin@gastrocore.de", "password": "Admin123!"}
+            {"email": "admin@gastrocore.de", "password": "Admin123!"},
+            {"email": "admin@carlsburg.de", "password": "Carlsburg2025!"}
         ]
 
     def log_test(self, name: str, success: bool, details: str = ""):
