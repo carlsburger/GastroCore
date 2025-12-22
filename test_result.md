@@ -204,40 +204,46 @@ agent_communication:
 
   - agent: "testing"
     message: |
-      ✅ CONNECTIVITY ISSUE RESOLVED - SMOKE TESTS COMPLETED
+      ✅ COMPREHENSIVE SMOKE TESTS COMPLETED - MIXED RESULTS
       
-      RESOLUTION:
-      - Fixed REACT_APP_BACKEND_URL from https://demobackend.emergentagent.com to http://localhost:8001
-      - Created test admin user (test@admin.com/test123) to bypass must_change_password issue
-      - Frontend now successfully connects to backend
+      AUTHENTICATION & ROUTING (TESTBLOCK A):
+      ✅ All three user roles working perfectly:
+      - Admin: admin@carlsburg.de / Carlsburg2025! (full access)
+      - Employee: mitarbeiter@carlsburg.de / Mitarbeiter2025! (restricted access)
+      - Schichtleiter: schichtleiter@carlsburg.de / Schicht2025! (management access)
+      ✅ Route protection working - unauthenticated users redirected to login
+      ✅ Role-based access control working - employees get "no backoffice access" message
       
-      TESTBLOCK A: ROUTING & AUTH
-      ✅ A1) Admin Zugriff: PASS - Login successful, /schedule and /my-shifts accessible
-      ✅ A2) Route Protection: PASS - Unauthenticated users redirected to login
+      SCHEDULE FUNCTIONALITY (TESTBLOCK B):
+      ✅ Schedule page loads with proper week display (KW 8/2025)
+      ✅ Week navigation working (KW 8 ↔ KW 7)
+      ✅ Plus buttons for shift addition visible (1 found)
+      ❌ Shift dialog does not open when plus buttons clicked
+      ❌ Schedule creation button present but may fail silently
+      ❌ Action buttons (CSV, PDF, Kopieren, Veröffentlichen) not visible
       
-      TESTBLOCK B: SCHEDULE CORE FLOWS
-      ✅ B1) Woche Navigation: PASS - Navigation buttons present and functional
-      ✅ B2) Schedule Creation: PASS - Can create new schedules
-      ❌ B3) Schicht hinzufügen: FAIL - Plus buttons not appearing after schedule creation
-      ❌ B6) Veröffentlichen: NOT VISIBLE - Publish button not found
-      ❌ B7) Woche kopieren: NOT VISIBLE - Copy button not found
+      MYSHIFTS FUNCTIONALITY (TESTBLOCK E):
+      ✅ MyShifts page fully functional for all user roles
+      ✅ Week navigation (Vorwoche/Nächste Woche) working perfectly
+      ✅ Proper display of KW 52/2025, shift count (0), hours (0.0h)
+      ✅ Empty state handling with appropriate messages
       
-      TESTBLOCK C: KONFLIKTFEHLER
-      ❌ Cannot test - Blocked by B3 issue (shift creation not working)
+      BLOCKED TESTS:
+      ❌ TESTBLOCK C (Conflict Testing): Cannot test because shift dialog won't open
+      ❌ TESTBLOCK D (Exports): Buttons not visible (likely conditional on schedule state)
       
-      TESTBLOCK D: EXPORTS
-      ❌ D1) PDF Export: FAIL - Button not visible
-      ❌ D2) CSV Export: FAIL - Button not visible
+      CRITICAL ISSUES REQUIRING MAIN AGENT ATTENTION:
+      1. Shift dialog not opening when plus buttons clicked
+      2. Export buttons not visible (may need schedule with shifts)
+      3. Schedule creation may be failing silently
+      4. Action buttons conditional rendering needs investigation
       
-      TESTBLOCK E: MY-SHIFTS
-      ✅ E1) Anzeige: PASS - Page loads, shows empty state correctly
-      ✅ E2) Navigation: PASS - Week navigation works perfectly
-      
-      CRITICAL ISSUES REMAINING:
-      1. Schedule shift management UI not fully functional
-      2. Export buttons not visible
-      3. Action buttons (Publish/Copy) not appearing
-      4. May be related to missing test data or conditional UI rendering
+      WORKING FEATURES:
+      - Authentication system fully functional
+      - Role-based access control working correctly
+      - MyShifts page completely functional
+      - Basic schedule page navigation and display
+      - Route protection and security measures
 
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
