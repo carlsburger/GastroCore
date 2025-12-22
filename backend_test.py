@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 class GastroCoreAPITester:
-    def __init__(self, base_url: str = "https://demobackend.emergentagent.com"):
+    def __init__(self, base_url: str = "http://localhost:8001"):
         self.base_url = base_url
         self.tokens = {}
         self.test_data = {}
