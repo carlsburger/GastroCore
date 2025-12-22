@@ -70,14 +70,8 @@ export const ReservationConfig = () => {
   const [editingPeriod, setEditingPeriod] = useState(null);
   const [showPeriodDialog, setShowPeriodDialog] = useState(false);
 
-  // Fetch data
-  useEffect(() => {
-    fetchDurationSettings();
-    fetchTimeSlotConfigs();
-    fetchOpeningPeriods();
-  }, []);
-
   const fetchDurationSettings = async () => {
+    if (!token) return;
     try {
       const res = await axios.get(`${BACKEND_URL}/api/reservation-config/duration-settings`, { headers });
       setDurationSettings(res.data);
@@ -87,6 +81,7 @@ export const ReservationConfig = () => {
   };
 
   const fetchTimeSlotConfigs = async () => {
+    if (!token) return;
     try {
       const res = await axios.get(`${BACKEND_URL}/api/reservation-config/time-slots`, { headers });
       setTimeSlotConfigs(res.data);
@@ -94,6 +89,25 @@ export const ReservationConfig = () => {
       console.error("Fehler beim Laden der Zeitslot-Konfiguration:", err);
     }
   };
+
+  const fetchOpeningPeriods = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/reservation-config/opening-periods`, { headers });
+      setOpeningPeriods(res.data);
+    } catch (err) {
+      console.error("Fehler beim Laden der Öffnungszeiten-Perioden:", err);
+    }
+  };
+
+  // Fetch data when token is available
+  useEffect(() => {
+    if (token) {
+      fetchDurationSettings();
+      fetchTimeSlotConfigs();
+      fetchOpeningPeriods();
+    }
+  }, [token]);
 
   const fetchOpeningPeriods = async () => {
     try {
