@@ -19,12 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../components/ui/tabs";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
@@ -52,7 +46,7 @@ import {
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
