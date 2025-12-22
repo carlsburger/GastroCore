@@ -1296,6 +1296,21 @@ async def update_shift(shift_id: str, data: ShiftUpdate, user: dict = Depends(re
     # Recalculate hours if times changed
     start = update_data.get("start_time", existing.get("start_time"))
     end = update_data.get("end_time", existing.get("end_time"))
+    shift_date = update_data.get("shift_date", existing.get("shift_date"))
+    staff_member_id = update_data.get("staff_member_id", existing.get("staff_member_id"))
+    
+    # KONFLIKT-PRÜFUNG bei Änderung von MA, Datum oder Zeiten (Sprint: Dienstplan Live-Ready)
+    if any(k in update_data for k in ["staff_member_id", "shift_date", "start_time", "end_time"]):
+        conflict = await check_shift_conflicts(
+            staff_member_id=staff_member_id,
+            shift_date=shift_date,
+            start_time=start,
+            end_time=end,
+            exclude_shift_id=shift_id
+        )
+        if conflict["has_conflict"]:
+            raise HTTPException(status_code=409, detail=conflict["message"])
+    
     update_data["hours"] = calculate_shift_hours(start, end)
     update_data["updated_at"] = now_iso()
     
