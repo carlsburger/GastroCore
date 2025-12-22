@@ -345,16 +345,24 @@ export const TablePlan = () => {
             }).map(([tableNumber, tableReservations]) => (
               <Card 
                 key={tableNumber} 
-                className={`${tableNumber === "Ohne Tisch" ? "border-dashed" : "border-solid"} border-2`}
+                className={`${tableNumber === "Ohne Tisch" ? "border-dashed border-gray-300" : "border-solid border-[#005500]"} border-2`}
               >
-                <CardHeader className="pb-2 bg-muted/50">
+                {/* Tisch-Header - GROSS */}
+                <CardHeader className={`pb-2 ${tableNumber === "Ohne Tisch" ? "bg-gray-100" : "bg-[#005500]"}`}>
                   <CardTitle className="flex items-center justify-between">
-                    <span className="text-lg">
-                      {tableNumber === "Ohne Tisch" ? "Ohne Tisch" : `Tisch ${tableNumber}`}
-                    </span>
-                    <Badge variant="secondary">
-                      {tableReservations.reduce((sum, r) => sum + (r.party_size || 0), 0)} Pers.
-                    </Badge>
+                    {tableNumber === "Ohne Tisch" ? (
+                      <span className="text-xl text-gray-600">Ohne Tisch</span>
+                    ) : (
+                      <div className="text-white">
+                        <p className="text-sm opacity-80">Tisch</p>
+                        <p className="text-3xl font-bold">{tableNumber}</p>
+                      </div>
+                    )}
+                    <div className={`${tableNumber === "Ohne Tisch" ? "bg-gray-200 text-gray-700" : "bg-white text-[#005500]"} rounded-lg px-3 py-1 text-center`}>
+                      <p className="text-xs opacity-70">Gesamt</p>
+                      <p className="text-2xl font-bold">{tableReservations.reduce((sum, r) => sum + (r.party_size || 0), 0)}</p>
+                      <p className="text-xs">Pers.</p>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-3 space-y-3">
@@ -366,23 +374,27 @@ export const TablePlan = () => {
                         className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-shadow ${STATUS_COLORS[res.status] || 'bg-white'}`}
                         onClick={() => setSelectedReservation(res)}
                       >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-semibold">{res.guest_name}</p>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {res.time}
-                              <Users className="h-3 w-3 ml-2" />
-                              {res.party_size}
+                        <div className="flex items-center gap-3">
+                          {/* Zeit & Personen prominent */}
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="bg-[#005500] text-white rounded px-2 py-1 text-center min-w-[50px]">
+                              <p className="text-lg font-bold">{res.time}</p>
+                            </div>
+                            <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-center min-w-[50px]">
+                              <p className="text-lg font-bold">{res.party_size} P.</p>
                             </div>
                           </div>
-                          {indicators.length > 0 && (
-                            <div className="flex gap-1">
-                              {indicators.map((ind, i) => (
-                                <ind.icon key={i} className={`h-4 w-4 ${ind.color}`} title={ind.label} />
-                              ))}
-                            </div>
-                          )}
+                          {/* Name & Infos */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-lg truncate">{res.guest_name}</p>
+                            {indicators.length > 0 && (
+                              <div className="flex gap-1 mt-1">
+                                {indicators.map((ind, i) => (
+                                  <ind.icon key={i} className={`h-4 w-4 ${ind.color}`} title={ind.label} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         {(res.notes || res.allergies || res.menu_choice) && (
                           <div className="mt-2 pt-2 border-t border-dashed text-xs text-muted-foreground">
