@@ -469,9 +469,11 @@ export const Schedule = () => {
                 const shifts = getShiftsForDate(date);
                 const dayDate = new Date(date);
                 const isToday = new Date().toISOString().split("T")[0] === date;
+                const closedInfo = closedDays[date];
+                const isClosed = !!closedInfo;
 
                 return (
-                  <Card key={date} className={isToday ? "ring-2 ring-primary" : ""}>
+                  <Card key={date} className={`${isToday ? "ring-2 ring-primary" : ""} ${isClosed ? "bg-red-50" : ""}`}>
                     <CardHeader className="pb-2 px-3 pt-3">
                       <div className="flex justify-between items-center">
                         <div>
@@ -480,7 +482,7 @@ export const Schedule = () => {
                             {dayDate.getDate()}.{dayDate.getMonth() + 1}.
                           </p>
                         </div>
-                        {schedule.status !== "archiviert" && (
+                        {schedule.status !== "archiviert" && !isClosed && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -491,9 +493,27 @@ export const Schedule = () => {
                           </Button>
                         )}
                       </div>
+                      {/* Closure Banner */}
+                      {isClosed && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="mt-2 flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
+                                <CalendarX className="h-3 w-3" />
+                                <span className="font-medium truncate">{closedInfo.reason}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Restaurant geschlossen: {closedInfo.reason}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </CardHeader>
                     <CardContent className="px-3 pb-3 space-y-2">
-                      {shifts.length === 0 ? (
+                      {isClosed ? (
+                        <p className="text-xs text-red-600 text-center py-4">Geschlossen</p>
+                      ) : shifts.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-4">-</p>
                       ) : (
                         shifts.map((shift) => {
