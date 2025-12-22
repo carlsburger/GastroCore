@@ -761,14 +761,14 @@ async def archive_table(
 
 @combination_router.get("")
 async def list_combinations(
-    date: Optional[str] = None,
+    date_filter: Optional[str] = Query(None, alias="date"),
     active_only: bool = True,
     current_user: dict = Depends(get_current_user)
 ):
     """Liste Tischkombinationen"""
     query = {"archived": False}
-    if date:
-        query["date"] = date
+    if date_filter:
+        query["date"] = date_filter
     if active_only:
         query["active"] = True
     
@@ -776,14 +776,14 @@ async def list_combinations(
     return combinations
 
 
-@combination_router.get("/for-date/{date}")
+@combination_router.get("/for-date/{date_str}")
 async def get_combinations_for_date(
-    date: str,
+    date_str: str,
     time_slot: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Hole aktive Kombinationen für ein Datum"""
-    query = {"date": date, "active": True, "archived": False}
+    query = {"date": date_str, "active": True, "archived": False}
     if time_slot:
         query["time_slot"] = time_slot
     
