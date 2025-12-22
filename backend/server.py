@@ -1952,7 +1952,7 @@ from marketing_module import marketing_router, marketing_public_router
 from ai_assistant import ai_router
 
 # ============== FIRST-RUN SEED SYSTEM (Sprint 11) ==============
-from seed_system import run_full_seed, verify_seed
+from seed_system import run_full_seed, verify_seed, bootstrap_admin_on_startup
 
 # Internal seed endpoint (no auth required for first-run)
 internal_router = APIRouter(prefix="/internal", tags=["Internal"])
