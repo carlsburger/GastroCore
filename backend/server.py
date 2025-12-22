@@ -178,6 +178,10 @@ class ReservationUpdate(BaseModel):
     table_number: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=1000)
     occasion: Optional[str] = None
+    # Sprint: Reservierung Live-Ready
+    duration_minutes: Optional[int] = None
+    allergies: Optional[str] = Field(None, max_length=500)
+    menu_choice: Optional[str] = None
 
 # Walk-in Quick Entry
 class WalkInCreate(BaseModel):
