@@ -210,8 +210,8 @@ async def update_system_settings(
         action="update",
         entity="system_settings",
         entity_id=settings["id"],
-        old_values=safe_dict_for_audit(old_settings),
-        new_values=safe_dict_for_audit(update_data)
+        before=safe_dict_for_audit(old_settings),
+        after=safe_dict_for_audit(update_data)
     )
     
     # Hole aktualisierten Stand

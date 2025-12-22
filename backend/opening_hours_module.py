@@ -428,7 +428,7 @@ async def create_period(
         action="create",
         entity="opening_hours_period",
         entity_id=period["id"],
-        new_values=safe_dict_for_audit(period)
+        after=safe_dict_for_audit(period)
     )
     
     logger.info(f"Öffnungszeiten-Periode '{data.name}' erstellt von {current_user.get('email')}")
@@ -490,8 +490,8 @@ async def update_period(
         action="update",
         entity="opening_hours_period",
         entity_id=period_id,
-        old_values=safe_dict_for_audit(old_period),
-        new_values=safe_dict_for_audit(update_data)
+        before=safe_dict_for_audit(old_period),
+        after=safe_dict_for_audit(update_data)
     )
     
     updated = await db.opening_hours_master.find_one(
@@ -614,7 +614,7 @@ async def create_closure(
         action="create",
         entity="closure",
         entity_id=closure["id"],
-        new_values=safe_dict_for_audit(closure)
+        after=safe_dict_for_audit(closure)
     )
     
     logger.info(f"Sperrtag '{data.reason}' erstellt von {current_user.get('email')}")
@@ -662,8 +662,8 @@ async def update_closure(
         action="update",
         entity="closure",
         entity_id=closure_id,
-        old_values=safe_dict_for_audit(old_closure),
-        new_values=safe_dict_for_audit(update_data)
+        before=safe_dict_for_audit(old_closure),
+        after=safe_dict_for_audit(update_data)
     )
     
     updated = await db.closures.find_one(
