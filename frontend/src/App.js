@@ -196,6 +196,26 @@ function App() {
             }
           />
 
+          {/* System Settings - Admin only */}
+          <Route
+            path="/admin/settings/system"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <SystemSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Opening Hours Admin - Admin only */}
+          <Route
+            path="/admin/settings/opening-hours"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <OpeningHoursAdmin />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Message Logs - Admin only */}
           <Route
             path="/message-logs"
