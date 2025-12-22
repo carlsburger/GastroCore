@@ -48,11 +48,14 @@ frontend:
     file: "Schedule.jsx"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Cannot test - blocked by TESTBLOCK A login issue. Conflict testing requires authenticated access to schedule."
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by TESTBLOCK B issues. Shift creation functionality not working properly (no plus buttons appearing), so conflict testing cannot be performed. Requires functional shift creation to test double-booking and rest period conflicts."
 
   - task: "TESTBLOCK D: Exports"
     implemented: true
