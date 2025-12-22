@@ -62,6 +62,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Cannot test - blocked by TESTBLOCK B issues. Shift creation functionality not working properly (no plus buttons appearing), so conflict testing cannot be performed. Requires functional shift creation to test double-booking and rest period conflicts."
+      - working: "NA"
+        agent: "testing"
+        comment: "BLOCKED: Cannot test conflict scenarios (double-booking, rest period violations) because shift dialog does not open when plus buttons are clicked. The UI elements are present but the shift creation/editing functionality is not working. Need to fix shift dialog opening mechanism before conflict testing can be performed."
 
   - task: "TESTBLOCK D: Exports"
     implemented: true
