@@ -2043,6 +2043,7 @@ app.include_router(customer_router)
 app.include_router(marketing_router)
 app.include_router(marketing_public_router)
 app.include_router(ai_router)
+app.include_router(reservation_config_router, prefix="/api")  # Sprint: Reservierung Live-Ready
 
 app.add_middleware(
     CORSMiddleware,
