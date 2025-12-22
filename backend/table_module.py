@@ -914,9 +914,9 @@ async def dissolve_combination(
 
 # ============== BELEGUNGS-ENDPOINTS ==============
 
-@table_router.get("/occupancy/{date}")
+@table_router.get("/occupancy/{date_str}")
 async def get_table_occupancy(
-    date: str,
+    date_str: str,
     time: Optional[str] = None,
     time_slot: Optional[str] = None,
     area: Optional[TableArea] = None,
@@ -924,12 +924,12 @@ async def get_table_occupancy(
 ):
     """Hole Belegungsstatus für alle Tische"""
     try:
-        datetime.strptime(date, "%Y-%m-%d")
+        datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
         raise ValidationException("Ungültiges Datumsformat (YYYY-MM-DD)")
     
     occupancy = await calculate_table_occupancy(
-        date,
+        date_str,
         time_str=time,
         time_slot=time_slot,
         area=area.value if area else None
