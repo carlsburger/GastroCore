@@ -424,10 +424,22 @@ async def calculate_table_occupancy(
         # Prüfe Event-Sperrungen (für Event-Bereich)
         if table.get("area") == TableArea.EVENT.value:
             for event in events:
-                event_start = event.get("start_time", event.get("time", ""))
+                # Event-Zeit kann in verschiedenen Formaten sein
+                event_start = event.get("start_datetime", event.get("start_time", event.get("time", "")))
                 if event_start:
-                    # Event Cut-Off berücksichtigen (Standard: 120 Min)
-                    cutoff_minutes = event.get("last_alacarte_minutes_before", 120)
+                    try:
+                        # Parse event datetime
+                        if isinstance(event_start, str):
+                            if "T" in event_start:
+                                event_dt = datetime.fromisoformat(event_start.replace("Z", "+00:00"))
+                            else:
+                                event_dt = datetime.strptime(f"{date_str} {event_start}", "%Y-%m-%d %H:%M")
+                        else:
+                            event_dt = event_start
+                        
+                        # Event Cut-Off berücksichtigen (Standard: 120 Min)
+                        cutoff_minutes = event.get("last_alacarte_reservation_minutes", 
+                                                   event.get("last_alacarte_minutes_before", 120))
                     event_dt = datetime.strptime(f"{date_str} {event_start}", "%Y-%m-%d %H:%M")
                     block_start = event_dt - timedelta(minutes=cutoff_minutes)
                     
