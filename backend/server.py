@@ -130,7 +130,7 @@ class AreaCreate(BaseModel):
     capacity: Optional[int] = Field(None, ge=1, le=500)
     table_count: Optional[int] = Field(None, ge=1, le=100)
 
-# Reservation Models - Extended for Sprint 2
+# Reservation Models - Extended for Sprint 2 + Reservierung Live-Ready
 class ReservationCreate(BaseModel):
     guest_name: str = Field(..., min_length=2, max_length=100)
     guest_phone: str = Field(..., min_length=6, max_length=30)
@@ -144,6 +144,10 @@ class ReservationCreate(BaseModel):
     occasion: Optional[str] = Field(None, max_length=100)  # Anlass: Geburtstag, Hochzeit, etc.
     source: Optional[str] = "intern"  # widget, intern, walk-in
     language: Optional[str] = "de"  # de, en, pl
+    # Sprint: Reservierung Live-Ready
+    duration_minutes: Optional[int] = None  # None = Standard-Aufenthaltsdauer
+    allergies: Optional[str] = Field(None, max_length=500)  # Allergien/Unverträglichkeiten
+    menu_choice: Optional[str] = None  # Bei Menüpflicht
     
     @field_validator('date')
     @classmethod
