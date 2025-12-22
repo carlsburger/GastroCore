@@ -67,7 +67,7 @@ const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
     {/* Schriftzug */}
     {!collapsed && (
       <div className="flex flex-col leading-none">
-        <span className="text-[10px] text-[#FAFBE0]/70 tracking-widest uppercase">
+        <span className="text-[10px] text-[#fafbed]/70 tracking-widest uppercase">
           Cockpit
         </span>
       </div>
@@ -172,7 +172,7 @@ const NavItem = ({ item, isActive, collapsed, onClick }) => {
       <div
         className={`
           flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-          text-[#FAFBE0]/40 cursor-not-allowed
+          text-[#fafbed]/40 cursor-not-allowed
           ${collapsed ? "justify-center" : ""}
         `}
         title={collapsed ? item.label : `${item.label} (bald verfügbar)`}
@@ -191,15 +191,15 @@ const NavItem = ({ item, isActive, collapsed, onClick }) => {
         flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
         transition-all duration-200
         ${isActive 
-          ? "bg-[#FFCC00] text-[#005500] shadow-md" 
-          : "text-[#FAFBE0] hover:bg-[#004400]"
+          ? "bg-[#ffed00] text-[#002f02] shadow-md" 
+          : "text-[#fafbed] hover:bg-[#003d03]"
         }
         ${collapsed ? "justify-center" : ""}
       `}
       title={collapsed ? item.label : undefined}
       data-testid={`nav-item-${item.path.replace("/", "") || "home"}`}
     >
-      <Icon size={18} className={isActive ? "text-[#005500]" : ""} />
+      <Icon size={18} className={isActive ? "text-[#002f02]" : ""} />
       {!collapsed && <span>{item.label}</span>}
     </Link>
   );
@@ -244,8 +244,8 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
           flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
           transition-all duration-200
           ${isActive 
-            ? "bg-[#FFCC00] text-[#005500] shadow-md" 
-            : "text-[#FAFBE0] hover:bg-[#004400]"
+            ? "bg-[#ffed00] text-[#002f02] shadow-md" 
+            : "text-[#fafbed] hover:bg-[#003d03]"
           }
           ${collapsed ? "justify-center" : ""}
         `}
@@ -269,8 +269,8 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
           w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
           transition-all duration-200
           ${hasActiveChild 
-            ? "bg-[#004400] text-[#FFCC00]" 
-            : "text-[#FAFBE0] hover:bg-[#004400]"
+            ? "bg-[#003d03] text-[#ffed00]" 
+            : "text-[#fafbed] hover:bg-[#003d03]"
           }
           ${collapsed ? "justify-center" : "justify-between"}
         `}
@@ -290,7 +290,7 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
 
       {/* Children */}
       {!collapsed && isOpen && (
-        <div className="ml-3 pl-3 border-l-2 border-[#004400] space-y-0.5 animate-fade-in">
+        <div className="ml-3 pl-3 border-l-2 border-[#003d03] space-y-0.5 animate-fade-in">
           {visibleChildren.map((child) => (
             <NavItem
               key={child.path}
@@ -341,26 +341,26 @@ export const Layout = ({ children }) => {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <div className="min-h-screen bg-[#FAFBE0] flex">
+    <div className="min-h-screen bg-[#fafbed] flex">
       {/* Desktop Sidebar */}
       <aside
         className={`
           hidden lg:flex flex-col
           ${sidebarCollapsed ? "w-20" : "w-64"}
-          bg-[#005500] text-[#FAFBE0]
-          border-r border-[#004400]
+          bg-[#002f02] text-[#fafbed]
+          border-r border-[#003d03]
           transition-all duration-300
           fixed left-0 top-0 h-screen z-40
         `}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-[#004400]">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-[#003d03]">
           <Link to="/" className="flex-1">
             <CarlsburgLogo collapsed={sidebarCollapsed} />
           </Link>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-1.5 rounded-lg hover:bg-[#004400] text-[#FAFBE0]/70 hover:text-[#FFCC00]"
+            className="p-1.5 rounded-lg hover:bg-[#003d03] text-[#fafbed]/70 hover:text-[#ffed00]"
             title={sidebarCollapsed ? "Menü erweitern" : "Menü einklappen"}
           >
             {sidebarCollapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
@@ -385,13 +385,13 @@ export const Layout = ({ children }) => {
 
         {/* User Footer */}
         <div className={`
-          border-t border-[#004400] p-3
+          border-t border-[#003d03] p-3
           ${sidebarCollapsed ? "text-center" : ""}
         `}>
           {!sidebarCollapsed && (
             <div className="mb-3 px-2">
-              <p className="text-sm font-medium text-[#FFCC00] truncate">{user?.name}</p>
-              <p className="text-xs text-[#FAFBE0]/60 capitalize">
+              <p className="text-sm font-medium text-[#ffed00] truncate">{user?.name}</p>
+              <p className="text-xs text-[#fafbed]/60 capitalize">
                 {t(`users.roles.${user?.role}`)}
               </p>
             </div>
@@ -401,7 +401,7 @@ export const Layout = ({ children }) => {
             size="sm"
             onClick={handleLogout}
             className={`
-              w-full text-[#FAFBE0] hover:bg-[#004400] hover:text-[#FFCC00]
+              w-full text-[#fafbed] hover:bg-[#003d03] hover:text-[#ffed00]
               ${sidebarCollapsed ? "px-2" : "justify-start"}
             `}
             data-testid="logout-button"
@@ -410,7 +410,7 @@ export const Layout = ({ children }) => {
             {!sidebarCollapsed && <span className="ml-2">Abmelden</span>}
           </Button>
           {buildId && !sidebarCollapsed && (
-            <p className="text-[10px] text-[#FAFBE0]/30 text-center mt-2 font-mono">
+            <p className="text-[10px] text-[#fafbed]/30 text-center mt-2 font-mono">
               {buildId}
             </p>
           )}
@@ -418,10 +418,10 @@ export const Layout = ({ children }) => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-[#005500] border-b border-[#004400] flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-[#002f02] border-b border-[#003d03] flex items-center justify-between px-4">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-[#004400] text-[#FAFBE0]"
+          className="p-2 rounded-lg hover:bg-[#003d03] text-[#fafbed]"
           data-testid="mobile-menu-toggle"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -435,7 +435,7 @@ export const Layout = ({ children }) => {
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="text-[#FAFBE0] hover:bg-[#004400]"
+          className="text-[#fafbed] hover:bg-[#003d03]"
         >
           <LogOut size={20} />
         </Button>
@@ -448,7 +448,7 @@ export const Layout = ({ children }) => {
             className="lg:hidden fixed inset-0 bg-black/50 z-40"
             onClick={closeMobileMenu}
           />
-          <aside className="lg:hidden fixed left-0 top-16 bottom-0 w-72 bg-[#005500] z-50 overflow-y-auto animate-slide-in-left">
+          <aside className="lg:hidden fixed left-0 top-16 bottom-0 w-72 bg-[#002f02] z-50 overflow-y-auto animate-slide-in-left">
             <nav className="p-4 space-y-1">
               {navigationGroups.map((group) => (
                 <NavGroup
@@ -463,9 +463,9 @@ export const Layout = ({ children }) => {
             </nav>
             
             {/* Mobile User Info */}
-            <div className="border-t border-[#004400] p-4 mt-4">
-              <p className="text-sm font-medium text-[#FFCC00]">{user?.name}</p>
-              <p className="text-xs text-[#FAFBE0]/60 capitalize">
+            <div className="border-t border-[#003d03] p-4 mt-4">
+              <p className="text-sm font-medium text-[#ffed00]">{user?.name}</p>
+              <p className="text-xs text-[#fafbed]/60 capitalize">
                 {t(`users.roles.${user?.role}`)}
               </p>
             </div>
@@ -495,7 +495,7 @@ export const Layout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 pt-20 lg:pt-6 bg-[#FAFBE0]">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 pt-20 lg:pt-6 bg-[#fafbed]">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
@@ -506,7 +506,7 @@ export const Layout = ({ children }) => {
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
             <div className="flex flex-col md:flex-row justify-between items-center gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-serif text-sm font-bold text-[#005500]">Carlsburg</span>
+                <span className="font-serif text-sm font-bold text-[#002f02]">Carlsburg</span>
                 <span className="text-xs text-gray-500">Cockpit</span>
               </div>
               <p className="text-xs text-gray-400">
