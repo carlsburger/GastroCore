@@ -1,8 +1,8 @@
 # 🔍 CARLSBURG COCKPIT / GASTROCORE – AUDIT & ROADMAP
-**Datum:** 2025-12-22  
-**Build-ID:** cc4b2f4d-20251222  
-**Commit:** cc4b2f4d4b9376cc57b8ff7be22553153b5ffa6c  
-**Branch:** main  
+**Datum:** 2025-12-22 13:34 UTC  
+**Build-ID:** `1245f44b-20251222`  
+**Commit:** `1245f44b587bcb198e10ed7681ed6c2f4a8999e9`  
+**Branch:** `main`  
 **Version:** 3.0.0  
 
 ---
@@ -10,18 +10,17 @@
 ## 1️⃣ SESSION INTEGRITY CHECK
 
 ### A) Git / Repo
-| Prüfpunkt | Status |
-|-----------|--------|
-| Repo-Pfad | `/app` (origin: github.com/carlsburger/GastroCore) |
-| Branch | `main` (up to date) |
-| Commit Hash | `cc4b2f4d4b9376cc57b8ff7be22553153b5ffa6c` |
+| Prüfpunkt | Wert |
+|-----------|------|
+| Repo-Pfad | `/app` |
+| Branch | `main` |
+| Commit Hash | `1245f44b587bcb198e10ed7681ed6c2f4a8999e9` |
 | git status | ✅ Clean (nur yarn.lock untracked) |
 
-### /api/version Response:
+### /api/version
 ```json
 {
-  "build_id": "cc4b2f4d-20251222",
-  "commit_hash": "cc4b2f4d4b9376cc57b8ff7be22553153b5ffa6c",
+  "build_id": "1245f44b-20251222",
   "health_version": "3.0.0",
   "modules": {
     "core": true, "reservations": true, "tables": true,
@@ -32,37 +31,33 @@
 }
 ```
 
-### /api/health Response:
+### /api/health
 ```json
 {"status": "healthy", "database": "connected", "version": "3.0.0"}
 ```
 
 ---
 
-### B) Dateiliste (Backend)
+### B) Dateiliste
 
+#### Backend (12 Module + Core)
 | Datei | LOC | Beschreibung |
 |-------|-----|--------------|
-| `server.py` | 2.242 | Haupt-Backend, Auth, Reservierungen, Core |
+| `server.py` | 2.247 | Core, Auth, Reservierungen |
 | `staff_module.py` | 1.871 | Mitarbeiter + Dienstplan |
 | `loyalty_module.py` | 1.106 | Kundenbindung |
 | `reservation_config_module.py` | 1.081 | Reservierungsregeln |
-| `table_module.py` | 1.021 | Tisch-Stammdaten + Kombinationen |
-| `payment_module.py` | 962 | Stripe-Integration |
-| `events_module.py` | 944 | Events + Buchungen |
-| `ai_assistant.py` | 921 | KI-Assistent |
-| `taxoffice_module.py` | 889 | Finanzamt-Exporte |
+| `table_module.py` | 1.021 | Tische + Kombinationen |
+| `payment_module.py` | 962 | Stripe |
+| `events_module.py` | 944 | Events |
+| `ai_assistant.py` | 921 | KI |
+| `taxoffice_module.py` | 889 | Exporte |
 | `marketing_module.py` | 875 | Kampagnen |
-| `import_module.py` | 830 | Datenimport |
-| `opening_hours_module.py` | 786 | Öffnungszeiten + Sperrtage |
-| `seed_system.py` | 684 | Test-Daten |
-| `email_service.py` | 670 | SMTP-E-Mail |
-| `system_settings_module.py` | 244 | Company Profile |
-| `pdf_service.py` | 190 | PDF-Generierung |
-| **TOTAL** | **15.889** | |
+| `opening_hours_module.py` | 786 | Öffnungszeiten |
+| `backup_module.py` | 438 | **NEU** Backup/Export |
+| **TOTAL** | **16.332** | |
 
-### Dateiliste (Frontend)
-
+#### Frontend (37 Seiten)
 | Seite | LOC | Beschreibung |
 |-------|-----|--------------|
 | `TablePlan.jsx` | 1.182 | Grafischer Tischplan |
@@ -74,12 +69,9 @@
 | `OpeningHoursAdmin.jsx` | 949 | Öffnungszeiten |
 | `ReservationConfig.jsx` | 743 | Regeln |
 | `Schedule.jsx` | 741 | Dienstplan |
-| `TaxOfficeExports.jsx` | 695 | Finanzamt |
-| `TableAdmin.jsx` | 645 | Tisch-Stammdaten |
-| `Settings.jsx` | 586 | Einstellungen |
-| `Staff.jsx` | 570 | Mitarbeiter-Liste |
-| ... (weitere 22 Seiten) | ~4.274 | |
-| **TOTAL** | **18.365** | 36 Seiten gesamt |
+| `BackupExport.jsx` | ~400 | **NEU** Backup |
+| ... (27 weitere) | ~8.073 | |
+| **TOTAL** | **~18.768** | |
 
 ---
 
@@ -88,145 +80,149 @@
 | Collection | Count | Status |
 |------------|-------|--------|
 | `users` | 1 | ✅ Admin vorhanden |
+| `staff_members` | 12 | ✅ Importiert |
+| `work_areas` | 3 | ✅ Service/Küche/Bar |
+| `tables` | 46 | ✅ Vollständig |
+| `events` | 11 | ✅ Von Website |
+| `actions` | 13 | ✅ Von Website |
 | `settings` | 6 | ✅ Grundkonfig |
-| `reminder_rules` | 2 | ✅ Erinnerungen |
-| `audit_logs` | 2 | ✅ Protokoll |
-| `staff_members` | 0 | ⚠️ on-demand |
-| `work_areas` | 0 | ⚠️ on-demand |
+| `reminder_rules` | 2 | ✅ |
+| `audit_logs` | 9 | ✅ |
 | `schedules` | 0 | ⚠️ on-demand |
 | `shifts` | 0 | ⚠️ on-demand |
-| `tables` | 0 | ⚠️ on-demand |
-| `table_combinations` | 0 | ⚠️ on-demand |
 | `reservations` | 0 | ⚠️ on-demand |
 | `guests` | 0 | ⚠️ on-demand |
 | `opening_hours_periods` | 0 | ⚠️ on-demand |
 | `closures` | 0 | ⚠️ on-demand |
-| `events` | 0 | ⚠️ on-demand |
-| `payment_rules` | 0 | ⚠️ on-demand |
-
-**Hinweis:** Collections werden automatisch bei erster Nutzung erstellt.
+| `table_combinations` | 0 | ⚠️ on-demand |
+| `reservation_config` | 0 | ⚠️ on-demand |
 
 ---
 
-## 2️⃣ IST-STAND-REPORT (Detail)
+## 2️⃣ IST-STAND-REPORT
 
 ### A) Module-Status
 
 | Modul | Status | Endpoints | UI | Bemerkung |
 |-------|--------|-----------|-----|-----------|
 | **Core/Auth** | ✅ Fertig | Login, Users, Roles | ✅ | 3-Rollen-System |
-| **Reservierungen** | ⚠️ Teilweise | CRUD, Waitlist | ✅ | Tisch-Zuweisung fehlt noch |
-| **Tischplan** | ⚠️ Teilweise | Tables, Combinations | ✅ | Backend OK, UX ungetestet |
-| **Service-Terminal** | ✅ Fertig | - | ✅ | UI optimiert (Sprint 5) |
-| **Events** | ⚠️ Teilweise | Events, Products, Bookings | ✅ | Keine Testdaten |
-| **Payments** | ⚠️ Teilweise | Stripe-Integration | ✅ | Test-Key vorhanden |
-| **Staff** | ✅ Fertig | Members, Documents | ✅ | HR-Felder, Upload |
-| **Schedules/Dienstplan** | ⚠️ Teilweise | Schedules, Shifts | ⚠️ | UX-Probleme, Shift-Dialog |
+| **Reservierungen** | ⚠️ Teilweise | CRUD vorhanden | ✅ | Tisch-Zuweisung manuell |
+| **Tischplan** | ✅ Fertig | Tables, Combinations | ✅ | 46 Tische importiert |
+| **Service-Terminal** | ✅ Fertig | - | ✅ | Touch-optimiert |
+| **Events & Aktionen** | ✅ Fertig | CRUD | ✅ | 24 importiert |
+| **Payments** | ⚠️ Teilweise | Stripe vorhanden | ✅ | Test-Key aktiv |
+| **Staff** | ✅ Fertig | 34 Endpoints | ✅ | 12 MA importiert |
+| **Schedules/Dienstplan** | ⚠️ Teilweise | CRUD vorhanden | ⚠️ | UX-Probleme |
 | **TaxOffice** | ✅ Fertig | Exports | ✅ | PDF/CSV |
-| **Loyalty** | ⚠️ Teilweise | Programs, Points | ✅ | Keine Testdaten |
-| **Marketing** | ⚠️ Teilweise | Campaigns | ✅ | SMTP nicht konfiguriert |
-| **AI** | ⚠️ Teilweise | Chat-Endpoint | ✅ | Kein API-Key |
+| **Backup/Export** | ✅ **NEU** | 4 Endpoints | ✅ | XLSX/JSON |
+| **Loyalty** | ⚠️ Teilweise | Endpoints | ✅ | Keine Daten |
+| **Marketing** | ⚠️ Teilweise | Endpoints | ✅ | SMTP fehlt |
+| **AI** | ⚠️ Teilweise | Chat | ✅ | API-Key fehlt |
 
 ---
 
 ### B) Was läuft gut? (Top 5)
 
-1. **Auth & Rollen-System** ✅
-   - 3-Rollen-Modell (Admin, Schichtleiter, Mitarbeiter)
+1. **Stammdaten vollständig** ✅
+   - 12 Mitarbeiter importiert (aus Excel)
+   - 46 Tische mit korrekten Bereichen/Subbereichen
+   - 3 Arbeitsbereiche (Service, Küche, Bar)
+
+2. **Events & Aktionen** ✅
+   - 11 Veranstaltungen + 13 Aktionen von Website gescraped
+   - Alle Termine 2026 erfasst
+   - Menü-Aktionen mit Optionen
+
+3. **Backup-System** ✅ (NEU)
+   - XLSX-Export (Staff + Tables)
+   - JSON-Export (Events/Actions)
+   - Server-Backup in /app/backups/
+   - Sensible Daten maskiert
+
+4. **Auth & Rollen** ✅
+   - Admin/Schichtleiter/Mitarbeiter
    - Route-Protection funktioniert
    - Token-basierte Auth stabil
 
-2. **Öffnungszeiten-Management** ✅
-   - Perioden + Sperrtage CRUD komplett
-   - Effective Hours Berechnung korrekt
-   - Priority-Logik funktioniert
-
-3. **Staff-Modul** ✅
-   - Mitarbeiter-Stammdaten mit Verschlüsselung
-   - Dokument-Upload mit Kategorien
-   - Completeness-Tracking
-
-4. **Service-Terminal UI** ✅
-   - Touch-optimiert, Pastel-Farben
-   - Quick-Navigation (Heute/Morgen, Slots)
-   - Hint-Icons für Gäste-Infos
-
-5. **TaxOffice-Exporte** ✅
-   - PDF/CSV-Export funktional
-   - GoBD-konforme Struktur vorbereitet
+5. **Tischplan-Backend** ✅
+   - Alle 46 Tische mit Kombinierbarkeit
+   - Saal/Wintergarten/Terrasse korrekt
+   - API liefert vollständige Daten
 
 ---
 
-### C) Risiken & Probleme (Top 10, priorisiert)
+### C) Risiken & Probleme (Top 10)
 
-| # | Problem | Impact | Ursache | Betrifft |
-|---|---------|--------|---------|----------|
-| 1 | **Dienstplan: Shift-Dialog öffnet nicht** | 🔴 Hoch | Click-Handler defekt | `Schedule.jsx` |
-| 2 | **Keine Stammdaten (Tische, MA, Bereiche)** | 🔴 Hoch | Seed nicht ausgeführt | DB |
-| 3 | **SMTP nicht konfiguriert** | 🟡 Mittel | Env-Vars fehlen | `email_service.py` |
-| 4 | **KI ohne API-Key** | 🟡 Mittel | OpenAI-Key fehlt | `ai_assistant.py` |
-| 5 | **Dienstplan: KW-Navigation statt Datum** | 🟡 Mittel | UX-Entscheidung | `Schedule.jsx` |
-| 6 | **Keine Schichtarten-Konfiguration** | 🟡 Mittel | Fehlendes Feature | Backend + UI |
-| 7 | **Export-Buttons nicht sichtbar** | 🟡 Mittel | Conditional Rendering | `Schedule.jsx` |
-| 8 | **Tischplan ohne Tische** | 🟡 Mittel | Keine Stammdaten | DB + `TablePlan.jsx` |
-| 9 | **Reservierung ohne Tisch-Zuweisung-Logik** | 🟡 Mittel | Kein Auto-Assign | `server.py` |
-| 10 | **MyShifts zeigt immer KW 52** | 🟢 Niedrig | Week-Calc Bug | `MyShifts.jsx` |
+| # | Problem | Impact | Ursache |
+|---|---------|--------|---------|
+| 1 | **Dienstplan: Shift-Dialog öffnet nicht** | 🔴 Hoch | Click-Handler in Schedule.jsx |
+| 2 | **Öffnungszeiten nicht konfiguriert** | 🔴 Hoch | Keine Perioden in DB |
+| 3 | **Keine Schichtarten-Konfiguration** | 🟡 Mittel | Collection fehlt |
+| 4 | **SMTP nicht konfiguriert** | 🟡 Mittel | Env-Vars fehlen |
+| 5 | **KI ohne API-Key** | 🟡 Mittel | OpenAI-Key fehlt |
+| 6 | **Dienstplan: Nur KW-Navigation** | 🟡 Mittel | UX-Entscheidung |
+| 7 | **Export-Buttons nicht sichtbar** | 🟡 Mittel | Conditional Rendering |
+| 8 | **Reservierungs-Slots fehlen** | 🟡 Mittel | reservation_config leer |
+| 9 | **Tischkombinationen ungetestet** | 🟢 Niedrig | Keine Kombinationen angelegt |
+| 10 | **MyShifts zeigt falsche KW** | 🟢 Niedrig | Week-Calc Bug |
 
 ---
 
 ### D) Nacharbeit erforderlich
 
-1. **Shift-Dialog fixen** – `Schedule.jsx` Click-Handler für Plus-Button reparieren
-2. **Schichtarten-Collection** – Backend-Endpoint + Admin-UI für konfigurierbare Schichtarten
-3. **Kalender-Navigation** – Datum-Picker statt KW-Buttons, heute markieren
-4. **Stammdaten-Setup** – Tische, Bereiche, Mitarbeiter initial anlegen
-5. **SMTP konfigurieren** – Env-Vars in Backend-Deployment setzen
-6. **Tischplan testen** – Mit echten Tischen durchspielen
-7. **Export-Visibility** – Buttons auch ohne Schichten anzeigen
+1. **Shift-Dialog fixen** → `Schedule.jsx` Click-Handler debuggen
+2. **Öffnungszeiten anlegen** → Mindestens 1 Periode in DB
+3. **Schichtarten-Collection** → Backend-Endpoint + Admin-UI
+4. **Kalender-Navigation** → Datum-Picker statt nur KW
+5. **SMTP konfigurieren** → Env-Vars im Deployment
+6. **Reservierungs-Slots** → Default-Config anlegen
+7. **Export-Buttons** → Conditional entfernen
 
 ---
 
 ## 3️⃣ ROADMAP – Praktische Reihenfolge
 
 ### Sprint 6: Dienstplan Stabilisierung (1 Woche)
-**Ziel:** Dienstplan produktionsreif machen
+**Ziel:** Dienstplan produktionsreif
 - [ ] Fix: Shift-Dialog Click-Handler
-- [ ] Schichtarten-Konfiguration (Collection + UI)
-- [ ] Kalender-Navigation (Datum statt nur KW)
 - [ ] Export-Buttons immer sichtbar
+- [ ] Schichtarten-Collection + UI
+- [ ] Kalender-Navigation verbessern
 - [ ] Test mit echten Mitarbeitern
 
-### Sprint 7: Tischplan & Stammdaten (1-2 Wochen)
-**Ziel:** Tische definieren, Plan nutzbar
-- [ ] Tisch-Stammdaten anlegen (15-20 Tische)
-- [ ] Bereiche definieren (Saal, Wintergarten, Terrasse)
-- [ ] Tischplan grafisch testen
-- [ ] Kombinationsregeln validieren
+### Sprint 7: Öffnungszeiten & Reservierung (1 Woche)
+**Ziel:** Reservierungssystem aktivieren
+- [ ] Öffnungszeiten-Perioden anlegen
+- [ ] Reservierungs-Slots konfigurieren
+- [ ] Sperrtage (Feiertage) eintragen
+- [ ] Booking-Widget testen
 
-### Sprint 8: Reservierung + Tisch-Zuweisung (1-2 Wochen)
-**Ziel:** Reservierungen an Tische binden
+### Sprint 8: Tischzuweisung & Service-Flow (1-2 Wochen)
+**Ziel:** End-to-End Reservierung → Tisch
 - [ ] Auto-Assign Logik implementieren
 - [ ] Service-Terminal: Tisch-Anzeige
-- [ ] Belegungsübersicht pro Zeitslot
-- [ ] Konflikte visualisieren
+- [ ] Belegungsübersicht pro Slot
+- [ ] Walk-in Flow testen
 
 ### Sprint 9: E-Mail & Kommunikation (1 Woche)
 **Ziel:** Gäste automatisch informieren
-- [ ] SMTP konfigurieren + testen
+- [ ] SMTP konfigurieren
 - [ ] E-Mail-Templates anpassen
 - [ ] Reminder-System aktivieren
+- [ ] Bestätigungs-Mails testen
 
-### Sprint 10: KI-Integration (Optional, nach Stabilisierung)
-**Ziel:** Assistenz-Funktionen
+### Sprint 10: KI-Integration (Optional)
+**Ziel:** Assistenz-Funktionen (nur nach Stabilisierung)
 - [ ] OpenAI-Key einbinden
 - [ ] Natürliche Sprache für Suche
 - [ ] Empfehlungen für Tischplanung
 
-**Begründung der Reihenfolge:**
+**Begründung:**
 1. Dienstplan zuerst → täglich im Einsatz
-2. Tische vor Reservierungen → Grundlage für Zuweisung
-3. E-Mail nach Kern-Features → Nice-to-have
-4. KI ganz am Ende → nur sinnvoll wenn Daten vorhanden
+2. Öffnungszeiten vor Reservierung → Grundlage
+3. Tischzuweisung → Kern-Feature
+4. E-Mail danach → Nice-to-have
+5. KI ganz am Ende → nur sinnvoll mit Daten
 
 ---
 
@@ -236,42 +232,39 @@
 
 **Backend-Endpoints (staff_module.py):**
 ```
-GET    /api/staff/schedules          – Liste aller Pläne
-GET    /api/staff/schedules/{id}     – Ein Plan
-POST   /api/staff/schedules          – Plan erstellen
-PATCH  /api/staff/schedules/{id}     – Plan aktualisieren
+GET    /api/staff/schedules          – Liste
+POST   /api/staff/schedules          – Erstellen
+PATCH  /api/staff/schedules/{id}     – Aktualisieren
 POST   /api/staff/schedules/{id}/publish  – Veröffentlichen
-POST   /api/staff/schedules/{id}/copy     – Woche kopieren
+POST   /api/staff/schedules/{id}/copy     – Kopieren
 GET    /api/staff/shifts             – Schichten filtern
 POST   /api/staff/shifts             – Schicht erstellen
-PATCH  /api/staff/shifts/{id}        – Schicht bearbeiten
-DELETE /api/staff/shifts/{id}        – Schicht löschen
-GET    /api/staff/my-shifts          – Eigene Schichten (MA-Ansicht)
+PATCH  /api/staff/shifts/{id}        – Bearbeiten
+DELETE /api/staff/shifts/{id}        – Löschen
+GET    /api/staff/my-shifts          – MA-Ansicht
+GET    /api/staff/export/schedule/{id}/pdf
+GET    /api/staff/export/shifts/csv
 ```
 
 **Collections:**
-- `schedules` – Wochenpläne (year, week, status)
-- `shifts` – Einzelne Schichten (staff_member_id, date, times, role)
-- `work_areas` – Arbeitsbereiche (name, description)
-- `staff_members` – Mitarbeiter (name, employment_type, areas)
+- `schedules` – Wochenpläne (year, week, status) → **0 Einträge**
+- `shifts` – Schichten → **0 Einträge**
+- `work_areas` – Bereiche → **3 Einträge**
+- `staff_members` – Mitarbeiter → **12 Einträge**
 
 **UI-Seiten:**
 - `Schedule.jsx` (741 LOC) – Manager-Ansicht
-- `MyShifts.jsx` (215 LOC) – Mitarbeiter-Ansicht
+- `MyShifts.jsx` (215 LOC) – MA-Ansicht
 
-**Konflikt-Erkennung:**
-- ✅ Doppelbelegung (gleicher MA, gleicher Tag, überlappende Zeit)
-- ✅ Ruhezeit (11 Stunden zwischen Schichten)
+**Konflikt-Erkennung:** ✅ Implementiert
+- Doppelbelegung (gleicher MA, gleicher Tag)
+- Ruhezeit (11h zwischen Schichten)
 
 ---
 
 ### B) Fehlende Konfiguration
 
-#### 1) Schichtarten (FEHLT KOMPLETT)
-
-**Anforderung:**
-- Konfigurierbare Schichttypen statt hardcodierter Rollen
-- Pro Schichtart: Name, Farbe, Default-Zeiten, Bereich, Pausenregel
+#### 1) Schichtarten (FEHLT)
 
 **Aktuell hardcoded:**
 ```javascript
@@ -284,7 +277,7 @@ const SHIFT_ROLES = {
 };
 ```
 
-**Empfohlene Struktur:**
+**Benötigt:** Collection `shift_types`
 ```json
 {
   "id": "uuid",
@@ -299,110 +292,83 @@ const SHIFT_ROLES = {
 }
 ```
 
----
-
 #### 2) Dienstplan-Ansicht (UX-Probleme)
 
 **Aktuell:**
-- Navigation nur über KW-Buttons (</>)
+- Nur KW-Navigation (← →)
 - Kein Datum-Picker
 - "Heute" nicht markiert
-- Keine Monats-Schnellwahl
 
 **Anforderung:**
-- Kalender-Widget oben
-- Monat/Jahr schnell wählbar (Dropdown oder Scroll)
-- Tagesleiste (Mo-So) klickbar
-- "Heute" immer hervorgehoben
-- 2 Jahre voraus mit wenigen Klicks erreichbar
-- Wochenstart: Montag (✅ bereits so)
-
-**Empfohlene Ansicht:**
 ```
-┌─────────────────────────────────────────────────────┐
-│  ← Dezember 2025 →   [Heute] [Monat-Picker]         │
-│  Mo  Di  Mi  Do  Fr  Sa  So                         │
-│  22  23  24  25  26  27  28  ← Aktuelle Woche       │
-├─────────────────────────────────────────────────────┤
-│        Mo   Di   Mi   Do   Fr   Sa   So             │
-│ Service  │    │    │    │    │    │    │            │
-│ Küche    │    │    │    │    │    │    │            │
-│ Bar      │    │    │    │    │    │    │            │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  ← Dezember 2025 →   [Heute] [Monat wählen]     │
+│  Mo  Di  Mi  Do  Fr  Sa  So                     │
+│  22  23  24  25  26  27  28  ← aktuelle Woche   │
+├─────────────────────────────────────────────────┤
+│        Mo    Di    Mi    Do    Fr    Sa    So   │
+│ Service │     │     │     │     │     │     │   │
+│ Küche   │     │     │     │     │     │     │   │
+│ Bar     │     │     │     │     │     │     │   │
+└─────────────────────────────────────────────────┘
 ```
 
-**Layout-Empfehlung:** 
+**Empfehlung Layout:** 
 - Spalten = Tage (Mo-So)
-- Zeilen = Bereiche (Service, Küche, Bar, Event)
-- Innerhalb: Mitarbeiter-Karten mit Zeiten
+- Zeilen = Bereiche
+- Innerhalb: MA-Karten mit Zeiten
 
 ---
 
 ### C) Quick Win vs. Sauberer Umbau
 
-#### Quick Win (ohne Backend-Änderung):
-1. **Shift-Dialog fix** – nur Frontend, Click-Handler debuggen
-2. **Heute markieren** – CSS-Klasse für aktuellen Tag
-3. **Datum anzeigen** – Neben KW auch DD.MM. anzeigen
-4. **Export-Buttons** – Conditional entfernen
+#### Quick Win (nur Frontend):
+1. Shift-Dialog Click-Handler fixen
+2. "Heute" markieren (CSS-Klasse)
+3. Datum (DD.MM.) neben KW anzeigen
+4. Export-Buttons immer sichtbar
 
 #### Sauberer Umbau (additive Endpoints):
-
-1. **Neue Collection: `shift_types`**
-   ```
-   POST   /api/staff/shift-types
-   GET    /api/staff/shift-types
-   PATCH  /api/staff/shift-types/{id}
-   DELETE /api/staff/shift-types/{id}
-   ```
-
-2. **UI-Seite: `/admin/settings/shift-types`**
-   - Liste aller Schichtarten
-   - Dialog für Erstellen/Bearbeiten
-   - Drag & Drop für Reihenfolge
-
-3. **Schedule.jsx Refactoring:**
-   - Kalender-Widget (DatePicker)
-   - Schichtarten aus API laden
-   - Shift-Dialog mit Schichtart-Dropdown
+1. `POST /api/staff/shift-types` – Schichtarten CRUD
+2. `GET /api/staff/shift-types`
+3. UI-Seite `/admin/settings/shift-types`
+4. Schedule.jsx: Schichtarten aus API laden
 
 ---
 
-### D) To-Do Liste (max 12 Punkte)
+### D) To-Do Liste (12 Punkte)
 
 | # | Aufgabe | Typ | Priorität |
 |---|---------|-----|-----------|
-| 1 | Fix: Shift-Dialog Click-Handler | Bug | 🔴 |
+| 1 | Shift-Dialog Click-Handler fixen | Bug | 🔴 |
 | 2 | Export-Buttons immer sichtbar | Bug | 🔴 |
 | 3 | "Heute" im Kalender markieren | UX | 🟡 |
-| 4 | Datum (DD.MM.) neben KW anzeigen | UX | 🟡 |
+| 4 | Datum (DD.MM.) neben KW | UX | 🟡 |
 | 5 | Collection `shift_types` anlegen | Backend | 🟡 |
 | 6 | CRUD-Endpoints für Schichtarten | Backend | 🟡 |
-| 7 | UI-Seite für Schichtarten | Frontend | 🟡 |
+| 7 | UI-Seite Schichtarten-Admin | Frontend | 🟡 |
 | 8 | Shift-Dialog: Schichtart-Dropdown | Frontend | 🟡 |
 | 9 | Kalender-Widget für Navigation | Frontend | 🟢 |
 | 10 | Monat-Schnellwahl | Frontend | 🟢 |
 | 11 | 2-Jahres-Navigation | Frontend | 🟢 |
-| 12 | Test: Vollständiger Schicht-Workflow | Test | 🔴 |
+| 12 | Test: Vollständiger Workflow | Test | 🔴 |
 
----
-
-### E) Testliste für Dienstplan
+### Testliste
 
 | Test | Beschreibung | Voraussetzung |
 |------|--------------|---------------|
-| T1 | Plan erstellen (neue Woche) | Mitarbeiter vorhanden |
-| T2 | Shift hinzufügen (Dialog öffnet) | Plan existiert |
-| T3 | Shift speichern (MA + Zeit + Bereich) | T2 erfolgreich |
-| T4 | Konflikt: Doppelbelegung → Fehler | 2 Shifts gleicher MA |
-| T5 | Konflikt: Ruhezeit → Fehler | Schicht 23:00, nächste 06:00 |
-| T6 | Shift bearbeiten | Bestehender Shift |
-| T7 | Shift löschen | Bestehender Shift |
+| T1 | Plan erstellen (neue Woche) | MA vorhanden ✅ |
+| T2 | Shift hinzufügen (Dialog) | Plan existiert |
+| T3 | Shift speichern | T2 |
+| T4 | Konflikt: Doppelbelegung | 2 Shifts |
+| T5 | Konflikt: Ruhezeit | Schicht 23:00 + 06:00 |
+| T6 | Shift bearbeiten | Shift existiert |
+| T7 | Shift löschen | Shift existiert |
 | T8 | Plan veröffentlichen | Status = entwurf |
 | T9 | Woche kopieren | Veröffentlichter Plan |
 | T10 | PDF-Export | Plan mit Shifts |
 | T11 | CSV-Export | Plan mit Shifts |
-| T12 | MyShifts: Eigene Schichten sehen | Als Mitarbeiter |
+| T12 | MyShifts anzeigen | Als MA einloggen |
 
 ---
 
@@ -412,21 +378,25 @@ const SHIFT_ROLES = {
 FOKUS: Sprint 6 – Dienstplan Stabilisierung
 
 1. SOFORT: Shift-Dialog Bug fixen (Schedule.jsx)
-   → Ohne funktionierenden Dialog kein produktiver Test
+   → Ohne Dialog kein Test möglich
 
-2. DANN: Schichtarten-Konzept finalisieren
-   → Collection-Schema abstimmen
+2. DANN: Öffnungszeiten anlegen
+   → Mindestens 1 Periode (Mo-So, 11-22 Uhr)
+   → Sperrtage: Heiligabend, Silvester
+
+3. PARALLEL: Schichtarten-Konzept finalisieren
+   → Schema bestätigen lassen
    → UI-Mockup erstellen
 
-3. DANACH: Stammdaten anlegen (2-3 Test-Mitarbeiter)
-   → Echte Schichten planen
-   → Konflikt-Tests durchführen
+4. TEST: Mit echten Mitarbeitern
+   → 1 Woche planen
+   → Konflikte provozieren
 
-4. PARALLEL: SMTP konfigurieren (wenn Zugangsdaten vorliegen)
-
-WARNUNG: KEIN Code schreiben bevor Schichtarten-Schema bestätigt!
+WARNUNG: 
+- KEIN Code für Schichtarten bevor Schema bestätigt!
+- Öffnungszeiten MÜSSEN vor Reservierungs-Test existieren
 ```
 
 ---
 
-**STOP – Warte auf Freigabe für Implementierung.**
+**STOP – Keine Implementierung gestartet. Warte auf Freigabe.**
