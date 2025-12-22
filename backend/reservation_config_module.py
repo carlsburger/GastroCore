@@ -404,6 +404,121 @@ async def check_capacity_with_duration(
         return {"available": True, "error": str(e)}
 
 
+async def check_table_conflict(
+    date_str: str,
+    time_str: str,
+    table_number: str,
+    duration_minutes: int = None,
+    exclude_reservation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Prüft ob ein Tisch zur angegebenen Zeit bereits belegt ist.
+    Berücksichtigt Aufenthaltsdauer für Überlappungsprüfung.
+    
+    Returns:
+        {
+            "available": bool,
+            "conflict": Optional[dict] - Details zur Konflikt-Reservierung
+        }
+    """
+    if not table_number:
+        return {"available": True, "conflict": None}
+    
+    try:
+        if duration_minutes is None:
+            duration_minutes = await get_default_duration()
+        
+        # Berechne Zeitfenster der neuen Reservierung
+        start_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        end_dt = start_dt + timedelta(minutes=duration_minutes)
+        
+        # Suche alle Reservierungen am selben Tag mit diesem Tisch
+        query = {
+            "date": date_str,
+            "table_number": table_number,
+            "status": {"$in": ["neu", "bestaetigt", "angekommen"]},
+            "archived": False
+        }
+        if exclude_reservation_id:
+            query["id"] = {"$ne": exclude_reservation_id}
+        
+        existing = await db.reservations.find(query, {"_id": 0}).to_list(100)
+        
+        default_duration = await get_default_duration()
+        
+        for res in existing:
+            res_start = datetime.strptime(f"{res['date']} {res['time']}", "%Y-%m-%d %H:%M")
+            res_duration = res.get("duration_minutes", default_duration)
+            res_end = res_start + timedelta(minutes=res_duration)
+            
+            # Prüfe Überlappung
+            if start_dt < res_end and end_dt > res_start:
+                return {
+                    "available": False,
+                    "conflict": {
+                        "id": res["id"],
+                        "guest_name": res.get("guest_name"),
+                        "time": res["time"],
+                        "end_time": res_end.strftime("%H:%M"),
+                        "party_size": res.get("party_size"),
+                        "table_number": res.get("table_number")
+                    },
+                    "message": f"Tisch {table_number} ist von {res['time']} bis {res_end.strftime('%H:%M')} durch {res.get('guest_name')} belegt"
+                }
+        
+        return {"available": True, "conflict": None}
+        
+    except Exception as e:
+        logger.error(f"Tisch-Konfliktprüfung fehlgeschlagen: {e}")
+        return {"available": True, "error": str(e)}
+
+
+async def get_available_tables_for_slot(
+    date_str: str,
+    time_str: str,
+    duration_minutes: int = None,
+    area_id: Optional[str] = None
+) -> List[str]:
+    """
+    Gibt Liste der verfügbaren Tische für einen Zeitslot zurück.
+    Nützlich für KI-Tischzuweisung.
+    """
+    if duration_minutes is None:
+        duration_minutes = await get_default_duration()
+    
+    try:
+        # Alle definierten Tische laden (aus Areas oder Settings)
+        all_tables = set()
+        
+        # Tische aus Areas
+        if area_id:
+            area = await db.areas.find_one({"id": area_id, "archived": False})
+            if area and area.get("tables"):
+                all_tables.update(area["tables"])
+        else:
+            areas = await db.areas.find({"archived": False}).to_list(100)
+            for area in areas:
+                if area.get("tables"):
+                    all_tables.update(area["tables"])
+        
+        # Tische aus bestehenden Reservierungen (als Fallback)
+        existing_tables = await db.reservations.distinct("table_number", {"archived": False, "table_number": {"$ne": None}})
+        all_tables.update([t for t in existing_tables if t])
+        
+        # Prüfe jeden Tisch auf Verfügbarkeit
+        available_tables = []
+        for table in sorted(all_tables, key=lambda x: (int(x) if x.isdigit() else 999, x)):
+            check = await check_table_conflict(date_str, time_str, table, duration_minutes)
+            if check["available"]:
+                available_tables.append(table)
+        
+        return available_tables
+        
+    except Exception as e:
+        logger.error(f"Fehler bei Tisch-Verfügbarkeit: {e}")
+        return []
+
+
 # ============== ROUTER ==============
 reservation_config_router = APIRouter(prefix="/reservation-config", tags=["Reservation Config"])
 
