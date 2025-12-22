@@ -59,6 +59,8 @@ from reservation_config_module import (
     get_available_slots_for_date,
     get_opening_hours_for_date,
     check_capacity_with_duration,
+    check_table_conflict,
+    get_available_tables_for_slot,
     DEFAULT_DURATION_MINUTES
 )
 
