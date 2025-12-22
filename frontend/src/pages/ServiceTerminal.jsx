@@ -959,7 +959,7 @@ export const ServiceTerminal = () => {
               <Bell className="h-5 w-5" />
               Neue Reservierungen ({pendingCount})
             </SheetTitle>
-            <SheetDescription>Reservierungen mit Status "Neu"</SheetDescription>
+            <SheetDescription>Reservierungen mit Status Neu</SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-2">
             {newReservations.length === 0 ? (
