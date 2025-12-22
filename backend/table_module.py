@@ -627,13 +627,14 @@ async def suggest_tables(
     """
     suggestions = await suggest_tables_for_party(
         date,
+        date_str,
         time,
         party_size,
         area=area.value if area else None
     )
     
     return {
-        "date": date,
+        "date": date_str,
         "time": time,
         "party_size": party_size,
         "suggestions": suggestions,
