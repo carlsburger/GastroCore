@@ -100,6 +100,7 @@ async def import_staff(dry_run=True):
         staff_data = {
             "first_name": first_name,
             "last_name": last_name,
+            "full_name": f"{first_name} {last_name}",
             "nickname": row.get("rufname", "").strip() or None,
             "email": email,
             "phone": phone,
