@@ -265,6 +265,39 @@ export const ServiceTerminal = () => {
     }
   };
 
+  // Sprint: Telefon-Modus - Schnelle Reservierung während Telefonat
+  const handlePhoneReservation = async () => {
+    if (!phoneReservationData.guest_name || !phoneReservationData.guest_phone) {
+      toast.error("Name und Telefon sind erforderlich");
+      return;
+    }
+
+    try {
+      await axios.post(`${BACKEND_URL}/api/reservations`, {
+        guest_name: phoneReservationData.guest_name,
+        guest_phone: phoneReservationData.guest_phone,
+        party_size: phoneReservationData.party_size,
+        date: selectedDate,
+        time: phoneReservationData.time,
+        notes: phoneReservationData.notes,
+        source: "telefon",
+      }, { headers });
+      
+      toast.success("Telefonische Reservierung angelegt");
+      setShowPhoneMode(false);
+      setPhoneReservationData({
+        guest_name: "",
+        guest_phone: "",
+        party_size: 2,
+        time: format(new Date(), "HH:mm"),
+        notes: "",
+      });
+      fetchData(false);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Anlegen");
+    }
+  };
+
   // Create waitlist entry
   const handleCreateWaitlist = async () => {
     if (!waitlistData.guest_name || !waitlistData.guest_phone) {
