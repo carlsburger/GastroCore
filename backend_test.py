@@ -5902,14 +5902,20 @@ def main():
     
     tester = GastroCoreAPITester()
     
+    # Check if we should run System Settings & Opening Hours Master tests
+    if len(sys.argv) > 1 and sys.argv[1] == "--system-settings":
+        print("Running System Settings & Opening Hours Master Tests...")
+        success = tester.run_system_settings_tests()
+        return 0 if success else 1
+    
     # Check if we should run full QA audit
     if len(sys.argv) > 1 and sys.argv[1] == "--full-qa-audit":
         print("Running FULL QA AUDIT for all sprints...")
         success = tester.run_full_qa_audit()
         return 0 if success else 1
     
-    # Original test execution
-    success = tester.run_all_tests()
+    # Default: Run System Settings & Opening Hours Master tests (as per review request)
+    success = tester.run_system_settings_tests()
     return 0 if success else 1
 
 if __name__ == "__main__":
