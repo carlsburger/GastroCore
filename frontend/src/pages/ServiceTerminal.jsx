@@ -671,28 +671,38 @@ export const ServiceTerminal = () => {
                   onClick={() => openDetailSheet(res)}
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      {/* Time & Party Size */}
-                      <div className="flex items-center gap-4 min-w-[140px]">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-[#005500]">{res.time}</p>
-                          <div className="flex items-center justify-center gap-1 text-muted-foreground">
-                            <Users className="h-4 w-4" />
-                            <span className="font-medium">{res.party_size}</span>
+                    <div className="flex items-center gap-4">
+                      {/* Tisch & Personen - GROSS und PROMINENT */}
+                      <div className="flex items-center gap-3 min-w-[180px]">
+                        {/* Tischnummer */}
+                        {res.table_number ? (
+                          <div className="bg-[#005500] text-white rounded-lg px-4 py-2 text-center min-w-[80px]">
+                            <p className="text-xs uppercase tracking-wide opacity-80">Tisch</p>
+                            <p className="text-2xl font-bold">{res.table_number}</p>
                           </div>
+                        ) : (
+                          <div className="bg-gray-200 text-gray-500 rounded-lg px-4 py-2 text-center min-w-[80px]">
+                            <p className="text-xs uppercase tracking-wide">Tisch</p>
+                            <p className="text-lg font-bold">—</p>
+                          </div>
+                        )}
+                        {/* Personenanzahl */}
+                        <div className="bg-blue-100 text-blue-800 rounded-lg px-4 py-2 text-center min-w-[70px]">
+                          <p className="text-xs uppercase tracking-wide opacity-80">Pers.</p>
+                          <p className="text-2xl font-bold">{res.party_size}</p>
                         </div>
+                      </div>
+
+                      {/* Uhrzeit */}
+                      <div className="text-center min-w-[70px]">
+                        <p className="text-2xl font-bold text-[#005500]">{res.time}</p>
+                        <p className="text-xs text-muted-foreground">Uhr</p>
                       </div>
 
                       {/* Guest Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-lg truncate">{res.guest_name}</p>
-                          {/* Tischnummer prominent anzeigen */}
-                          {res.table_number && (
-                            <Badge className="bg-[#005500] text-white text-sm px-2 py-0.5">
-                              Tisch {res.table_number}
-                            </Badge>
-                          )}
                           {hasFlag && (
                             <Badge className={isBlacklist ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}>
                               {isBlacklist ? <Ban className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
