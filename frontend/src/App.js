@@ -45,6 +45,8 @@ import AIAssistant from "./pages/AIAssistant";
 import ReservationConfig from "./pages/ReservationConfig";
 // Tischplan (Sprint: Service-Terminal Erweiterungen)
 import TablePlan from "./pages/TablePlan";
+// Tisch-Stammdaten Admin (Sprint: Tischplan & Belegung)
+import TableAdmin from "./pages/TableAdmin";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
