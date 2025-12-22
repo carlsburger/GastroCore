@@ -883,6 +883,114 @@ async def get_guests(
     guests = await db.guests.find(query, {"_id": 0}).to_list(500)
     return guests
 
+
+# Sprint: Gäste-Autocomplete für schnelle Auswahl
+@api_router.get("/guests/autocomplete", tags=["Guests"])
+async def autocomplete_guests(
+    q: str = Query(..., min_length=2, description="Suchbegriff (min. 2 Zeichen)"),
+    limit: int = Query(10, ge=1, le=50),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Schnelle Gäste-Suche für Autocomplete.
+    Sucht in Name, Telefon und E-Mail.
+    Gibt Besuchszähler und letzten Besuch mit zurück.
+    """
+    safe_search = escape_regex(q)
+    
+    # Suche in Gäste-Datenbank
+    guests = await db.guests.find(
+        {
+            "archived": False,
+            "$or": [
+                {"name": {"$regex": safe_search, "$options": "i"}},
+                {"phone": {"$regex": safe_search, "$options": "i"}},
+                {"email": {"$regex": safe_search, "$options": "i"}}
+            ]
+        },
+        {"_id": 0}
+    ).limit(limit).to_list(limit)
+    
+    # Für jeden Gast: Besuchszähler und letzten Besuch hinzufügen
+    result = []
+    for guest in guests:
+        # Zähle abgeschlossene Reservierungen
+        visit_count = await db.reservations.count_documents({
+            "guest_phone": guest.get("phone"),
+            "status": {"$in": ["abgeschlossen", "angekommen"]},
+            "archived": False
+        })
+        
+        # Letzter Besuch
+        last_visit = await db.reservations.find_one(
+            {
+                "guest_phone": guest.get("phone"),
+                "status": {"$in": ["abgeschlossen", "angekommen"]},
+                "archived": False
+            },
+            {"_id": 0, "date": 1, "time": 1},
+            sort=[("date", -1), ("time", -1)]
+        )
+        
+        result.append({
+            "id": guest.get("id"),
+            "name": guest.get("name"),
+            "phone": guest.get("phone"),
+            "email": guest.get("email"),
+            "flag": guest.get("flag"),
+            "notes": guest.get("notes"),
+            "newsletter_subscribed": guest.get("newsletter_subscribed", True),
+            "visit_count": visit_count,
+            "last_visit": last_visit.get("date") if last_visit else None
+        })
+    
+    # Auch in Reservierungen suchen (für Gäste die noch nicht in guests sind)
+    if len(result) < limit:
+        res_guests = await db.reservations.aggregate([
+            {
+                "$match": {
+                    "archived": False,
+                    "$or": [
+                        {"guest_name": {"$regex": safe_search, "$options": "i"}},
+                        {"guest_phone": {"$regex": safe_search, "$options": "i"}}
+                    ]
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$guest_phone",
+                    "name": {"$first": "$guest_name"},
+                    "phone": {"$first": "$guest_phone"},
+                    "email": {"$first": "$guest_email"},
+                    "visit_count": {"$sum": 1},
+                    "last_visit": {"$max": "$date"}
+                }
+            },
+            {"$limit": limit - len(result)}
+        ]).to_list(limit)
+        
+        # Nur hinzufügen wenn nicht bereits in result
+        existing_phones = {g["phone"] for g in result}
+        for rg in res_guests:
+            if rg["_id"] and rg["_id"] not in existing_phones:
+                result.append({
+                    "id": None,
+                    "name": rg["name"],
+                    "phone": rg["phone"],
+                    "email": rg.get("email"),
+                    "flag": None,
+                    "notes": None,
+                    "newsletter_subscribed": True,
+                    "visit_count": rg["visit_count"],
+                    "last_visit": rg["last_visit"]
+                })
+    
+    # Sortiere nach Besuchszähler (Stammgäste zuerst)
+    result.sort(key=lambda x: x["visit_count"], reverse=True)
+    
+    return result[:limit]
+
+
 @api_router.post("/guests", tags=["Guests"])
 async def create_guest(data: GuestCreate, user: dict = Depends(require_manager)):
     existing = await db.guests.find_one({"phone": data.phone, "archived": False})
@@ -890,6 +998,9 @@ async def create_guest(data: GuestCreate, user: dict = Depends(require_manager))
         raise ConflictException("Gast mit dieser Telefonnummer existiert bereits")
     
     guest = create_entity(data.model_dump(exclude_none=True))
+    # Sprint: Newsletter standardmäßig aktiviert
+    if "newsletter_subscribed" not in guest:
+        guest["newsletter_subscribed"] = True
     await db.guests.insert_one(guest)
     await create_audit_log(user, "guest", guest["id"], "create", None, safe_dict_for_audit(guest))
     
