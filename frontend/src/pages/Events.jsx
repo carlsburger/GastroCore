@@ -161,7 +161,7 @@ export const Events = ({ category: propCategory }) => {
       last_alacarte_reservation_minutes: 120,
       requires_payment: isVeranstaltung,
       requires_menu_choice: isMenueAktion,
-      content_category: category,
+      content_category: currentCategory,
     });
     setEditingEvent(null);
   };
