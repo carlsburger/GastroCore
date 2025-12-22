@@ -29,15 +29,18 @@ frontend:
 
   - task: "TESTBLOCK B: Schedule Core Flows"
     implemented: true
-    working: "NA"
+    working: false
     file: "Schedule.jsx"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Cannot test - blocked by TESTBLOCK A login issue. Schedule page requires authentication."
+      - working: false
+        agent: "testing"
+        comment: "PARTIAL: Schedule page loads and basic functionality works. Week navigation buttons present but selectors not working properly. Schedule creation works. However, shift management features not fully functional - plus buttons for adding shifts not appearing after schedule creation. Export buttons (PDF/CSV) and action buttons (Publish/Copy) not visible, suggesting UI rendering issues or missing data."
 
   - task: "TESTBLOCK C: Konfliktfehler im UI"
     implemented: true
