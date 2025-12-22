@@ -51,8 +51,9 @@ export const Login = () => {
               src={CARLSBURG_LOGO_URL} 
               alt="Carlsburg Logo" 
               className="h-24 mx-auto mb-4 object-contain"
+              style={{ filter: 'brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(1500%) hue-rotate(90deg) brightness(0.7)' }}
             />
-            <p className="text-[#005500]/70 mt-2 text-lg font-medium">Cockpit</p>
+            <p className="text-[#005500] mt-2 text-3xl font-bold tracking-wide">Cockpit</p>
           </div>
 
           <Card className="border-[#005500]/20 shadow-lg bg-white">
