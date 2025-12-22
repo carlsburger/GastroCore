@@ -29,6 +29,7 @@ import {
 const navItems = [
   { path: "/", icon: LayoutDashboard, label: "nav.dashboard", roles: ["admin", "schichtleiter"] },
   { path: "/service-terminal", icon: Utensils, label: "Service-Terminal", roles: ["admin", "schichtleiter"] },
+  { path: "/table-plan", icon: MapPin, label: "Tischplan", roles: ["admin", "schichtleiter"] },
   { path: "/events-admin", icon: Calendar, label: "nav.events", roles: ["admin", "schichtleiter"] },
   { path: "/marketing", icon: Megaphone, label: "Marketing", roles: ["admin", "schichtleiter"] },
   { path: "/ai-assistant", icon: Bot, label: "KI-Assistent", roles: ["admin", "schichtleiter"] },
