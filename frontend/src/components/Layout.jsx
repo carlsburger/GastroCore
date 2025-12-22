@@ -34,6 +34,7 @@ const navItems = [
   { path: "/ai-assistant", icon: Bot, label: "KI-Assistent", roles: ["admin", "schichtleiter"] },
   { path: "/schedule", icon: CalendarClock, label: "nav.schedule", roles: ["admin", "schichtleiter"] },
   { path: "/staff", icon: UserCog, label: "nav.staff", roles: ["admin", "schichtleiter"] },
+  { path: "/reservation-config", icon: Clock, label: "Reservierungs-Konfig", roles: ["admin"] },
   { path: "/taxoffice", icon: Building2, label: "nav.taxoffice", roles: ["admin"] },
   { path: "/payments", icon: CreditCard, label: "nav.payments", roles: ["admin"] },
   { path: "/waitlist", icon: Clock, label: "nav.waitlist", roles: ["admin", "schichtleiter"] },
