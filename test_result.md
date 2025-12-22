@@ -1,22 +1,35 @@
 #====================================================================================================
-# Frontend Smoke Tests - Schedule & MyShifts + System Settings & Opening Hours
+# Frontend Smoke Tests - Service Terminal Optimization
 #====================================================================================================
 
 user_problem_statement: |
-  SYSTEM SETTINGS & OPENING HOURS MASTER MODULE
+  SERVICE TERMINAL UI OPTIMIERUNG
   
   Implementierte Features:
-  1. System Settings (Company Profile) - GET/PUT /api/system/settings
-  2. Opening Hours Periods - CRUD /api/opening-hours/periods
-  3. Closures (Sperrtage) - CRUD /api/closures
-  4. Effective Hours - GET /api/opening-hours/effective
-  5. Schedule Integration - Closed days banner
+  1. UI: Pastelligere Farben, größere Touch-Flächen, bessere Kontraste
+  2. Speed: Slot-Switcher mit < > Buttons, Heute/Morgen Quick-Buttons
+  3. Bereich-Tabs mit localStorage Speicherung
+  4. Banner für Neue Reservierungen (Drawer)
+  5. Quick Actions (Einchecken, Bestätigen, etc.) mit großen Buttons
+  6. Print Button
+  7. Hint-Icons (Geburtstag, Allergie, Gesteck, Menü) mit Tooltips
   
   TESTDATEN:
   - Admin: admin@carlsburg.de / Carlsburg2025!
-  - Sommer 2026, Winter 2026 Perioden
-  - Recurring Closures: Heiligabend, Silvester
-  - One-off Closure: 15.04.2026 Betriebsausflug
+  - Frontend URL: http://localhost:3000/service-terminal
+
+frontend:
+  - task: "Service Terminal UI Optimization"
+    implemented: true
+    working: true
+    file: "ServiceTerminal.jsx"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Komplett überarbeitete UI mit pastelligeren Farben, Touch-optimierten Buttons (h-10/h-11), Slot-Navigation mit < > Buttons, Heute/Morgen Quick-Buttons, localStorage für Bereich/Slot, Drawer für neue Reservierungen, Hint-Icons mit Tooltips, Print-Button."
 
 backend:
   - task: "System Settings CRUD"
