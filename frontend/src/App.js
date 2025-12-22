@@ -41,6 +41,8 @@ import Marketing from "./pages/Marketing";
 import Unsubscribe from "./pages/Unsubscribe";
 // AI Assistant Module (Sprint 9)
 import AIAssistant from "./pages/AIAssistant";
+// Reservation Config Module (Sprint: Reservierung Live-Ready)
+import ReservationConfig from "./pages/ReservationConfig";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
