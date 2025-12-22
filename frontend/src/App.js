@@ -230,6 +230,16 @@ function App() {
             }
           />
 
+          {/* Table Import - Admin only */}
+          <Route
+            path="/admin/reservations/import"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <TableImport />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Message Logs - Admin only */}
           <Route
             path="/message-logs"
