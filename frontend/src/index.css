@@ -120,6 +120,22 @@
     }
 }
 
+/* Slide in from left animation for mobile menu */
+.animate-slide-in-left {
+    animation: slideInLeft 0.25s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 @layer base {
     [data-debug-wrapper="true"] {
         display: contents !important;
