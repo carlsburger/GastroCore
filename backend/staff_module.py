@@ -92,6 +92,113 @@ def create_entity(data: dict) -> dict:
     }
 
 
+# ============== KONFLIKT-ERKENNUNG (Sprint: Dienstplan Live-Ready) ==============
+
+async def check_shift_conflicts(
+    staff_member_id: str,
+    shift_date: str,
+    start_time: str,
+    end_time: str,
+    exclude_shift_id: str = None
+) -> dict:
+    """
+    Prüft auf Konflikte bei Schichtzuweisung:
+    A) Doppelbelegung (überlappende Zeiten am gleichen Tag)
+    B) Ruhezeit (min. 11 Stunden zwischen Schichten)
+    
+    Returns: {"has_conflict": bool, "conflict_type": str, "message": str}
+    """
+    from datetime import datetime, timedelta
+    
+    # A) Prüfe Doppelbelegung am gleichen Tag
+    query = {
+        "staff_member_id": staff_member_id,
+        "shift_date": shift_date,
+        "archived": False
+    }
+    if exclude_shift_id:
+        query["id"] = {"$ne": exclude_shift_id}
+    
+    same_day_shifts = await db.shifts.find(query, {"_id": 0}).to_list(100)
+    
+    # Parse times
+    new_start = datetime.strptime(start_time, "%H:%M")
+    new_end = datetime.strptime(end_time, "%H:%M")
+    if new_end < new_start:
+        new_end += timedelta(days=1)
+    
+    for existing in same_day_shifts:
+        ex_start = datetime.strptime(existing["start_time"], "%H:%M")
+        ex_end = datetime.strptime(existing["end_time"], "%H:%M")
+        if ex_end < ex_start:
+            ex_end += timedelta(days=1)
+        
+        # Check overlap
+        if not (new_end <= ex_start or new_start >= ex_end):
+            return {
+                "has_conflict": True,
+                "conflict_type": "overlap",
+                "message": f"Konflikt: Mitarbeiter ist bereits eingeplant ({existing['start_time']}-{existing['end_time']})"
+            }
+    
+    # B) Prüfe Ruhezeit (11 Stunden)
+    shift_datetime = datetime.fromisoformat(shift_date)
+    prev_day = (shift_datetime - timedelta(days=1)).strftime("%Y-%m-%d")
+    next_day = (shift_datetime + timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # Schichten am Vortag (für Ruhezeit nach Schichtende)
+    prev_query = {
+        "staff_member_id": staff_member_id,
+        "shift_date": prev_day,
+        "archived": False
+    }
+    prev_shifts = await db.shifts.find(prev_query, {"_id": 0}).to_list(100)
+    
+    for prev in prev_shifts:
+        prev_end = datetime.strptime(prev["end_time"], "%H:%M")
+        # Wenn Schicht nach Mitternacht endet
+        if prev_end < datetime.strptime(prev["start_time"], "%H:%M"):
+            prev_end_full = shift_datetime.replace(hour=prev_end.hour, minute=prev_end.minute)
+        else:
+            prev_end_full = (shift_datetime - timedelta(days=1)).replace(hour=prev_end.hour, minute=prev_end.minute)
+        
+        new_start_full = shift_datetime.replace(hour=new_start.hour, minute=new_start.minute)
+        
+        rest_hours = (new_start_full - prev_end_full).total_seconds() / 3600
+        if 0 < rest_hours < 11:
+            return {
+                "has_conflict": True,
+                "conflict_type": "rest_time",
+                "message": f"Ruhezeit von 11h unterschritten (nur {rest_hours:.1f}h seit Schichtende am Vortag)"
+            }
+    
+    # Schichten am Folgetag (für Ruhezeit vor Schichtbeginn)
+    next_query = {
+        "staff_member_id": staff_member_id,
+        "shift_date": next_day,
+        "archived": False
+    }
+    next_shifts = await db.shifts.find(next_query, {"_id": 0}).to_list(100)
+    
+    for nxt in next_shifts:
+        nxt_start = datetime.strptime(nxt["start_time"], "%H:%M")
+        nxt_start_full = (shift_datetime + timedelta(days=1)).replace(hour=nxt_start.hour, minute=nxt_start.minute)
+        
+        new_end_full = shift_datetime.replace(hour=new_end.hour, minute=new_end.minute)
+        if new_end < new_start:
+            new_end_full += timedelta(days=1)
+        
+        rest_hours = (nxt_start_full - new_end_full).total_seconds() / 3600
+        if 0 < rest_hours < 11:
+            return {
+                "has_conflict": True,
+                "conflict_type": "rest_time",
+                "message": f"Ruhezeit von 11h unterschritten (nur {rest_hours:.1f}h bis Schichtbeginn am Folgetag)"
+            }
+    
+    return {"has_conflict": False, "conflict_type": None, "message": None}
+
+
 def get_week_dates(year: int, week: int) -> tuple:
     """Get start and end date of a calendar week"""
     first_day = date(year, 1, 1)
