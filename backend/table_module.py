@@ -615,8 +615,8 @@ async def get_tables_by_area(
 
 @table_router.get("/suggest")
 async def suggest_tables(
-    date: str,
-    time: str,
+    date_str: str = Query(..., alias="date"),
+    time: str = Query(...),
     party_size: int = Query(..., ge=1, le=50),
     area: Optional[TableArea] = None,
     current_user: dict = Depends(get_current_user)
