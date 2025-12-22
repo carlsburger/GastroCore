@@ -59,15 +59,18 @@ frontend:
 
   - task: "TESTBLOCK D: Exports"
     implemented: true
-    working: "NA"
+    working: false
     file: "Schedule.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Cannot test - blocked by TESTBLOCK A login issue. Export functionality requires authenticated access."
+      - working: false
+        agent: "testing"
+        comment: "FAIL: PDF and CSV export buttons not visible in the schedule interface. Expected buttons with text 'PDF' and 'CSV' not found. May be conditional on schedule having shifts or specific status."
 
   - task: "TESTBLOCK E: MyShifts"
     implemented: true
