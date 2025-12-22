@@ -269,7 +269,7 @@ export const TablePlan = () => {
         time_slot: selectedTimeSlot.value,
         table_ids: combinationTables.map(t => t.id),
         name: `Kombination ${combinationTables.map(t => t.table_number).join(" + ")}`
-      }, { headers });
+      }, { headers: getHeaders() });
       
       toast.success("Tischkombination erstellt");
       setCombinationMode(false);
@@ -283,7 +283,7 @@ export const TablePlan = () => {
   // Kombination auflösen
   const handleDissolveCombination = async (combinationId) => {
     try {
-      await axios.delete(`${BACKEND_URL}/api/table-combinations/${combinationId}`, { headers });
+      await axios.delete(`${BACKEND_URL}/api/table-combinations/${combinationId}`, { headers: getHeaders() });
       toast.success("Kombination aufgelöst");
       fetchData();
     } catch (err) {
@@ -305,7 +305,7 @@ export const TablePlan = () => {
         area_id: null
       };
       
-      await axios.post(`${BACKEND_URL}/api/walk-ins`, walkInData, { headers });
+      await axios.post(`${BACKEND_URL}/api/walk-ins`, walkInData, { headers: getHeaders() });
       
       // Wenn Tisch ausgewählt, auch zuweisen
       if (selectedTable) {
@@ -358,7 +358,7 @@ export const TablePlan = () => {
       await axios.post(
         `${BACKEND_URL}/api/reservation-config/reservations/${reservationId}/extend`,
         { additional_minutes: 30, reason: "Service-Verlängerung" },
-        { headers }
+        { headers: getHeaders() }
       );
       toast.success("Um 30 Minuten verlängert");
       fetchData();
