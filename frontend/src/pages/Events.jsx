@@ -141,18 +141,11 @@ export const Events = ({ category: propCategory }) => {
   };
 
   // Filter events by category
-  const filteredEvents = events.filter(e => e.content_category === categoryTab);
+  const filteredEvents = events.filter(e => e.content_category === currentCategory);
 
-  // Count by category
-  const categoryCounts = {
-    VERANSTALTUNG: events.filter(e => e.content_category === "VERANSTALTUNG").length,
-    AKTION: events.filter(e => e.content_category === "AKTION").length,
-    AKTION_MENUE: events.filter(e => e.content_category === "AKTION_MENUE").length,
-  };
-
-  const resetForm = (category = categoryTab) => {
-    const isVeranstaltung = category === "VERANSTALTUNG";
-    const isMenueAktion = category === "AKTION_MENUE";
+  const resetForm = () => {
+    const isVeranstaltung = currentCategory === "VERANSTALTUNG";
+    const isMenueAktion = currentCategory === "AKTION_MENUE";
     
     setFormData({
       title: "",
