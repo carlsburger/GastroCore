@@ -945,7 +945,7 @@ async def get_table_occupancy(
     }
     
     return {
-        "date": date,
+        "date": date_str,
         "time": time,
         "time_slot": time_slot,
         "occupancy": [o.model_dump() for o in occupancy],
