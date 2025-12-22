@@ -687,6 +687,12 @@ export const ServiceTerminal = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-lg truncate">{res.guest_name}</p>
+                          {/* Tischnummer prominent anzeigen */}
+                          {res.table_number && (
+                            <Badge className="bg-[#005500] text-white text-sm px-2 py-0.5">
+                              Tisch {res.table_number}
+                            </Badge>
+                          )}
                           {hasFlag && (
                             <Badge className={isBlacklist ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}>
                               {isBlacklist ? <Ban className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
