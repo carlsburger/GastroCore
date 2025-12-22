@@ -26,6 +26,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "FIXED: Updated REACT_APP_BACKEND_URL from https://demobackend.emergentagent.com to http://localhost:8001. Created test admin user (test@admin.com/test123). Login now works successfully. Admin can access both /schedule and /my-shifts pages. Route protection working - unauthenticated users redirected to login."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: All three user roles tested successfully. Admin (admin@carlsburg.de/Carlsburg2025!) can access all features. Employee (mitarbeiter@carlsburg.de/Mitarbeiter2025!) has proper restricted access - can view MyShifts but gets 'no backoffice access' message for Schedule. Schichtleiter (schichtleiter@carlsburg.de/Schicht2025!) has full Schedule management access. Route protection working correctly - unauthenticated users redirected to login for both /schedule and /my-shifts."
 
   - task: "TESTBLOCK B: Schedule Core Flows"
     implemented: true
