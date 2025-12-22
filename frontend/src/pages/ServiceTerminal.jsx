@@ -1114,6 +1114,99 @@ export const ServiceTerminal = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sprint: Telefon-Modus Dialog */}
+      <Dialog open={showPhoneMode} onOpenChange={setShowPhoneMode}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-blue-600" />
+              Telefonische Reservierung
+            </DialogTitle>
+            <DialogDescription>
+              Schnellerfassung während eines Telefonats
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Name *</Label>
+                <Input
+                  value={phoneReservationData.guest_name}
+                  onChange={(e) => setPhoneReservationData({
+                    ...phoneReservationData,
+                    guest_name: e.target.value
+                  })}
+                  placeholder="Gast-Name"
+                  autoFocus
+                />
+              </div>
+              <div className="col-span-2">
+                <Label>Telefon *</Label>
+                <Input
+                  value={phoneReservationData.guest_phone}
+                  onChange={(e) => setPhoneReservationData({
+                    ...phoneReservationData,
+                    guest_phone: e.target.value
+                  })}
+                  placeholder="+49..."
+                />
+              </div>
+              <div>
+                <Label>Uhrzeit</Label>
+                <Input
+                  type="time"
+                  value={phoneReservationData.time}
+                  onChange={(e) => setPhoneReservationData({
+                    ...phoneReservationData,
+                    time: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <Label>Personen</Label>
+                <Select
+                  value={String(phoneReservationData.party_size)}
+                  onValueChange={(v) => setPhoneReservationData({
+                    ...phoneReservationData,
+                    party_size: parseInt(v)
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} Pers.</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label>Notiz</Label>
+                <Textarea
+                  value={phoneReservationData.notes}
+                  onChange={(e) => setPhoneReservationData({
+                    ...phoneReservationData,
+                    notes: e.target.value
+                  })}
+                  placeholder="Besondere Wünsche..."
+                  rows={2}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPhoneMode(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handlePhoneReservation} className="bg-blue-600 hover:bg-blue-700">
+              <Phone className="h-4 w-4 mr-2" />
+              Reservierung anlegen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
