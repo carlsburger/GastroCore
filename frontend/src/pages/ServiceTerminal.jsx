@@ -71,6 +71,7 @@ import {
   X,
   Timer,
   Utensils,
+  Bell,
 } from "lucide-react";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
