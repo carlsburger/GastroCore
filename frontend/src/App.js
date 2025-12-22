@@ -83,8 +83,8 @@ function App() {
           <Route path="/unsubscribe/:customerId" element={<Unsubscribe />} />
           {/* Public Events */}
           <Route path="/events-public" element={<PublicEventsList />} />
-          <Route path="/events/:eventId" element={<PublicEventDetail />} />
-          <Route path="/events/:eventId/book" element={<PublicEventBooking />} />
+          <Route path="/event/:eventId" element={<PublicEventDetail />} />
+          <Route path="/event/:eventId/book" element={<PublicEventBooking />} />
           
           {/* Change Password (authenticated but no role check) */}
           <Route
