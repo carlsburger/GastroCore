@@ -621,6 +621,17 @@ async def update_reservation(reservation_id: str, data: ReservationUpdate, user:
     if ReservationStatus.is_terminal(existing.get("status")):
         raise ValidationException("Abgeschlossene Reservierungen können nicht mehr bearbeitet werden")
     
+    # Sprint: Tisch-Doppelbelegungsprüfung bei Tisch-Änderung
+    new_table = data.table_number if data.table_number is not None else existing.get("table_number")
+    new_date = data.date if data.date is not None else existing.get("date")
+    new_time = data.time if data.time is not None else existing.get("time")
+    
+    if new_table and (new_table != existing.get("table_number") or new_date != existing.get("date") or new_time != existing.get("time")):
+        duration = data.duration_minutes or existing.get("duration_minutes") or await get_default_duration()
+        table_check = await check_table_conflict(new_date, new_time, new_table, duration, exclude_reservation_id=reservation_id)
+        if not table_check["available"]:
+            raise ConflictException(table_check.get("message", f"Tisch {new_table} ist bereits belegt"))
+    
     before = safe_dict_for_audit(existing)
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     update_data["updated_at"] = now_iso()
