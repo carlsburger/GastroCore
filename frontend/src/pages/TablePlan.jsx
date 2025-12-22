@@ -135,7 +135,7 @@ export const TablePlan = () => {
 
   // Fetch data
   const fetchData = useCallback(async () => {
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = getHeaders();
     setLoading(true);
     try {
       const timeSlotParam = selectedTimeSlot.value !== "all" ? selectedTimeSlot.value : undefined;
