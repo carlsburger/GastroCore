@@ -109,9 +109,9 @@ const navigationGroups = [
     icon: PartyPopper,
     roles: ["admin", "schichtleiter"],
     children: [
-      { path: "/events-admin", label: "Veranstaltungen", icon: Calendar },
-      { path: "/events-actions", label: "Aktionen", icon: Gift, disabled: true },
-      { path: "/events-menus", label: "Menü-Aktionen", icon: UtensilsCrossed, disabled: true },
+      { path: "/events", label: "Veranstaltungen", icon: Calendar },
+      { path: "/aktionen", label: "Aktionen", icon: Gift },
+      { path: "/menue-aktionen", label: "Menü-Aktionen", icon: UtensilsCrossed },
       { path: "/events-bookings", label: "Buchungen", icon: Ticket, disabled: true },
     ],
   },
