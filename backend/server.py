@@ -2127,6 +2127,9 @@ from marketing_module import marketing_router, marketing_public_router
 # Import AI Assistant Module (Sprint 9 - KI-Assistenz)
 from ai_assistant import ai_router
 
+# Import Backup Module (Sprint: Admin Backup/Export)
+from backup_module import backup_router
+
 # ============== FIRST-RUN SEED SYSTEM (Sprint 11) ==============
 from seed_system import run_full_seed, verify_seed, bootstrap_admin_on_startup
 
