@@ -281,7 +281,7 @@ export const Events = ({ category: propCategory }) => {
             </Button>
             <Button
               onClick={() => {
-                resetForm(categoryTab);
+                resetForm();
                 setShowCreateDialog(true);
               }}
               className="rounded-full"
@@ -292,72 +292,55 @@ export const Events = ({ category: propCategory }) => {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <Tabs value={categoryTab} onValueChange={setCategoryTab}>
-          <TabsList className="grid w-full grid-cols-3 h-auto">
-            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
-              const Icon = config.icon;
-              return (
-                <TabsTrigger 
-                  key={key} 
-                  value={key}
-                  className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-white"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-xs sm:text-sm">{config.label}</span>
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {categoryCounts[key]}
-                  </Badge>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+        {/* Status Filter */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex gap-4 items-center">
+              <Label>Status:</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="draft">Entwürfe</SelectItem>
+                  <SelectItem value="published">Veröffentlicht</SelectItem>
+                  <SelectItem value="sold_out">Ausgebucht</SelectItem>
+                  <SelectItem value="cancelled">Abgesagt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Tab Content */}
-          {Object.keys(CATEGORY_CONFIG).map((category) => (
-            <TabsContent key={category} value={category} className="space-y-4">
-              {/* Category Description */}
-              <Card className={CATEGORY_CONFIG[category].bgColor}>
-                <CardContent className="py-3">
-                  <p className={`text-sm ${CATEGORY_CONFIG[category].color}`}>
-                    {CATEGORY_CONFIG[category].description}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Status Filter */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex gap-4 items-center">
-                    <Label>Status:</Label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Alle</SelectItem>
-                        <SelectItem value="draft">Entwürfe</SelectItem>
-                        <SelectItem value="published">Veröffentlicht</SelectItem>
-                        <SelectItem value="sold_out">Ausgebucht</SelectItem>
-                        <SelectItem value="cancelled">Abgesagt</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Events List */}
-              {loading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </div>
-              ) : filteredEvents.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <CategoryIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Keine {CATEGORY_CONFIG[category].label} gefunden</p>
-                    <Button 
-                      className="mt-4" 
+        {/* Events List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <CategoryIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Keine {categoryConfig?.label} gefunden</p>
+              <Button 
+                className="mt-4" 
+                onClick={() => {
+                  resetForm();
+                  setShowCreateDialog(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Neu erstellen
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {filteredEvents.map((event) => {
+              const statusConfig = STATUS_CONFIG[event.status] || STATUS_CONFIG.draft;
+              const price = event.ticket_price || event.price_per_person || 0;
+              const hasMenuOptions = event.menu_options && event.menu_options.length > 0; 
                       onClick={() => {
                         resetForm(category);
                         setShowCreateDialog(true);
