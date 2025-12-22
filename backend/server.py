@@ -2219,6 +2219,8 @@ app.include_router(opening_hours_router, prefix="/api")
 # Table Module (Sprint: Tischplan & Belegung)
 app.include_router(table_router, prefix="/api")
 app.include_router(combination_router, prefix="/api")
+# Backup Module (Sprint: Admin Backup/Export)
+app.include_router(backup_router)
 
 app.add_middleware(
     CORSMiddleware,
