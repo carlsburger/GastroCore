@@ -376,6 +376,306 @@ async def seed_from_repo(user: dict = Depends(require_admin)):
     
     # Import tables
     if tables_file.exists():
+
+
+# ============== STAFF IMPORT ==============
+
+import hashlib
+import re
+
+def normalize_phone(phone: str) -> str:
+    """Normalize phone number to +49 format"""
+    if not phone:
+        return None
+    phone = str(phone).strip()
+    phone = re.sub(r'[^\d+]', '', phone)
+    if phone.startswith('0') and not phone.startswith('00'):
+        phone = '+49' + phone[1:]
+    elif phone.startswith('49') and not phone.startswith('+'):
+        phone = '+' + phone
+    elif not phone.startswith('+'):
+        phone = '+49' + phone
+    return phone if len(phone) > 5 else None
+
+
+def parse_date(date_val) -> str:
+    """Parse date from various formats to ISO"""
+    if not date_val:
+        return None
+    if isinstance(date_val, datetime):
+        return date_val.strftime("%Y-%m-%d")
+    try:
+        # Try DD.MM.YYYY
+        return datetime.strptime(str(date_val), "%d.%m.%Y").strftime("%Y-%m-%d")
+    except:
+        try:
+            # Try YYYY-MM-DD
+            return datetime.strptime(str(date_val), "%Y-%m-%d").strftime("%Y-%m-%d")
+        except:
+            return None
+
+
+def create_row_hash(data: dict) -> str:
+    """Create hash for duplicate detection"""
+    key = f"{data.get('last_name','')}{data.get('first_name','')}{data.get('email','')}{data.get('phone','')}"
+    return hashlib.md5(key.lower().encode()).hexdigest()[:16]
+
+
+class StaffImportResult(BaseModel):
+    success: bool
+    imported: int
+    updated: int
+    skipped: int
+    errors: int
+    error_details: List[Dict[str, Any]]
+    message: str
+
+
+@import_router.post("/api/admin/import/staff", response_model=StaffImportResult)
+async def import_staff(file: UploadFile = File(...), user: dict = Depends(require_admin)):
+    """
+    POST /api/admin/import/staff
+    Import staff members from Excel file
+    Upsert by email or (first_name + last_name + personnel_number)
+    """
+    try:
+        import openpyxl
+    except ImportError:
+        raise HTTPException(500, "openpyxl not installed")
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(400, "Nur Excel-Dateien (.xlsx) erlaubt")
+    
+    content = await file.read()
+    wb = openpyxl.load_workbook(io.BytesIO(content))
+    ws = wb.active
+    
+    # Get headers (normalize to lowercase)
+    raw_headers = [str(c.value).lower().strip() if c.value else f"col{i}" for i, c in enumerate(ws[1])]
+    
+    # Column mapping
+    col_map = {
+        'nachname': 'last_name',
+        'vorname': 'first_name',
+        'rufname': 'display_name',
+        'e-mail': 'email',
+        'email': 'email',
+        'telefon': 'phone',
+        'telefon 2': 'phone_secondary',
+        'adresse': 'street',
+        'stadt': 'city',
+        'plz': 'zip',
+        'geburtstag': 'birthday',
+        'pers-nr.': 'personnel_number',
+        'pers-nr': 'personnel_number',
+        'zeit-pin': 'time_pin',
+    }
+    
+    imported = 0
+    updated = 0
+    skipped = 0
+    errors = 0
+    error_details = []
+    
+    for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        if not row[0]:
+            continue
+        
+        try:
+            # Map row to dict
+            raw_data = dict(zip(raw_headers, row))
+            data = {}
+            for excel_col, db_field in col_map.items():
+                if excel_col in raw_data:
+                    data[db_field] = raw_data[excel_col]
+            
+            # Validation
+            first_name = str(data.get('first_name', '')).strip()
+            last_name = str(data.get('last_name', '')).strip()
+            
+            if not first_name or not last_name:
+                error_details.append({"row": row_idx, "reason": "Vorname oder Nachname fehlt"})
+                errors += 1
+                continue
+            
+            # Normalize fields
+            email = str(data.get('email', '')).strip().lower() if data.get('email') else None
+            phone = normalize_phone(data.get('phone'))
+            phone_secondary = normalize_phone(data.get('phone_secondary'))
+            birthday = parse_date(data.get('birthday'))
+            personnel_number = str(data.get('personnel_number', '')).strip() if data.get('personnel_number') else None
+            time_pin = str(data.get('time_pin', '')).strip() if data.get('time_pin') else None
+            display_name = str(data.get('display_name', '')).strip() if data.get('display_name') else first_name
+            
+            # Address
+            address = None
+            if data.get('street') or data.get('city') or data.get('zip'):
+                address = {
+                    "street": str(data.get('street', '')).strip() if data.get('street') else None,
+                    "city": str(data.get('city', '')).strip() if data.get('city') else None,
+                    "zip": str(data.get('zip', '')).strip() if data.get('zip') else None,
+                }
+            
+            # Create row hash for duplicate detection
+            row_hash = create_row_hash({
+                'last_name': last_name,
+                'first_name': first_name,
+                'email': email,
+                'phone': phone
+            })
+            
+            # Find existing - try multiple strategies
+            existing = None
+            
+            # Strategy 1: by email
+            if email:
+                existing = await db.staff_members.find_one({"email": email, "archived": {"$ne": True}})
+            
+            # Strategy 2: by phone
+            if not existing and phone:
+                existing = await db.staff_members.find_one({"phone": phone, "archived": {"$ne": True}})
+            
+            # Strategy 3: by name + personnel_number
+            if not existing and personnel_number:
+                existing = await db.staff_members.find_one({
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "personnel_number": personnel_number,
+                    "archived": {"$ne": True}
+                })
+            
+            # Strategy 4: by external_row_hash
+            if not existing:
+                existing = await db.staff_members.find_one({
+                    "external_row_hash": row_hash,
+                    "archived": {"$ne": True}
+                })
+            
+            now = now_iso()
+            
+            staff_data = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "display_name": display_name,
+                "email": email,
+                "phone": phone,
+                "phone_secondary": phone_secondary,
+                "birthday": birthday,
+                "personnel_number": personnel_number,
+                "time_pin": time_pin,
+                "address": address,
+                "external_source": "excel_import",
+                "external_row_hash": row_hash,
+                "updated_at": now,
+            }
+            
+            if existing:
+                # Update existing
+                await db.staff_members.update_one(
+                    {"id": existing['id']},
+                    {"$set": staff_data}
+                )
+                updated += 1
+            else:
+                # Create new
+                staff_data["id"] = str(uuid.uuid4())
+                staff_data["role"] = "service"  # Default
+                staff_data["employment_type"] = "teilzeit"  # Default
+                staff_data["weekly_hours"] = 0
+                staff_data["hourly_rate"] = None
+                staff_data["status"] = "aktiv"
+                staff_data["work_areas"] = []
+                staff_data["documents"] = []
+                staff_data["created_at"] = now
+                staff_data["archived"] = False
+                
+                await db.staff_members.insert_one(staff_data)
+                imported += 1
+                
+        except Exception as e:
+            logger.error(f"Error importing staff row {row_idx}: {e}")
+            error_details.append({"row": row_idx, "reason": str(e)})
+            errors += 1
+    
+    # Log import
+    await log_import(
+        user.get('email', 'unknown'),
+        file.filename,
+        'staff_members',
+        imported,
+        updated,
+        errors
+    )
+    
+    # Audit
+    await create_audit_log(
+        actor={"id": user['id'], "email": user['email']},
+        entity="staff_members",
+        entity_id="bulk_import",
+        action="import",
+        after={"filename": file.filename, "imported": imported, "updated": updated}
+    )
+    
+    return {
+        "success": errors == 0,
+        "imported": imported,
+        "updated": updated,
+        "skipped": skipped,
+        "errors": errors,
+        "error_details": error_details[:10],  # Limit to first 10 errors
+        "message": f"Import: {imported} neu, {updated} aktualisiert, {skipped} übersprungen, {errors} Fehler"
+    }
+
+
+@import_router.get("/api/admin/import/staff/preview")
+async def preview_staff_import(user: dict = Depends(require_admin)):
+    """
+    GET /api/admin/import/staff/preview
+    Show last imported staff members (first 20)
+    """
+    staff = await db.staff_members.find(
+        {"external_source": "excel_import", "archived": {"$ne": True}},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "email": 1, "phone": 1, 
+         "personnel_number": 1, "status": 1, "created_at": 1}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    
+    return {
+        "count": len(staff),
+        "staff": staff
+    }
+
+
+@import_router.get("/api/admin/import/staff/status")
+async def get_staff_import_status(user: dict = Depends(require_admin)):
+    """
+    GET /api/admin/import/staff/status
+    Show last staff import status
+    """
+    # Get last staff import log
+    last_import = await db.import_logs.find_one(
+        {"collection": "staff_members"},
+        sort=[("timestamp", -1)]
+    )
+    
+    # Get counts
+    total_staff = await db.staff_members.count_documents({"archived": {"$ne": True}})
+    imported_staff = await db.staff_members.count_documents({
+        "external_source": "excel_import",
+        "archived": {"$ne": True}
+    })
+    
+    return {
+        "total_staff": total_staff,
+        "imported_from_excel": imported_staff,
+        "last_import": {
+            "timestamp": last_import.get("timestamp") if last_import else None,
+            "filename": last_import.get("filename") if last_import else None,
+            "created": last_import.get("created") if last_import else 0,
+            "updated": last_import.get("updated") if last_import else 0,
+            "errors": last_import.get("errors") if last_import else 0,
+        } if last_import else None
+    }
+
         wb = openpyxl.load_workbook(tables_file)
         sheet_name = 'tables' if 'tables' in wb.sheetnames else wb.sheetnames[0]
         ws = wb[sheet_name]
