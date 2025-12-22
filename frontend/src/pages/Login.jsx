@@ -134,7 +134,7 @@ export const Login = () => {
       </div>
 
       {/* Right side - Carlsburg Branding */}
-      <div className="hidden lg:flex relative bg-black">
+      <div className="hidden lg:flex relative bg-[#005500]">
         <div className="absolute inset-0 flex flex-col items-center justify-center p-12">
           {/* Großes offizielles Logo */}
           <img 
@@ -143,11 +143,11 @@ export const Login = () => {
             className="max-w-md w-full h-auto mb-8 object-contain"
           />
           
-          <div className="text-[#FAFBE0]/80 text-center max-w-md mt-8">
+          <div className="text-[#FAFBE0]/90 text-center max-w-md mt-8">
             <p className="text-xl mb-4">
               Ihr Restaurant. Professionell verwaltet.
             </p>
-            <p className="text-sm text-[#FAFBE0]/60">
+            <p className="text-sm text-[#FAFBE0]/70">
               Reservierungen, Tischplan, Personal und Service – 
               alles in einer eleganten Oberfläche.
             </p>
