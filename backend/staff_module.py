@@ -1326,6 +1326,53 @@ async def list_shifts(
     return shifts
 
 
+# ============== MEINE SCHICHTEN (Sprint: Dienstplan Live-Ready) ==============
+@staff_router.get("/my-shifts")
+async def get_my_shifts(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Zeigt nur die eigenen Schichten des eingeloggten Mitarbeiters.
+    Für alle Rollen verfügbar.
+    """
+    # Finde Staff-Member anhand der User-Email
+    staff_member = await db.staff_members.find_one({
+        "email": user.get("email"),
+        "archived": False
+    })
+    
+    if not staff_member:
+        return []  # Kein Mitarbeiter-Profil gefunden
+    
+    query = {
+        "staff_member_id": staff_member["id"],
+        "archived": False
+    }
+    
+    if date_from:
+        query["shift_date"] = {"$gte": date_from}
+    if date_to:
+        if "shift_date" in query:
+            query["shift_date"]["$lte"] = date_to
+        else:
+            query["shift_date"] = {"$lte": date_to}
+    
+    shifts = await db.shifts.find(query, {"_id": 0}).sort("shift_date", 1).to_list(100)
+    
+    # Bereichsnamen hinzufügen
+    work_areas = await db.work_areas.find({"archived": False}, {"_id": 0}).to_list(100)
+    area_map = {a["id"]: a for a in work_areas}
+    
+    for shift in shifts:
+        area = area_map.get(shift.get("work_area_id"), {})
+        shift["work_area_name"] = area.get("name", "Unbekannt")
+        shift["work_area_color"] = area.get("color", "#888888")
+    
+    return shifts
+
+
 @staff_router.post("/shifts")
 async def create_shift(data: ShiftCreate, user: dict = Depends(require_manager)):
     """Create a new shift"""
