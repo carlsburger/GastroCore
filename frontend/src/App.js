@@ -314,6 +314,16 @@ function App() {
             }
           />
 
+          {/* Tischplan (Sprint: Service-Terminal Erweiterungen) - Admin & Schichtleiter */}
+          <Route
+            path="/table-plan"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <TablePlan />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
