@@ -423,10 +423,10 @@ async def write_backup_to_disk(user: dict = Depends(require_admin)):
     # Audit log
     await create_audit_log(
         actor={"id": user['id'], "email": user['email']},
-        action="backup_write_disk",
-        entity_type="backup",
+        entity="backup",
         entity_id=timestamp,
-        new_value={"files": written_files, "folder": str(BACKUP_FOLDER)}
+        action="backup_write_disk",
+        after={"files": written_files, "folder": str(BACKUP_FOLDER)}
     )
     
     logger.info(f"Backup written to {BACKUP_FOLDER}: {written_files}")
