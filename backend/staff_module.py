@@ -1208,6 +1208,97 @@ async def archive_schedule(schedule_id: str, user: dict = Depends(require_admin)
     return {"message": "Dienstplan archiviert", "success": True}
 
 
+# ============== WOCHE KOPIEREN (Sprint: Dienstplan Live-Ready) ==============
+@staff_router.post("/schedules/{schedule_id}/copy")
+async def copy_schedule_to_next_week(schedule_id: str, user: dict = Depends(require_manager)):
+    """
+    Kopiert einen Dienstplan in die nächste Woche.
+    Alle Schichten werden mitkopiert, Status ist 'entwurf'.
+    """
+    # Quell-Schedule laden
+    source = await db.schedules.find_one({"id": schedule_id, "archived": False}, {"_id": 0})
+    if not source:
+        raise NotFoundException("Dienstplan")
+    
+    # Nächste Woche berechnen
+    source_year = source["year"]
+    source_week = source["week"]
+    
+    if source_week >= 52:
+        target_year = source_year + 1
+        target_week = 1
+    else:
+        target_year = source_year
+        target_week = source_week + 1
+    
+    target_start, target_end = get_week_dates(target_year, target_week)
+    
+    # Prüfen ob Ziel-Schedule bereits existiert
+    existing_target = await db.schedules.find_one({
+        "year": target_year,
+        "week": target_week,
+        "archived": False
+    })
+    if existing_target:
+        raise ValidationException(f"Dienstplan für KW {target_week}/{target_year} existiert bereits")
+    
+    # Neuen Schedule erstellen
+    new_schedule = create_entity({
+        "year": target_year,
+        "week": target_week,
+        "week_start": target_start.isoformat(),
+        "week_end": target_end.isoformat(),
+        "status": ScheduleStatus.ENTWURF.value,
+        "notes": f"Kopiert von KW {source_week}/{source_year}"
+    })
+    
+    await db.schedules.insert_one(new_schedule)
+    
+    # Schichten kopieren
+    source_shifts = await db.shifts.find({
+        "schedule_id": schedule_id,
+        "archived": False
+    }, {"_id": 0}).to_list(500)
+    
+    # Tages-Offset berechnen (Differenz zwischen Wochenstart)
+    source_start = date.fromisoformat(source["week_start"])
+    days_offset = (target_start - source_start).days
+    
+    copied_count = 0
+    for shift in source_shifts:
+        # Neues Datum berechnen
+        old_date = date.fromisoformat(shift["shift_date"])
+        new_date = old_date + timedelta(days=days_offset)
+        
+        new_shift = create_entity({
+            "schedule_id": new_schedule["id"],
+            "staff_member_id": shift["staff_member_id"],
+            "work_area_id": shift["work_area_id"],
+            "shift_date": new_date.isoformat(),
+            "start_time": shift["start_time"],
+            "end_time": shift["end_time"],
+            "hours": shift["hours"],
+            "role": shift.get("role"),
+            "notes": shift.get("notes")
+        })
+        
+        await db.shifts.insert_one(new_shift)
+        copied_count += 1
+    
+    await create_audit_log(
+        user, "schedule", new_schedule["id"], "copy",
+        {"source_id": schedule_id, "source_week": f"KW {source_week}/{source_year}"},
+        {"target_week": f"KW {target_week}/{target_year}", "shifts_copied": copied_count}
+    )
+    
+    return {
+        "message": f"Dienstplan nach KW {target_week}/{target_year} kopiert",
+        "success": True,
+        "new_schedule_id": new_schedule["id"],
+        "shifts_copied": copied_count
+    }
+
+
 # ============== SHIFTS ENDPOINTS ==============
 @staff_router.get("/shifts")
 async def list_shifts(
