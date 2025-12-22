@@ -259,7 +259,7 @@ export const Events = ({ category: propCategory }) => {
     }
   };
 
-  const CategoryIcon = CATEGORY_CONFIG[categoryTab]?.icon || Calendar;
+  const CategoryIcon = categoryConfig?.icon || Calendar;
 
   return (
     <Layout>
@@ -267,11 +267,12 @@ export const Events = ({ category: propCategory }) => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="font-serif text-3xl md:text-4xl font-medium text-primary">
-              Veranstaltungen & Aktionen
+            <h1 className="font-serif text-3xl md:text-4xl font-medium text-primary flex items-center gap-3">
+              <CategoryIcon className={`h-8 w-8 ${categoryConfig?.color}`} />
+              {categoryConfig?.label}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Events, Sattessen und Menü-Aktionen verwalten
+              {categoryConfig?.description}
             </p>
           </div>
           <div className="flex gap-2">
