@@ -371,35 +371,47 @@ export const ReservationConfig = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4">
-                {timeSlotConfigs.map((config, index) => (
-                  <div
-                    key={config.day_of_week}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => openEditDay(config.day_of_week)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="font-medium w-24">{config.day_name}</span>
-                      {config.use_manual_slots ? (
-                        <Badge variant="outline" className="text-xs">
-                          {config.slots?.length || 0} Slots definiert
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          Auto ({config.slot_interval_minutes}min Intervall)
-                        </Badge>
-                      )}
-                      {config.blocked_ranges?.length > 0 && (
-                        <Badge variant="destructive" className="text-xs">
-                          <Ban className="h-3 w-3 mr-1" />
-                          {config.blocked_ranges.length} Sperrzeit(en)
-                        </Badge>
-                      )}
+              {!dataLoaded ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <RefreshCw className="h-8 w-8 mx-auto mb-4 animate-spin" />
+                  <p>Lade Konfiguration...</p>
+                </div>
+              ) : timeSlotConfigs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Keine Zeitslot-Konfiguration gefunden.</p>
+                  <p className="text-sm">Die API gibt möglicherweise leere Daten zurück.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {timeSlotConfigs.map((config, index) => (
+                    <div
+                      key={config.day_of_week}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => openEditDay(config.day_of_week)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="font-medium w-24">{config.day_name}</span>
+                        {config.use_manual_slots ? (
+                          <Badge variant="outline" className="text-xs">
+                            {config.slots?.length || 0} Slots definiert
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Auto ({config.slot_interval_minutes}min Intervall)
+                          </Badge>
+                        )}
+                        {config.blocked_ranges?.length > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            <Ban className="h-3 w-3 mr-1" />
+                            {config.blocked_ranges.length} Sperrzeit(en)
+                          </Badge>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="sm">Bearbeiten</Button>
                     </div>
-                    <Button variant="ghost" size="sm">Bearbeiten</Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
