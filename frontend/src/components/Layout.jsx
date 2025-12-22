@@ -190,7 +190,7 @@ const NavItem = ({ item, isActive, collapsed, onClick }) => {
   );
 };
 
-// Menügruppe (auf-/zuklappbar)
+// Menügruppe (auf-/zuklappbar) - Standard eingeklappt
 const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
   const [isOpen, setIsOpen] = useState(false);
   const Icon = group.icon;
@@ -201,12 +201,14 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
     (child.path !== "/" && location.pathname.startsWith(child.path))
   );
 
-  // Auto-open wenn ein Child aktiv ist (useEffect muss vor conditional returns kommen)
+  // Auto-open NUR wenn ein Child aktiv ist
   useEffect(() => {
     if (hasActiveChild && !collapsed) {
       setIsOpen(true);
+    } else if (!hasActiveChild) {
+      setIsOpen(false);
     }
-  }, [hasActiveChild, collapsed]);
+  }, [hasActiveChild, collapsed, location.pathname]);
 
   // Filter children by role
   const visibleChildren = group.children?.filter(child => 
