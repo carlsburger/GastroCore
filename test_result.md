@@ -110,11 +110,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Frontend-Backend Connectivity Fix"
-    - "Login Authentication Flow"
-    - "Proxy Configuration"
+    - "TESTBLOCK B: Schedule Core Flows - Shift Dialog Issues"
+    - "TESTBLOCK C: Konfliktfehler - Blocked by Shift Dialog"
+    - "TESTBLOCK D: Export Button Visibility"
   stuck_tasks:
-    - "TESTBLOCK A: Routing & Auth"
+    - "TESTBLOCK B: Schedule Core Flows"
+    - "TESTBLOCK C: Konfliktfehler im UI"
   test_all: false
   test_priority: "critical_first"
 
