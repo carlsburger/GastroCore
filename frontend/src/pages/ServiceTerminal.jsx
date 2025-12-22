@@ -423,6 +423,43 @@ export const ServiceTerminal = () => {
             <h1 className="font-serif text-3xl font-bold text-[#005500] flex items-center gap-3">
               <Utensils className="h-8 w-8" />
               Service-Terminal
+              {/* Sprint: Neue Reservierungen Badge */}
+              {newReservations.length > 0 && (
+                <DropdownMenu open={showNewReservationsPopover} onOpenChange={setShowNewReservationsPopover}>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="animate-pulse ml-2"
+                    >
+                      <Bell className="h-4 w-4 mr-1" />
+                      {newReservations.length} Neue
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-80">
+                    <div className="p-2 font-semibold border-b">
+                      Neue Reservierungen
+                    </div>
+                    <ScrollArea className="h-64">
+                      {newReservations.map((res) => (
+                        <DropdownMenuItem 
+                          key={res.id}
+                          className="flex flex-col items-start p-3 cursor-pointer"
+                          onClick={() => openDetailSheet(res)}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium">{res.guest_name}</span>
+                            <Badge variant="outline">{res.time}</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {res.party_size} Pers. • {res.guest_phone}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </h1>
             <p className="text-muted-foreground mt-1">
               {getDateLabel(selectedDate)} • Letzte Aktualisierung: {format(lastUpdate, "HH:mm:ss")}
@@ -430,6 +467,15 @@ export const ServiceTerminal = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Sprint: Telefon-Modus Button */}
+            <Button
+              variant="outline"
+              onClick={() => setShowPhoneMode(true)}
+              className="rounded-full border-blue-500 text-blue-600 hover:bg-blue-50"
+            >
+              <Phone className="h-4 w-4 mr-2" />
+              Telefon
+            </Button>
             <Button
               variant="outline"
               onClick={() => fetchData(false)}
