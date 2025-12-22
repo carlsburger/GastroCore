@@ -51,6 +51,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   HardDrive,
+  Upload,
 } from "lucide-react";
 
 // Offizielles Carlsburg Logo URL
