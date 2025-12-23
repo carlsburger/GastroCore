@@ -1,8 +1,25 @@
 import axios from "axios";
 
-// Dynamische Backend-URL: Wenn REACT_APP_BACKEND_URL gesetzt ist, nutze diese,
-// ansonsten nutze relative URL (für Produktion hinter einem Reverse Proxy)
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+// Dynamische Backend-URL: 
+// 1. Wenn REACT_APP_BACKEND_URL gesetzt ist, nutze diese
+// 2. Wenn auf localhost:3000, nutze localhost:8001 (Development)
+// 3. Ansonsten nutze relative URL (für Produktion hinter einem Reverse Proxy)
+const getBackendUrl = () => {
+  // Explizit gesetzte URL hat Priorität
+  if (process.env.REACT_APP_BACKEND_URL) {
+    return process.env.REACT_APP_BACKEND_URL;
+  }
+  
+  // Development auf localhost
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8001';
+  }
+  
+  // Produktion - relative URL
+  return '';
+};
+
+const BACKEND_URL = getBackendUrl();
 const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
 // Create axios instance with default config
