@@ -79,6 +79,9 @@ from opening_hours_module import (
     get_reservable_slots_for_date
 )
 
+# Reservation Slots Module (Sprint: Slots & Durchgänge)
+from reservation_slots_module import slots_router
+
 # Table Module (Sprint: Tischplan & Belegung)
 from table_module import (
     table_router,
