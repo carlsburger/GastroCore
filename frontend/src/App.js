@@ -57,6 +57,9 @@ import OpeningHoursAdmin from "./pages/OpeningHoursAdmin";
 import BackupExport from "./pages/BackupExport";
 // Table Import Module
 import TableImport from "./pages/TableImport";
+// Service Terminal Standalone (Sprint: Service-Terminal getrennt & abgesichert)
+import ServiceLogin from "./pages/ServiceLogin";
+import ServiceApp from "./pages/ServiceApp";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
