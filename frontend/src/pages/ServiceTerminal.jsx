@@ -629,7 +629,7 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
           </div>
         </div>
 
-        {/* ===== WEEK VIEW ===== */}
+        {/* ===== WEEK VIEW - Minimale Reservierungsliste ===== */}
         {viewMode === "week" && (
           <Card className="bg-white print:hidden">
             <CardContent className="p-4">
@@ -643,40 +643,48 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
                     <button
                       key={day.date}
                       onClick={() => handleWeekDayClick(day.date)}
-                      className={`p-3 rounded-lg border-2 transition-all hover:shadow-md ${
+                      className={`p-2 rounded-lg border-2 transition-all hover:shadow-md text-left min-h-[180px] flex flex-col ${
                         day.isToday 
                           ? "border-[#002f02] bg-[#002f02]/5" 
                           : "border-stone-200 hover:border-[#002f02]/50"
                       }`}
                     >
-                      <div className="text-center">
+                      {/* Datum-Header */}
+                      <div className={`text-center pb-2 border-b border-stone-100 mb-2 ${day.isToday ? "border-[#002f02]/20" : ""}`}>
                         <div className={`text-xs font-medium ${day.isToday ? "text-[#002f02]" : "text-stone-500"}`}>
                           {day.dayShort}
                         </div>
-                        <div className={`text-2xl font-bold ${day.isToday ? "text-[#002f02]" : "text-stone-800"}`}>
-                          {day.dayNumber}
+                        <div className={`text-lg font-bold ${day.isToday ? "text-[#002f02]" : "text-stone-800"}`}>
+                          {day.dayNumber}.
                         </div>
-                        <div className="text-xs text-stone-400">{day.month}</div>
                       </div>
                       
-                      <div className="mt-3 space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-stone-500">Reserv.</span>
-                          <span className="font-semibold">{day.total}</span>
-                        </div>
-                        {day.pending > 0 && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-amber-600">Offen</span>
-                            <Badge variant="outline" className="h-5 text-xs border-amber-400 text-amber-600">
-                              {day.pending}
-                            </Badge>
-                          </div>
+                      {/* Reservierungsliste - minimal */}
+                      <div className="flex-1 space-y-0.5 overflow-hidden">
+                        {day.reservations.length === 0 ? (
+                          <div className="text-xs text-stone-400 text-center py-2">–</div>
+                        ) : (
+                          day.reservations.map((res, idx) => (
+                            <div key={idx} className="text-xs truncate">
+                              <span className="font-medium text-stone-600">{res.time}</span>
+                              <span className="text-stone-400 mx-1">–</span>
+                              <span className="text-stone-700">{res.name}</span>
+                              <span className="text-stone-400 ml-1">({res.party_size})</span>
+                            </div>
+                          ))
                         )}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-stone-500">Gäste</span>
-                          <span className="font-medium text-stone-600">{day.guests}</span>
-                        </div>
+                        {day.hasMore && (
+                          <div className="text-xs text-stone-400 text-center">+mehr</div>
+                        )}
                       </div>
+                      
+                      {/* Footer: Gesamt */}
+                      {day.total > 0 && (
+                        <div className="pt-2 mt-auto border-t border-stone-100 text-center">
+                          <span className="text-xs font-semibold text-[#002f02]">{day.total} Res.</span>
+                          <span className="text-xs text-stone-400 ml-1">({day.guests} P)</span>
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
