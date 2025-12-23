@@ -267,7 +267,7 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
           }
           ${collapsed ? "justify-center" : "justify-between"}
         `}
-        title={collapsed ? group.label : undefined}
+        title={collapsed ? (group.fullLabel || group.label) : (group.fullLabel || undefined)}
         data-testid={`nav-group-${group.id}`}
       >
         <div className="flex items-center gap-3">
