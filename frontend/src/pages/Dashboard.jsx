@@ -289,7 +289,8 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchKulturEvents();
+  }, [fetchData, fetchKulturEvents]);
 
   // Polling every 30 seconds
   useEffect(() => {
