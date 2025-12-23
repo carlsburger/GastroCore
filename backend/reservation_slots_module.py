@@ -132,14 +132,12 @@ class GenerateBetween(BaseModel):
 
 
 class SlotRuleCreate(BaseModel):
-    """Neue Slot-Regel erstellen"""
+    """Neue Slot-Regel erstellen - NUR automatische Generierung"""
     name: str = Field(..., min_length=2, max_length=100)
     valid_from: Optional[str] = None  # YYYY-MM-DD
     valid_to: Optional[str] = None    # YYYY-MM-DD
     applies_days: List[int] = Field(default_factory=lambda: [0,1,2,3,4,5,6])  # 0=Mo..6=So
-    slot_interval_minutes: int = Field(default=30, ge=15, le=120)
-    allowed_start_times: Optional[List[str]] = None  # Exakte Slots
-    generate_between: Optional[GenerateBetween] = None  # ODER auto-generate
+    generate_between: GenerateBetween  # PFLICHT: Start/End/Interval
     blocked_windows: List[BlockedWindow] = Field(default_factory=list)
     active: bool = True
     priority: int = Field(default=10, ge=0, le=100)
@@ -159,8 +157,6 @@ class SlotRuleUpdate(BaseModel):
     valid_from: Optional[str] = None
     valid_to: Optional[str] = None
     applies_days: Optional[List[int]] = None
-    slot_interval_minutes: Optional[int] = Field(None, ge=15, le=120)
-    allowed_start_times: Optional[List[str]] = None
     generate_between: Optional[GenerateBetween] = None
     blocked_windows: Optional[List[BlockedWindow]] = None
     active: Optional[bool] = None
