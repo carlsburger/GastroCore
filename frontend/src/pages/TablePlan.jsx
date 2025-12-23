@@ -70,8 +70,8 @@ const AREAS = {
   event: { label: "Event", icon: PartyPopper, color: "bg-purple-100" }
 };
 
-// Zeitfenster-Optionen
-const TIME_SLOTS = [
+// Zeitfenster-Optionen (werden dynamisch geladen)
+const DEFAULT_TIME_SLOTS = [
   { label: "11:00 - 14:00", value: "11:00-14:00", start: "11:00", end: "14:00" },
   { label: "14:00 - 17:00", value: "14:00-17:00", start: "14:00", end: "17:00" },
   { label: "17:00 - 20:00", value: "17:00-20:00", start: "17:00", end: "20:00" },
