@@ -50,6 +50,8 @@ import {
   Building,
   Trees,
   PartyPopper,
+  XCircle,
+  Info,
 } from "lucide-react";
 import { format, addDays, subDays } from "date-fns";
 import { de } from "date-fns/locale";
