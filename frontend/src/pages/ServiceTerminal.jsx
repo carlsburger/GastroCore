@@ -261,7 +261,7 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
     }
   }, [selectedDate]);
 
-  // Fetch Week Data
+  // Fetch Week Data - mit Reservierungsliste pro Tag
   const fetchWeekData = useCallback(async () => {
     setLoadingWeek(true);
     try {
@@ -280,7 +280,9 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             params: { date: dateStr },
             headers,
           });
-          const dayReservations = response.data || [];
+          const dayReservations = (response.data || [])
+            .filter(r => !["storniert", "no_show"].includes(r.status))
+            .sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
           
           weekDays.push({
             date: dateStr,
@@ -290,9 +292,14 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             month: format(day, "MMM", { locale: de }),
             isToday: isToday(day),
             total: dayReservations.length,
-            pending: dayReservations.filter(r => r.status === "neu").length,
-            confirmed: dayReservations.filter(r => r.status === "bestaetigt").length,
             guests: dayReservations.reduce((sum, r) => sum + (r.party_size || 0), 0),
+            // Reservierungsliste für Wochenübersicht (max 6 pro Tag)
+            reservations: dayReservations.slice(0, 6).map(r => ({
+              time: r.time?.substring(0, 5) || "–",
+              name: r.guest_name?.split(" ")[0] || "Gast",
+              party_size: r.party_size || 0,
+            })),
+            hasMore: dayReservations.length > 6,
           });
         } catch {
           weekDays.push({
@@ -303,9 +310,9 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             month: format(day, "MMM", { locale: de }),
             isToday: isToday(day),
             total: 0,
-            pending: 0,
-            confirmed: 0,
             guests: 0,
+            reservations: [],
+            hasMore: false,
           });
         }
       }
