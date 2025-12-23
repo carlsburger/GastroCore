@@ -551,7 +551,10 @@ export const Dashboard = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm text-gray-900 truncate">{event.title}</p>
                           <p className="text-xs text-gray-500">
-                            {format(new Date(event.date), "dd.MM.yyyy", { locale: de })}
+                            {event.date 
+                              ? format(new Date(event.date), "dd.MM.yyyy", { locale: de })
+                              : "Datum offen"
+                            }
                             {event.start_time && ` • ${event.start_time}`}
                           </p>
                         </div>
