@@ -19,6 +19,21 @@ user_problem_statement: |
   - Frontend URL: http://localhost:3000/service-terminal
 
 frontend:
+  - task: "Tischplan mit Slot-Umschalter"
+    implemented: true
+    working: true
+    file: "TablePlan.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL BUG: JavaScript error 'Cannot read properties of null (reading 'label')' in TablePlan.jsx line 812. Page crashes when selectedTimeSlot is null for closed days."
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG FIXED: Added null-safe operator (selectedTimeSlot?.label || 'Geschlossen'). ✅ COMPREHENSIVE TESTING COMPLETE: Slot dropdown shows 'Geschlossen' badge for closed days (Ruhetag), API integration working (47 tables configured), print button correctly disabled for closed days, area dropdown functional (Restaurant/Terrasse/Event), date navigation working, event notes ('Ruhetag') properly displayed. Backend APIs verified working. Minor: Direct URL access requires proper auth flow."
+
   - task: "Service Terminal UI Optimization"
     implemented: true
     working: true
