@@ -404,14 +404,25 @@ export default function ReservationCalendar() {
       <div className="space-y-6">
         {/* Header mit View-Toggle */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <CalendarIcon className="w-6 h-6 text-[#002f02]" />
-              Reservierungskalender
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              {viewMode === 'week' ? 'Wochenübersicht' : 'Tagesdetails'}
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/reservations')}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Zurück
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <CalendarIcon className="w-6 h-6 text-[#002f02]" />
+                Reservierungskalender
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {viewMode === 'week' ? 'Wochenübersicht' : 'Tagesdetails'}
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center gap-3">
