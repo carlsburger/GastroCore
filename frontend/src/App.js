@@ -141,8 +141,8 @@ function App() {
           {/* Sprint: Service-Terminal getrennt & abgesichert (iPad)       */}
           {/* ============================================================ */}
           
-          {/* Service Login - Public, aber eigener Login-Screen */}
-          <Route path="/service/login" element={<ServiceLogin />} />
+          {/* Service Login - Redirect zum Unified Login */}
+          <Route path="/service/login" element={<Navigate to="/login" replace />} />
           
           {/* Service App Wrapper mit Nested Routes */}
           <Route
