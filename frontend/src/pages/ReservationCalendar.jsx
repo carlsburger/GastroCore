@@ -10,20 +10,13 @@ import {
   XCircle,
   Info,
   Settings,
-  Users,
   CalendarDays,
   CalendarRange,
-  Sparkles
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../components/ui/tooltip';
 import Layout from '../components/Layout';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || '';
