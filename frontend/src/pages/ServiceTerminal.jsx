@@ -460,20 +460,23 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
   };
 
   // ============== RENDER ==============
+  
+  // Wrapper-Komponente (Layout oder Fragment je nach standalone-Modus)
+  const Wrapper = standalone ? React.Fragment : Layout;
 
   if (loading) {
     return (
-      <Layout>
+      <Wrapper>
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-12 w-12 animate-spin text-[#002f02]" />
         </div>
-      </Layout>
+      </Wrapper>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-4 print:space-y-2">
+    <Wrapper>
+      <div className={`space-y-4 print:space-y-2 ${standalone ? 'p-4' : ''}`}>
         {/* ===== HEADER ===== */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
           <div className="flex items-center gap-4">
