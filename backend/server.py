@@ -805,7 +805,7 @@ async def update_waitlist_entry(
     entry_id: str,
     data: WaitlistUpdate,
     background_tasks: BackgroundTasks,
-    user: dict = Depends(require_manager)
+    user: dict = Depends(require_terminal)
 ):
     existing = await db.waitlist.find_one({"id": entry_id, "archived": False}, {"_id": 0})
     if not existing:
