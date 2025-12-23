@@ -713,7 +713,7 @@ async def assign_table(
     reservation_id: str,
     area_id: Optional[str] = None,
     table_number: Optional[str] = None,
-    user: dict = Depends(require_manager)
+    user: dict = Depends(require_terminal)
 ):
     """Quick table/area assignment for walk-ins and service"""
     existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
