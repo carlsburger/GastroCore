@@ -222,11 +222,12 @@ export default function ReservationCalendar() {
     setViewMode('day');
   };
 
-  // ========== WOCHENANSICHT KARTE (kompakt) ==========
+  // ========== WOCHENANSICHT KARTE (entschlackt) ==========
   const WeekDayCard = ({ dateStr, index }) => {
     const hours = openingHours[dateStr] || {};
     const slots = slotsData[dateStr] || {};
     const reservationCount = reservationCounts[dateStr] || 0;
+    const dayReservations = reservationsData[dateStr] || [];
     
     const isOpen = hours.is_open !== false && slots.open !== false;
     const isClosed = !isOpen;
@@ -235,8 +236,6 @@ export default function ReservationCalendar() {
     const blocks = hours.blocks || [];
     const openTime = blocks.length > 0 ? blocks[0].start : null;
     const closeTime = blocks.length > 0 ? blocks[blocks.length - 1].end : null;
-    
-    const isHoliday = hours.is_holiday;
 
     return (
       <Card 
@@ -247,50 +246,55 @@ export default function ReservationCalendar() {
         `}
         onClick={() => handleDayClick(dateStr)}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-3">
           {/* Wochentag + Datum */}
-          <div className="text-center mb-3">
+          <div className="text-center mb-2 pb-2 border-b border-gray-100">
             <div className={`text-xs font-medium ${isToday ? 'text-[#002f02]' : 'text-gray-500'}`}>
               {WEEKDAYS[index]}
             </div>
-            <div className={`text-2xl font-bold ${isToday ? 'text-[#002f02]' : 'text-gray-800'}`}>
-              {new Date(dateStr).getDate()}
-            </div>
-            <div className="text-xs text-gray-400">
-              {new Date(dateStr).toLocaleDateString('de-DE', { month: 'short' })}
+            <div className={`text-xl font-bold ${isToday ? 'text-[#002f02]' : 'text-gray-800'}`}>
+              {new Date(dateStr).getDate()}.
             </div>
           </div>
           
           {isClosed ? (
-            <div className="text-center py-2">
+            <div className="text-center py-3">
               <XCircle className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-              <span className="text-xs text-gray-500">Geschlossen</span>
-              {isHoliday && (
-                <div className="text-xs text-amber-600 mt-1">{hours.holiday_name}</div>
-              )}
+              <span className="text-xs text-gray-500">geschlossen</span>
             </div>
           ) : (
             <div className="space-y-2">
-              {/* Öffnungszeit - kompakt */}
+              {/* Öffnungszeit - eine Zeile */}
               {openTime && closeTime && (
-                <div className="flex items-center justify-center gap-1 text-sm">
-                  <Clock className="w-3 h-3 text-gray-400" />
-                  <span className="font-medium text-gray-700">{openTime}–{closeTime}</span>
+                <div className="text-center text-xs text-gray-600 font-medium">
+                  {openTime}–{closeTime}
                 </div>
               )}
               
-              {/* Reservierungen */}
-              <div className="text-center py-2 bg-gray-50 rounded-lg">
-                <div className="text-lg font-bold text-[#002f02]">{reservationCount}</div>
-                <div className="text-xs text-gray-500">Reservierungen</div>
+              {/* Reservierungsliste */}
+              <div className="space-y-0.5 min-h-[60px]">
+                {dayReservations.length === 0 ? (
+                  <div className="text-xs text-gray-400 text-center py-2">keine</div>
+                ) : (
+                  dayReservations.map((res, idx) => (
+                    <div key={idx} className="text-xs truncate">
+                      <span className="font-medium text-gray-600">{res.time}</span>
+                      <span className="text-gray-400 mx-0.5">–</span>
+                      <span className="text-gray-700">{res.name}</span>
+                      <span className="text-gray-400 ml-0.5">({res.party_size})</span>
+                    </div>
+                  ))
+                )}
+                {reservationCount > 5 && (
+                  <div className="text-xs text-gray-400 text-center">+{reservationCount - 5} mehr</div>
+                )}
               </div>
               
-              {/* Events/Aktionen Badge (Platzhalter) */}
-              {hours.has_event && (
-                <Badge variant="outline" className="w-full justify-center text-xs border-amber-400 text-amber-700 bg-amber-50">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Event
-                </Badge>
+              {/* Gesamt */}
+              {reservationCount > 0 && (
+                <div className="text-center pt-2 border-t border-gray-100">
+                  <span className="text-xs font-semibold text-[#002f02]">{reservationCount} Res.</span>
+                </div>
               )}
             </div>
           )}
