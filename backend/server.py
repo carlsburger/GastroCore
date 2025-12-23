@@ -26,7 +26,7 @@ load_dotenv(ROOT_DIR / '.env')
 from core.config import settings
 from core.database import db, client, close_db_connection
 from core.auth import (
-    get_current_user, require_roles, require_admin, require_manager,
+    get_current_user, require_roles, require_admin, require_manager, require_terminal,
     hash_password, verify_password, create_token, decode_token
 )
 from core.audit import create_audit_log, safe_dict_for_audit, SYSTEM_ACTOR
