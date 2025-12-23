@@ -809,7 +809,7 @@ export const TablePlan = () => {
         {/* Datum-Label */}
         <div className="text-center">
           <h2 className="text-xl font-semibold text-muted-foreground">
-            {getDateLabel()} • {selectedTimeSlot.label}
+            {getDateLabel()} • {selectedTimeSlot?.label || "Geschlossen"}
           </h2>
         </div>
 
