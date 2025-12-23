@@ -19,11 +19,12 @@ class GastroCoreAPITester:
         self.tests_passed = 0
         self.failed_tests = []
         
-        # Test credentials from requirements - Updated for Carlsburg
+        # Test credentials from requirements - Updated for Carlsburg + Service Terminal
         self.credentials = {
             "admin": {"email": "admin@carlsburg.de", "password": "Carlsburg2025!"},
             "schichtleiter": {"email": "schichtleiter@carlsburg.de", "password": "Schicht2025!"},
-            "mitarbeiter": {"email": "mitarbeiter@carlsburg.de", "password": "Mitarbeiter2025!"}
+            "mitarbeiter": {"email": "mitarbeiter@carlsburg.de", "password": "Mitarbeiter2025!"},
+            "service": {"email": "service@carlsburg.de", "password": "Service2025!"}
         }
 
     def log_test(self, name: str, success: bool, details: str = ""):
