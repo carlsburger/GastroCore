@@ -138,8 +138,63 @@ export const TablePlan = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionPartySize, setSuggestionPartySize] = useState(4);
 
+  // NEU: Slots für Datum laden
+  const fetchSlots = useCallback(async () => {
+    setSlotsLoading(true);
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/reservation-slots/effective`, {
+        headers: getHeaders(),
+        params: { date: selectedDate }
+      });
+      
+      const data = res.data;
+      setDayInfo({ open: data.open, notes: data.notes || [], blocked: data.blocked || [] });
+      
+      if (data.open && data.slots && data.slots.length > 0) {
+        // Konvertiere Slots zu Zeitfenstern
+        const slots = data.slots.map(slot => ({
+          label: slot,
+          value: slot,
+          start: slot,
+          end: slot
+        }));
+        
+        // Füge "Alle" Option hinzu
+        slots.push({ label: "Alle Zeiten", value: "all", start: "00:00", end: "23:59" });
+        
+        setAvailableSlots(slots);
+        
+        // Setze ersten Slot als Default wenn noch keiner gewählt
+        if (!selectedTimeSlot || !slots.find(s => s.value === selectedTimeSlot?.value)) {
+          setSelectedTimeSlot(slots[0]);
+        }
+      } else {
+        setAvailableSlots([{ label: "Geschlossen", value: "closed", start: "00:00", end: "00:00" }]);
+        setSelectedTimeSlot(null);
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden der Slots:", err);
+      // Fallback auf Default-Slots
+      setAvailableSlots(DEFAULT_TIME_SLOTS);
+      setSelectedTimeSlot(DEFAULT_TIME_SLOTS[0]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, [selectedDate, token]);
+
+  // Slots laden wenn Datum sich ändert
+  useEffect(() => {
+    fetchSlots();
+  }, [selectedDate]);
+
   // Fetch data
   const fetchData = useCallback(async () => {
+    if (!selectedTimeSlot || selectedTimeSlot.value === "closed") {
+      setOccupancy([]);
+      setLoading(false);
+      return;
+    }
+    
     const headers = getHeaders();
     setLoading(true);
     try {
