@@ -188,6 +188,99 @@ class GastroCoreAPITester:
             self.log_test("Password change requirement", True, "User doesn't need to change password")
             return True
 
+    def test_service_terminal_rbac(self):
+        """Test Service Terminal RBAC - Specific requirements from review request"""
+        print("\n🏪 Testing Service Terminal RBAC...")
+        
+        service_rbac_success = True
+        
+        # 1. Test Service User Authentication
+        if "service" not in self.tokens:
+            self.log_test("Service Terminal RBAC", False, "Service user token not available")
+            return False
+        
+        # 2. Test Service User Profile Access
+        result = self.make_request("GET", "auth/me", token=self.tokens.get("service"), expected_status=200)
+        if result["success"]:
+            user_data = result["data"]
+            if user_data.get("role") == "service" or user_data.get("role") == "schichtleiter":
+                self.log_test("Service user profile access", True, f"Role: {user_data.get('role')}")
+            else:
+                self.log_test("Service user profile access", False, f"Unexpected role: {user_data.get('role')}")
+                service_rbac_success = False
+        else:
+            self.log_test("Service user profile access", False, f"Status: {result['status_code']}")
+            service_rbac_success = False
+        
+        # 3. Test Service User CAN access reservations (needed for service terminal)
+        result = self.make_request("GET", "reservations", token=self.tokens.get("service"), expected_status=200)
+        if result["success"]:
+            self.log_test("Service user CAN access /api/reservations", True, "Service terminal needs reservation access")
+        else:
+            self.log_test("Service user CAN access /api/reservations", False, f"Status: {result['status_code']}")
+            service_rbac_success = False
+        
+        # 4. Test Service User CAN access areas (needed for service terminal)
+        result = self.make_request("GET", "areas", token=self.tokens.get("service"), expected_status=200)
+        if result["success"]:
+            self.log_test("Service user CAN access /api/areas", True, "Service terminal needs area access")
+        else:
+            self.log_test("Service user CAN access /api/areas", False, f"Status: {result['status_code']}")
+            service_rbac_success = False
+        
+        # 5. Test Service User CANNOT access admin endpoints (users management)
+        result = self.make_request("GET", "users", token=self.tokens.get("service"), expected_status=403)
+        if result["success"]:
+            self.log_test("Service user BLOCKED from /api/users (403)", True, "403 Forbidden as expected")
+        else:
+            self.log_test("Service user BLOCKED from /api/users (403)", False, 
+                        f"Expected 403, got {result['status_code']}")
+            service_rbac_success = False
+        
+        # 6. Test Service User CANNOT access audit logs
+        result = self.make_request("GET", "audit-logs", token=self.tokens.get("service"), expected_status=403)
+        if result["success"]:
+            self.log_test("Service user BLOCKED from /api/audit-logs (403)", True, "403 Forbidden as expected")
+        else:
+            self.log_test("Service user BLOCKED from /api/audit-logs (403)", False, 
+                        f"Expected 403, got {result['status_code']}")
+            service_rbac_success = False
+        
+        # 7. Test Service User CAN create walk-ins (service terminal functionality)
+        walk_in_data = {
+            "guest_name": "Service Terminal Walk-In",
+            "guest_phone": "+49 170 5555555",
+            "party_size": 2,
+            "notes": "Created via service terminal"
+        }
+        
+        result = self.make_request("POST", "walk-ins", walk_in_data, 
+                                 self.tokens.get("service"), expected_status=200)
+        if result["success"]:
+            walk_in_response = result["data"]
+            if walk_in_response.get("status") == "angekommen":
+                self.log_test("Service user CAN create walk-ins", True, 
+                            f"Walk-in created with ID: {walk_in_response.get('id')}")
+            else:
+                self.log_test("Service user CAN create walk-ins", False, 
+                            f"Unexpected status: {walk_in_response.get('status')}")
+                service_rbac_success = False
+        else:
+            self.log_test("Service user CAN create walk-ins", False, f"Status: {result['status_code']}")
+            service_rbac_success = False
+        
+        # 8. Test Service User CAN update reservation status (service terminal functionality)
+        if "test_reservation_id" in self.test_data:
+            result = self.make_request("PATCH", f"reservations/{self.test_data['test_reservation_id']}/status?new_status=angekommen", 
+                                     {}, self.tokens.get("service"), expected_status=200)
+            if result["success"]:
+                self.log_test("Service user CAN update reservation status", True, "Status updated to 'angekommen'")
+            else:
+                self.log_test("Service user CAN update reservation status", False, f"Status: {result['status_code']}")
+                service_rbac_success = False
+        
+        return service_rbac_success
+
     def test_rbac_access_control(self):
         """Test Role-Based Access Control - Specific requirements from review"""
         print("\n🛡️ Testing RBAC access control...")
