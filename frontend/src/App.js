@@ -412,6 +412,16 @@ function App() {
             }
           />
 
+          {/* Tischplan Druckansicht (Sprint: Tischplan Druck) */}
+          <Route
+            path="/table-plan/print"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <TablePlanPrint />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Tisch-Stammdaten Admin (Sprint: Tischplan & Belegung) - Admin only */}
           <Route
             path="/table-admin"
