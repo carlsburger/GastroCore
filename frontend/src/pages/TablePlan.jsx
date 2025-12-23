@@ -702,25 +702,44 @@ export const TablePlan = () => {
                 </Button>
               </div>
 
-              {/* Zeitfenster */}
+              {/* Zeitfenster - DYNAMISCH aus API */}
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <Select
-                  value={selectedTimeSlot.value}
-                  onValueChange={(v) => setSelectedTimeSlot(TIME_SLOTS.find(t => t.value === v) || TIME_SLOTS[0])}
-                >
-                  <SelectTrigger className="w-40" data-testid="time-slot-select">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_SLOTS.map((slot) => (
-                      <SelectItem key={slot.value} value={slot.value}>
-                        {slot.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {slotsLoading ? (
+                  <div className="w-40 h-9 bg-gray-100 rounded animate-pulse"></div>
+                ) : !dayInfo.open ? (
+                  <Badge variant="destructive" className="py-2 px-4">
+                    <XCircle className="h-4 w-4 mr-1" />
+                    Geschlossen
+                  </Badge>
+                ) : (
+                  <Select
+                    value={selectedTimeSlot?.value || ""}
+                    onValueChange={(v) => setSelectedTimeSlot(availableSlots.find(t => t.value === v))}
+                  >
+                    <SelectTrigger className="w-40" data-testid="time-slot-select">
+                      <SelectValue placeholder="Slot wählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSlots.map((slot) => (
+                        <SelectItem key={slot.value} value={slot.value}>
+                          {slot.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
+              
+              {/* Event-Hinweise */}
+              {dayInfo.notes && dayInfo.notes.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                    <Info className="h-3 w-3 mr-1" />
+                    {dayInfo.notes[0]}
+                  </Badge>
+                </div>
+              )}
 
               {/* Bereich */}
               <div className="flex items-center gap-2">
