@@ -561,12 +561,32 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
                 Service-Terminal
               </h1>
               <p className="text-stone-500 text-sm mt-0.5">
-                {getDateLabel(selectedDate)} • {format(lastUpdate, "HH:mm")} Uhr
+                {viewMode === "week" ? "Wochenübersicht" : getDateLabel(selectedDate)} • {format(lastUpdate, "HH:mm")} Uhr
               </p>
             </div>
             
+            {/* Tag/Woche Umschalter */}
+            <div className="flex bg-stone-100 rounded-lg p-1">
+              <Button 
+                variant={viewMode === "day" ? "default" : "ghost"} 
+                size="sm"
+                onClick={() => setViewMode("day")}
+                className={viewMode === "day" ? "bg-[#002f02] text-white" : ""}
+              >
+                Tag
+              </Button>
+              <Button 
+                variant={viewMode === "week" ? "default" : "ghost"} 
+                size="sm"
+                onClick={() => setViewMode("week")}
+                className={viewMode === "week" ? "bg-[#002f02] text-white" : ""}
+              >
+                Woche
+              </Button>
+            </div>
+            
             {/* Neue/Unbestätigte Banner */}
-            {pendingCount > 0 && (
+            {pendingCount > 0 && viewMode === "day" && (
               <Button 
                 variant="outline"
                 onClick={() => setShowNewReservationsDrawer(true)}
@@ -588,8 +608,8 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
               <Phone className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Telefon</span>
             </Button>
-            <Button variant="outline" onClick={() => fetchData(false)} disabled={refreshing} className="h-10">
-              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            <Button variant="outline" onClick={() => viewMode === "week" ? fetchWeekData() : fetchData(false)} disabled={refreshing || loadingWeek} className="h-10">
+              <RefreshCw className={`h-4 w-4 ${(refreshing || loadingWeek) ? "animate-spin" : ""}`} />
             </Button>
             <Button onClick={() => setShowWalkInDialog(true)} className="h-10 bg-[#002f02] hover:bg-[#003d03]">
               <Footprints className="h-4 w-4 sm:mr-2" />
