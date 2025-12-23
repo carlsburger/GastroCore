@@ -277,6 +277,69 @@ events_router = APIRouter(prefix="/api/events", tags=["Events"])
 public_events_router = APIRouter(prefix="/api/public/events", tags=["Public Events"])
 
 
+# ============== DASHBOARD SUMMARY ENDPOINT ==============
+DEFAULT_KULTUR_CAPACITY = 96
+
+@events_router.get("/dashboard/kultur-summary")
+async def get_kultur_events_summary(user: dict = Depends(require_manager)):
+    """
+    Get Kulturveranstaltungen (category=VERANSTALTUNG) with utilization for Dashboard.
+    Returns events in next 60 days with booked/capacity info.
+    Default capacity: 96 if not set.
+    """
+    from datetime import datetime, timedelta
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    future = (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
+    
+    query = {
+        "archived": False,
+        "category": "VERANSTALTUNG",
+        "start_datetime": {"$gte": today, "$lte": future + "T23:59:59"}
+    }
+    
+    events = await db.events.find(query, {"_id": 0}).sort("start_datetime", 1).to_list(100)
+    
+    result = []
+    for event in events:
+        event_id = event.get("id")
+        
+        # Capacity: use capacity_total if set, else DEFAULT_KULTUR_CAPACITY
+        capacity = event.get("capacity_total") or DEFAULT_KULTUR_CAPACITY
+        
+        # Booked count from event_bookings
+        booked = await get_event_booked_count(event_id, include_pending=True)
+        
+        # Calculate utilization
+        utilization = round((booked / capacity) * 100, 1) if capacity > 0 else 0
+        
+        # Status based on utilization
+        if utilization >= 90:
+            status = "critical"  # rot
+        elif utilization >= 70:
+            status = "warning"   # gelb
+        else:
+            status = "ok"        # grün
+        
+        result.append({
+            "id": event_id,
+            "title": event.get("title", ""),
+            "date": event.get("start_datetime", "")[:10],
+            "start_time": event.get("start_datetime", "")[11:16] if len(event.get("start_datetime", "")) > 11 else "",
+            "capacity": capacity,
+            "booked": booked,
+            "utilization": utilization,
+            "status": status,
+            "is_default_capacity": event.get("capacity_total") is None
+        })
+    
+    return {
+        "events": result,
+        "default_capacity": DEFAULT_KULTUR_CAPACITY,
+        "total_events": len(result)
+    }
+
+
 # ============== ADMIN EVENT ENDPOINTS ==============
 @events_router.get("")
 async def list_events(
