@@ -68,6 +68,10 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = useCallback(() => hasRole("admin"), [hasRole]);
   const isSchichtleiter = useCallback(() => hasRole("admin", "schichtleiter"), [hasRole]);
+  const isService = useCallback(() => hasRole("service"), [hasRole]);
+  const canAccessTerminal = useCallback(() => hasRole("admin", "schichtleiter", "service"), [hasRole]);
+  const canAccessBackoffice = useCallback(() => hasRole("admin", "schichtleiter"), [hasRole]);
+  const isServiceOnly = useCallback(() => user?.role === "service", [user]);
 
   const value = {
     user,
@@ -79,6 +83,10 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     isAdmin,
     isSchichtleiter,
+    isService,
+    canAccessTerminal,
+    canAccessBackoffice,
+    isServiceOnly,
     isAuthenticated: !!user,
   };
 
