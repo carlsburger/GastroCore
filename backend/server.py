@@ -676,7 +676,7 @@ async def update_reservation_status(
     reservation_id: str,
     new_status: str,
     background_tasks: BackgroundTasks,
-    user: dict = Depends(require_manager)
+    user: dict = Depends(require_terminal)
 ):
     existing = await db.reservations.find_one({"id": reservation_id, "archived": False}, {"_id": 0})
     if not existing:
