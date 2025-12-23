@@ -210,22 +210,20 @@ export default function ReservationCalendar() {
             </div>
           )}
           
-          {/* Periode */}
-          {hours.period_name && (
-            <div className="text-xs text-gray-500 mt-1">
-              Periode: {hours.period_name}
-            </div>
-          )}
+          {/* Periode NICHT anzeigen - zu verbose */}
         </CardHeader>
         
         <CardContent className="px-3 pb-3">
           {isClosed ? (
-            <div className="text-center py-4">
-              <div className="text-gray-500 text-sm">{closureReason}</div>
+            <div className="text-center py-2">
+              <div className="text-gray-400 text-xs flex items-center justify-center gap-1">
+                <XCircle className="w-3 h-3" />
+                Geschlossen
+              </div>
             </div>
           ) : (
             <>
-              {/* Öffnungszeiten */}
+              {/* Öffnungszeiten - kompakt */}
               {openTime && closeTime && (
                 <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
                   <Clock className="w-4 h-4" />
@@ -233,7 +231,7 @@ export default function ReservationCalendar() {
                 </div>
               )}
               
-              {/* Blocked Windows */}
+              {/* Blocked Windows - nur wenn vorhanden */}
               {blockedWindows.length > 0 && (
                 <div className="mb-2">
                   {blockedWindows.map((bw, idx) => (
@@ -254,21 +252,13 @@ export default function ReservationCalendar() {
                 </div>
               )}
               
-              {/* Slots */}
-              <div className="flex flex-wrap gap-1">
-                {slotsList.map((slot, idx) => (
-                  <Badge 
-                    key={idx} 
-                    variant="outline" 
-                    className="text-xs bg-white hover:bg-gray-50 cursor-default"
-                  >
-                    {slot}
-                  </Badge>
-                ))}
-                {slotsList.length === 0 && (
-                  <span className="text-xs text-gray-400">Keine Slots</span>
-                )}
-              </div>
+              {/* Slots NICHT als Liste anzeigen - zu verbose */}
+              {/* Stattdessen nur Anzahl wenn relevant */}
+              {slotsList.length > 0 && (
+                <div className="text-xs text-gray-400">
+                  {slotsList.length} Zeitslots verfügbar
+                </div>
+              )}
               
               {/* Notes */}
               {notes.length > 0 && (
