@@ -261,6 +261,75 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
     }
   }, [selectedDate]);
 
+  // Fetch Week Data
+  const fetchWeekData = useCallback(async () => {
+    setLoadingWeek(true);
+    try {
+      const startOfWeek = parseISO(selectedDate);
+      // Mo-So der aktuellen Woche
+      const dayOfWeek = startOfWeek.getDay();
+      const monday = addDays(startOfWeek, dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+      
+      const weekDays = [];
+      for (let i = 0; i < 7; i++) {
+        const day = addDays(monday, i);
+        const dateStr = format(day, "yyyy-MM-dd");
+        
+        try {
+          const response = await axios.get(`${BACKEND_URL}/api/reservations`, {
+            params: { date: dateStr },
+            headers,
+          });
+          const dayReservations = response.data || [];
+          
+          weekDays.push({
+            date: dateStr,
+            dayName: format(day, "EEEE", { locale: de }),
+            dayShort: format(day, "EE", { locale: de }),
+            dayNumber: format(day, "d"),
+            month: format(day, "MMM", { locale: de }),
+            isToday: isToday(day),
+            total: dayReservations.length,
+            pending: dayReservations.filter(r => r.status === "neu").length,
+            confirmed: dayReservations.filter(r => r.status === "bestaetigt").length,
+            guests: dayReservations.reduce((sum, r) => sum + (r.party_size || 0), 0),
+          });
+        } catch {
+          weekDays.push({
+            date: dateStr,
+            dayName: format(day, "EEEE", { locale: de }),
+            dayShort: format(day, "EE", { locale: de }),
+            dayNumber: format(day, "d"),
+            month: format(day, "MMM", { locale: de }),
+            isToday: isToday(day),
+            total: 0,
+            pending: 0,
+            confirmed: 0,
+            guests: 0,
+          });
+        }
+      }
+      setWeekData(weekDays);
+    } catch (err) {
+      toast.error("Fehler beim Laden der Wochenansicht");
+    } finally {
+      setLoadingWeek(false);
+    }
+  }, [selectedDate]);
+
+  // Persist view mode
+  useEffect(() => {
+    localStorage.setItem(LS_VIEW_MODE_KEY, viewMode);
+    if (viewMode === "week") {
+      fetchWeekData();
+    }
+  }, [viewMode, selectedDate]);
+
+  const handleWeekDayClick = (dateStr) => {
+    setSelectedDate(dateStr);
+    setViewMode("day");
+  };
+
   // Initial load and polling
   useEffect(() => {
     fetchData();
