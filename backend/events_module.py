@@ -292,10 +292,17 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
     today = datetime.now().strftime("%Y-%m-%d")
     future = (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
     
+    # Query: VERANSTALTUNG events
+    # Include events with future dates OR events without dates (to show them)
     query = {
         "archived": False,
         "category": "VERANSTALTUNG",
-        "start_datetime": {"$gte": today, "$lte": future + "T23:59:59"}
+        "$or": [
+            {"start_datetime": {"$gte": today, "$lte": future + "T23:59:59"}},
+            {"start_datetime": {"$exists": False}},
+            {"start_datetime": None},
+            {"start_datetime": ""}
+        ]
     }
     
     events = await db.events.find(query, {"_id": 0}).sort("start_datetime", 1).to_list(100)
@@ -321,16 +328,22 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
         else:
             status = "ok"        # grün
         
+        # Parse date
+        start_dt = event.get("start_datetime", "")
+        date_str = start_dt[:10] if start_dt and len(start_dt) >= 10 else None
+        time_str = start_dt[11:16] if start_dt and len(start_dt) > 11 else None
+        
         result.append({
             "id": event_id,
             "title": event.get("title", ""),
-            "date": event.get("start_datetime", "")[:10],
-            "start_time": event.get("start_datetime", "")[11:16] if len(event.get("start_datetime", "")) > 11 else "",
+            "date": date_str,
+            "start_time": time_str,
             "capacity": capacity,
             "booked": booked,
             "utilization": utilization,
             "status": status,
-            "is_default_capacity": event.get("capacity_total") is None
+            "is_default_capacity": event.get("capacity_total") is None,
+            "has_date": date_str is not None
         })
     
     return {
