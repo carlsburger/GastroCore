@@ -777,7 +777,7 @@ async def create_walk_in(data: WalkInCreate, user: dict = Depends(require_termin
 async def get_waitlist(
     date: Optional[str] = None,
     status: Optional[str] = None,
-    user: dict = Depends(require_manager)
+    user: dict = Depends(require_terminal)
 ):
     query = {"archived": False}
     if date:
@@ -789,7 +789,7 @@ async def get_waitlist(
     return entries
 
 @api_router.post("/waitlist", tags=["Waitlist"])
-async def create_waitlist_entry(data: WaitlistCreate, user: dict = Depends(require_manager)):
+async def create_waitlist_entry(data: WaitlistCreate, user: dict = Depends(require_terminal)):
     entry = create_entity(
         data.model_dump(exclude_none=True),
         {"status": "offen"}
