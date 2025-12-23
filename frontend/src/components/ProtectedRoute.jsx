@@ -1,10 +1,11 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Loader2 } from "lucide-react";
 
 export const ProtectedRoute = ({ children, roles = [] }) => {
   const { user, loading, isAuthenticated, hasRole } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -14,8 +15,12 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
     );
   }
 
+  // Determine if we're in service area
+  const isServiceArea = location.pathname.startsWith("/service");
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Redirect to appropriate login based on area
+    return <Navigate to={isServiceArea ? "/service/login" : "/login"} replace />;
   }
 
   // Check if user needs to change password
@@ -25,7 +30,11 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
 
   // Check role access
   if (roles.length > 0 && !roles.some((role) => hasRole(role))) {
-    // If user is mitarbeiter and trying to access restricted area, redirect to no-access
+    // Service users trying to access admin areas
+    if (user?.role === "service" && !isServiceArea) {
+      return <Navigate to="/service" replace />;
+    }
+    // Mitarbeiter trying to access restricted area
     if (user?.role === "mitarbeiter") {
       return <Navigate to="/no-access" replace />;
     }
