@@ -126,15 +126,42 @@ function App() {
             }
           />
 
-          {/* Service Terminal - Admin & Schichtleiter */}
+          {/* Service Terminal - Admin & Schichtleiter (Legacy Route) */}
           <Route
             path="/service-terminal"
             element={
-              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+              <ProtectedRoute roles={["admin", "schichtleiter", "service"]}>
                 <ServiceTerminal />
               </ProtectedRoute>
             }
           />
+
+          {/* ============================================================ */}
+          {/* SERVICE TERMINAL STANDALONE - Separater Bereich für Kellner  */}
+          {/* Sprint: Service-Terminal getrennt & abgesichert (iPad)       */}
+          {/* ============================================================ */}
+          
+          {/* Service Login - Public, aber eigener Login-Screen */}
+          <Route path="/service/login" element={<ServiceLogin />} />
+          
+          {/* Service App Wrapper mit Nested Routes */}
+          <Route
+            path="/service"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter", "service"]}>
+                <ServiceApp />
+              </ProtectedRoute>
+            }
+          >
+            {/* Service Hauptansicht (Heute) */}
+            <Route index element={<ServiceTerminal standalone />} />
+            {/* Tischplan im Service-Bereich */}
+            <Route path="tischplan" element={<TablePlan standalone />} />
+            {/* Warteliste im Service-Bereich */}
+            <Route path="warteliste" element={<Waitlist standalone />} />
+            {/* Walk-in Schnellerfassung */}
+            <Route path="walkin" element={<ServiceTerminal walkInMode standalone />} />
+          </Route>
 
           {/* Areas - Admin only */}
           <Route
