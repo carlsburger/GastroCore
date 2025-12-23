@@ -12,19 +12,33 @@ class UserRole(str, Enum):
     """User roles with hierarchical permissions"""
     ADMIN = "admin"
     SCHICHTLEITER = "schichtleiter"
+    SERVICE = "service"  # Kellner - nur Service-Terminal Zugang
     MITARBEITER = "mitarbeiter"
     
     @classmethod
     def can_manage_reservations(cls, role: str) -> bool:
-        return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value]
+        """Wer darf Reservierungen verwalten (Status ändern, Walk-ins, etc.)"""
+        return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value, cls.SERVICE.value]
     
     @classmethod
     def can_access_backoffice(cls, role: str) -> bool:
-        return role == cls.ADMIN.value
+        """Wer darf ins Admin-Cockpit (Einstellungen, Mitarbeiter, etc.)"""
+        return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value]
     
     @classmethod
     def can_access_terminal(cls, role: str) -> bool:
-        return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value]
+        """Wer darf das Service-Terminal nutzen"""
+        return role in [cls.ADMIN.value, cls.SCHICHTLEITER.value, cls.SERVICE.value]
+    
+    @classmethod
+    def can_access_admin(cls, role: str) -> bool:
+        """Wer darf Admin-Bereiche (Einstellungen, System) nutzen"""
+        return role == cls.ADMIN.value
+    
+    @classmethod
+    def is_service_only(cls, role: str) -> bool:
+        """Ist der Benutzer nur Service (kein Admin/Backoffice Zugang)"""
+        return role == cls.SERVICE.value
 
 
 class ReservationStatus(str, Enum):
