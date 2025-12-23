@@ -80,6 +80,7 @@ export default function ReservationCalendar() {
   const [openingHours, setOpeningHours] = useState({});
   const [slotsData, setSlotsData] = useState({});
   const [reservationCounts, setReservationCounts] = useState({});
+  const [reservationsData, setReservationsData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
