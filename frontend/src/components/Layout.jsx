@@ -109,7 +109,8 @@ const navigationGroups = [
   },
   {
     id: "events",
-    label: "Veranstaltungen & Aktionen",
+    label: "V&A",
+    fullLabel: "Veranstaltungen & Aktionen",
     icon: PartyPopper,
     roles: ["admin", "schichtleiter"],
     children: [
