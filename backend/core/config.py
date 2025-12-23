@@ -17,8 +17,9 @@ load_dotenv(ROOT_DIR / '.env')
 class Settings(BaseSettings):
     """Application settings loaded from environment"""
     
-    # Database
-    MONGO_URL: str = Field(default="mongodb://localhost:27017")
+    # Database - KEIN LOCALHOST FALLBACK!
+    # MONGO_URL MUSS in .env gesetzt sein
+    MONGO_URL: str = Field(...)  # Required - kein Default!
     DB_NAME: str = Field(default="gastrocore")
     
     # Security
