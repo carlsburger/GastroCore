@@ -810,8 +810,10 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             </Card>
           )}
         </div>
+        )}
 
-        {/* ===== RESERVATION LIST ===== */}
+        {/* ===== RESERVATION LIST (nur im Tag-Modus) ===== */}
+        {viewMode === "day" && (
         <div className="space-y-2">
           {sortedReservations.length === 0 ? (
             <Card className="bg-white">
