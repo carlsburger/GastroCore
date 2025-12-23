@@ -584,9 +584,7 @@ async def create_slot_rule(
         "valid_from": data.valid_from,
         "valid_to": data.valid_to,
         "applies_days": data.applies_days,
-        "slot_interval_minutes": data.slot_interval_minutes,
-        "allowed_start_times": data.allowed_start_times,
-        "generate_between": data.generate_between.model_dump() if data.generate_between else None,
+        "generate_between": data.generate_between.model_dump(),  # PFLICHT
         "blocked_windows": [bw.model_dump() for bw in data.blocked_windows],
         "active": data.active,
         "priority": data.priority,
