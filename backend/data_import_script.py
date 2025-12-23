@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 load_dotenv('/app/backend/.env')
 
-MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+MONGO_URL = os.environ.get('MONGO_URL')  # KEIN LOCALHOST FALLBACK
 DB_NAME = os.environ.get('DB_NAME', 'gastrocore')
 
 # Connect to MongoDB
