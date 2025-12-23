@@ -47,6 +47,7 @@ import ReservationConfig from "./pages/ReservationConfig";
 import ReservationCalendar from "./pages/ReservationCalendar";
 // Tischplan (Sprint: Service-Terminal Erweiterungen)
 import TablePlan from "./pages/TablePlan";
+import TablePlanPrint from "./pages/TablePlanPrint";
 // Tisch-Stammdaten Admin (Sprint: Tischplan & Belegung)
 import TableAdmin from "./pages/TableAdmin";
 // System Settings & Opening Hours Master Module
