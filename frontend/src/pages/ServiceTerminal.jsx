@@ -162,7 +162,7 @@ const POLLING_INTERVAL = 20000;
 const LS_AREA_KEY = "carlsburg_service_area";
 const LS_SLOT_KEY = "carlsburg_service_slot";
 
-export const ServiceTerminal = () => {
+export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
   const { user } = useAuth();
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
