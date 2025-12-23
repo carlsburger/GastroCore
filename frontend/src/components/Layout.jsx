@@ -101,10 +101,8 @@ const navigationGroups = [
     children: [
       { path: "/reservations", label: "Übersicht", icon: ClipboardList },
       { path: "/reservation-calendar", label: "Kalender", icon: CalendarRange },
-      { path: "/reservation-config", label: "Reservierungs-Einstellungen", icon: Settings, roles: ["admin"] },
       { path: "/table-plan", label: "Tischplan", icon: MapPin },
       { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties, roles: ["admin"] },
-      { path: "/admin/reservations/import", label: "Tisch-Import", icon: Upload, roles: ["admin"] },
     ],
   },
   {
@@ -146,10 +144,12 @@ const navigationGroups = [
     children: [
       { path: "/admin/settings/system", label: "System", icon: Cog },
       { path: "/admin/settings/opening-hours", label: "Öffnungszeiten", icon: Clock },
-      { path: "/admin/settings/backup", label: "Backup / Export", icon: HardDrive },
-      { path: "/settings", label: "E-Mail / Reminders", icon: Mail },
+      { path: "/reservation-config", label: "Reservierung", icon: BookOpen },
+      { path: "/settings", label: "E-Mail / SMTP", icon: Mail },
       { path: "/areas", label: "Bereiche", icon: MapPin },
       { path: "/users", label: "Benutzer", icon: Users },
+      { path: "/admin/settings/backup", label: "Backup / Export", icon: HardDrive },
+      { path: "/admin/reservations/import", label: "Tisch-Import", icon: Upload, hidden: true },
     ],
   },
 ];
