@@ -17,21 +17,40 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
 
   // Determine if we're in service area
   const isServiceArea = location.pathname.startsWith("/service");
+  const isAdminArea = !isServiceArea && location.pathname !== "/login" && 
+                      location.pathname !== "/no-access" && 
+                      location.pathname !== "/change-password";
 
   if (!isAuthenticated) {
-    // Redirect to appropriate login based on area
-    return <Navigate to={isServiceArea ? "/service/login" : "/login"} replace />;
+    // Alle nicht-authentifizierten Benutzer zum Unified Login
+    return <Navigate to="/login" replace />;
   }
 
   // Check if user needs to change password
-  if (user?.must_change_password && window.location.pathname !== "/change-password") {
+  if (user?.must_change_password && location.pathname !== "/change-password") {
     return <Navigate to="/change-password" replace />;
   }
 
-  // Check role access
+  // ============== ROLLEN-GUARDS ==============
+  
+  // Mitarbeiter: Kein Zugriff auf Admin oder Service
+  if (user?.role === "mitarbeiter") {
+    if (isAdminArea || isServiceArea) {
+      return <Navigate to="/no-access" replace />;
+    }
+  }
+  
+  // Service-User: Nur Service-Bereich erlaubt
+  if (user?.role === "service") {
+    if (isAdminArea && !isServiceArea) {
+      return <Navigate to="/service" replace />;
+    }
+  }
+
+  // Check role access für spezifische Routen
   if (roles.length > 0 && !roles.some((role) => hasRole(role))) {
-    // Service users trying to access admin areas
-    if (user?.role === "service" && !isServiceArea) {
+    // Service users trying to access admin-only areas
+    if (user?.role === "service") {
       return <Navigate to="/service" replace />;
     }
     // Mitarbeiter trying to access restricted area
