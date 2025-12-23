@@ -100,7 +100,7 @@ export const TablePlan = () => {
 
   // State
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(TIME_SLOTS[2]); // 17:00-20:00 als Default
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null); // Wird dynamisch gesetzt
   const [selectedArea, setSelectedArea] = useState("all");
   const [selectedSubArea, setSelectedSubArea] = useState("all");
   const [tables, setTables] = useState([]);
@@ -108,6 +108,11 @@ export const TablePlan = () => {
   const [combinations, setCombinations] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // NEU: Slots aus API
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [dayInfo, setDayInfo] = useState({ open: true, notes: [] });
   
   // Dialog States
   const [selectedTable, setSelectedTable] = useState(null);
