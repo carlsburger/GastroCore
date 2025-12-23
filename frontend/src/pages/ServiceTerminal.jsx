@@ -964,6 +964,7 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             })
           )}
         </div>
+        )}
       </div>
 
       {/* ===== DETAIL SHEET ===== */}
