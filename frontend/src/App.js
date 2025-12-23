@@ -43,6 +43,8 @@ import Unsubscribe from "./pages/Unsubscribe";
 import AIAssistant from "./pages/AIAssistant";
 // Reservation Config Module (Sprint: Reservierung Live-Ready)
 import ReservationConfig from "./pages/ReservationConfig";
+// Reservation Calendar (Sprint: Admin Kalender)
+import ReservationCalendar from "./pages/ReservationCalendar";
 // Tischplan (Sprint: Service-Terminal Erweiterungen)
 import TablePlan from "./pages/TablePlan";
 // Tisch-Stammdaten Admin (Sprint: Tischplan & Belegung)
