@@ -54,6 +54,9 @@ import {
   Bell,
   CreditCard,
   Send,
+  Sparkles,
+  Theater,
+  TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
