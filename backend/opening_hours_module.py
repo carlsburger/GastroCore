@@ -845,6 +845,73 @@ async def get_effective_hours(
     }
 
 
+@opening_hours_router.get(
+    "/opening-hours/effective/{date_str}",
+    summary="Effektive Öffnungszeiten für einzelnes Datum",
+    description="Berechnet die tatsächlichen Öffnungszeiten für ein Datum. Für Reservierung & Dienstplan."
+)
+async def get_effective_hours_single(
+    date_str: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """GET /api/opening-hours/effective/YYYY-MM-DD"""
+    try:
+        target = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise ValidationException("Ungültiges Datumsformat (YYYY-MM-DD erwartet)")
+    
+    return await calculate_effective_hours(target)
+
+
+@opening_hours_router.get(
+    "/holidays",
+    summary="Feiertage für ein Jahr abrufen",
+    description="Listet alle gesetzlichen Feiertage in Brandenburg für ein Jahr."
+)
+async def list_holidays(
+    year: int = Query(..., ge=2020, le=2100, description="Jahr"),
+    current_user: dict = Depends(get_current_user)
+):
+    """GET /api/holidays?year=2026"""
+    holidays = []
+    
+    # Feste Feiertage
+    for mm_dd, name in BRANDENBURG_HOLIDAYS.items():
+        month, day = mm_dd.split("-")
+        holiday_date = date(year, int(month), int(day))
+        holidays.append({
+            "date": holiday_date.strftime("%Y-%m-%d"),
+            "name": name,
+            "type": "fixed",
+            "weekday": weekday_name(holiday_date.weekday()),
+            "weekday_de": weekday_name_de(holiday_date.weekday()),
+            "region": "BB"
+        })
+    
+    # Bewegliche Feiertage
+    moveable = get_moveable_holidays(year)
+    for date_str, name in moveable.items():
+        holiday_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        holidays.append({
+            "date": date_str,
+            "name": name,
+            "type": "moveable",
+            "weekday": weekday_name(holiday_date.weekday()),
+            "weekday_de": weekday_name_de(holiday_date.weekday()),
+            "region": "BB"
+        })
+    
+    # Nach Datum sortieren
+    holidays.sort(key=lambda x: x["date"])
+    
+    return {
+        "year": year,
+        "region": "Brandenburg (BB)",
+        "count": len(holidays),
+        "holidays": holidays
+    }
+
+
 # ============== PUBLIC HELPER FUNCTIONS ==============
 
 async def is_date_closed(target_date: date) -> tuple:
