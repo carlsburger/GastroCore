@@ -127,8 +127,9 @@ export default function ReservationCalendar() {
       if (!slotsRes.ok) throw new Error('Slots konnten nicht geladen werden');
       const slotsDataRes = await slotsRes.json();
 
-      // Reservierungen zählen (für Wochenansicht)
+      // Reservierungen laden (für Wochenansicht mit Details)
       const counts = {};
+      const reservationsMap = {};
       if (viewMode === 'week') {
         for (const date of weekDates) {
           try {
@@ -138,10 +139,22 @@ export default function ReservationCalendar() {
             );
             if (resRes.ok) {
               const resData = await resRes.json();
-              counts[date] = Array.isArray(resData) ? resData.length : (resData.items?.length || 0);
+              const resList = Array.isArray(resData) ? resData : (resData.items || []);
+              // Nur aktive Reservierungen
+              const activeRes = resList
+                .filter(r => !['storniert', 'no_show'].includes(r.status))
+                .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+              counts[date] = activeRes.length;
+              // Speichere max 5 Reservierungen pro Tag für die Übersicht
+              reservationsMap[date] = activeRes.slice(0, 5).map(r => ({
+                time: r.time?.substring(0, 5) || '–',
+                name: r.guest_name?.split(' ')[0] || 'Gast',
+                party_size: r.party_size || 0,
+              }));
             }
           } catch {
             counts[date] = 0;
+            reservationsMap[date] = [];
           }
         }
       }
@@ -160,6 +173,7 @@ export default function ReservationCalendar() {
       setOpeningHours(hoursMap);
       setSlotsData(slotsMap);
       setReservationCounts(counts);
+      setReservationsData(reservationsMap);
     } catch (err) {
       console.error('Fehler beim Laden:', err);
       setError(err.message);
