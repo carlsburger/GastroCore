@@ -582,6 +582,19 @@ agent_communication:
       
       OVERALL RESULT: ✅ MAJOR BUG FIXED - Tischplan functionality working correctly for both open and closed days
 
+backend:
+  - task: "Service Terminal RBAC Authentication"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE PASS: Service Terminal RBAC fully functional. Service user (service@carlsburg.de / Service2025!) can authenticate successfully. ✅ Service Access: Can access /api/reservations, /api/areas, /api/walk-ins (required for service terminal functionality). ✅ Admin Blockade: Correctly blocked from /api/users, /api/audit-logs, /api/settings, /api/email-logs with 403 Forbidden. ✅ Admin Functionality: Admin user (admin@carlsburg.de / Carlsburg2025!) retains full access to all endpoints. ✅ RBAC Working: Role-based access control properly implemented and enforced. Created missing schichtleiter and mitarbeiter users for complete testing."
+
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
 #====================================================================================================
