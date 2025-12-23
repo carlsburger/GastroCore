@@ -3,10 +3,11 @@ Configuration Management - All configurable values in one place
 Loads from environment and database settings
 """
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
 from typing import Optional, Dict, Any
 from functools import lru_cache
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -22,10 +23,14 @@ class Settings(BaseSettings):
     MONGO_URL: str = Field(...)  # Required - kein Default!
     DB_NAME: str = Field(default="gastrocore")
     
-    # Security
-    JWT_SECRET: str = Field(default="change-me-in-production")
+    # Security - KRITISCH: MUSS aus .env kommen!
+    # KEINE automatische Generierung, KEINE unsicheren Defaults
+    JWT_SECRET: str = Field(...)  # Required - kein Default!
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
+    
+    # Optional: Encryption Key für sensible Daten
+    ENCRYPTION_KEY: str = Field(default="")
     
     # CORS
     CORS_ORIGINS: str = "*"
@@ -56,6 +61,20 @@ class Settings(BaseSettings):
         "no_show": [],  # Terminal state
         "storniert": []  # Terminal state
     }
+    
+    @field_validator('JWT_SECRET')
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        """Verhindere unsichere JWT_SECRET Werte"""
+        unsafe_values = ['change-me', 'change-me-in-production', 'secret', 'jwt-secret', '']
+        if v.lower() in unsafe_values or len(v) < 16:
+            print("=" * 60, file=sys.stderr)
+            print("KRITISCHER FEHLER: JWT_SECRET ist nicht sicher konfiguriert!", file=sys.stderr)
+            print("Bitte setzen Sie einen sicheren Wert in /app/backend/.env", file=sys.stderr)
+            print("Mindestlänge: 16 Zeichen", file=sys.stderr)
+            print("=" * 60, file=sys.stderr)
+            sys.exit(1)
+        return v
     
     class Config:
         env_file = ".env"
