@@ -622,7 +622,64 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
           </div>
         </div>
 
-        {/* ===== DATE & SLOT NAVIGATION ===== */}
+        {/* ===== WEEK VIEW ===== */}
+        {viewMode === "week" && (
+          <Card className="bg-white print:hidden">
+            <CardContent className="p-4">
+              {loadingWeek ? (
+                <div className="flex items-center justify-center h-48">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#002f02]" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-7 gap-2">
+                  {weekData.map((day) => (
+                    <button
+                      key={day.date}
+                      onClick={() => handleWeekDayClick(day.date)}
+                      className={`p-3 rounded-lg border-2 transition-all hover:shadow-md ${
+                        day.isToday 
+                          ? "border-[#002f02] bg-[#002f02]/5" 
+                          : "border-stone-200 hover:border-[#002f02]/50"
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div className={`text-xs font-medium ${day.isToday ? "text-[#002f02]" : "text-stone-500"}`}>
+                          {day.dayShort}
+                        </div>
+                        <div className={`text-2xl font-bold ${day.isToday ? "text-[#002f02]" : "text-stone-800"}`}>
+                          {day.dayNumber}
+                        </div>
+                        <div className="text-xs text-stone-400">{day.month}</div>
+                      </div>
+                      
+                      <div className="mt-3 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-stone-500">Reserv.</span>
+                          <span className="font-semibold">{day.total}</span>
+                        </div>
+                        {day.pending > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-amber-600">Offen</span>
+                            <Badge variant="outline" className="h-5 text-xs border-amber-400 text-amber-600">
+                              {day.pending}
+                            </Badge>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-stone-500">Gäste</span>
+                          <span className="font-medium text-stone-600">{day.guests}</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ===== DATE & SLOT NAVIGATION (nur im Tag-Modus) ===== */}
+        {viewMode === "day" && (
         <Card className="bg-white print:hidden">
           <CardContent className="p-3">
             <div className="flex flex-wrap items-center gap-3">
