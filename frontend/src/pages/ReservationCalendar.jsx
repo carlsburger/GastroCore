@@ -349,7 +349,7 @@ export default function ReservationCalendar() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Öffnungszeiten */}
+                {/* Öffnungszeiten - kompakt */}
                 <div className="flex items-center gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                     <CheckCircle className="w-6 h-6 text-green-600" />
@@ -362,7 +362,7 @@ export default function ReservationCalendar() {
                   </div>
                 </div>
                 
-                {/* Sperrfenster */}
+                {/* Sperrfenster - nur wenn vorhanden */}
                 {blockedWindows.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-medium text-gray-700 flex items-center gap-2">
@@ -381,28 +381,7 @@ export default function ReservationCalendar() {
                   </div>
                 )}
                 
-                {/* Verfügbare Slots */}
-                {slotsList.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-gray-700 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-blue-500" />
-                      Verfügbare Zeitslots ({slotsList.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {slotsList.map((slot, idx) => (
-                        <Badge 
-                          key={idx} 
-                          variant="outline" 
-                          className="text-sm px-3 py-1 bg-white hover:bg-gray-50"
-                        >
-                          {slot}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Hinweise */}
+                {/* Hinweise - nur wenn vorhanden */}
                 {notes.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-medium text-gray-700 flex items-center gap-2">
