@@ -73,7 +73,7 @@ def generate_slots_between(start: str, end: str, interval: int) -> List[str]:
     end_min = time_to_minutes(end)
     
     current = start_min
-    while current <= end_min - interval:  # Letzter Slot muss noch Platz für Aufenthalt haben
+    while current <= end_min:  # Letzter Slot = end_min (z.B. 18:30)
         slots.append(minutes_to_time(current))
         current += interval
     
