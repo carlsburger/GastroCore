@@ -391,6 +391,16 @@ function App() {
             }
           />
 
+          {/* Reservation Calendar (Sprint: Admin Kalender) - Admin & Schichtleiter */}
+          <Route
+            path="/reservation-calendar"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <ReservationCalendar />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Tischplan (Sprint: Service-Terminal Erweiterungen) - Admin & Schichtleiter */}
           <Route
             path="/table-plan"
