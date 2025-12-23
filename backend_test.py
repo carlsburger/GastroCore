@@ -5481,6 +5481,7 @@ class GastroCoreAPITester:
         
         # PRIORITY: Service-Terminal Tests (Sprint 8) - CRITICAL
         print("\n🖥️ SERVICE-TERMINAL (SPRINT 8) TESTING - CRITICAL:")
+        test_results.append(self.test_service_terminal_rbac())
         test_results.append(self.test_service_terminal_sprint8())
         
         # Core RBAC tests (essential for Service-Terminal)
