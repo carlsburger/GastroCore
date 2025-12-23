@@ -100,6 +100,7 @@ const navigationGroups = [
     roles: ["admin", "schichtleiter"],
     children: [
       { path: "/reservations", label: "Übersicht", icon: ClipboardList },
+      { path: "/reservation-calendar", label: "Kalender", icon: CalendarRange },
       { path: "/reservation-config", label: "Reservierungs-Einstellungen", icon: Settings, roles: ["admin"] },
       { path: "/table-plan", label: "Tischplan", icon: MapPin },
       { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties, roles: ["admin"] },
