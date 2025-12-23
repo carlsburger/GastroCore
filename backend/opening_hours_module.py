@@ -298,11 +298,19 @@ async def get_closures_for_date(target_date: date) -> List[dict]:
 async def calculate_effective_hours(target_date: date) -> dict:
     """
     Berechne die effektiven Öffnungszeiten für ein Datum.
-    Kombiniert Periode + Sperrtage.
+    
+    Prioritäten (höchste zuerst):
+    1. closures (ganztags geschlossen) - HÖCHSTE PRIORITÄT
+    2. holidays (können Ruhetag überschreiben → offen 12:00-20:00)
+    3. opening_hours_periods (Sommer/Winter Regelwerk)
+    4. Fallback: geschlossen
     """
     date_str = target_date.strftime("%Y-%m-%d")
     weekday = target_date.weekday()
     weekday_key = weekday_name(weekday)
+    
+    # Feiertag prüfen
+    is_holiday, holiday_name = is_holiday_brandenburg(target_date)
     
     result = {
         "date": date_str,
@@ -312,11 +320,13 @@ async def calculate_effective_hours(target_date: date) -> dict:
         "is_closed_full_day": False,
         "closure_reason": None,
         "period_name": None,
+        "is_holiday": is_holiday,
+        "holiday_name": holiday_name,
         "blocks": [],
         "closures": []
     }
     
-    # 1. Sperrtage prüfen
+    # 1. HÖCHSTE PRIORITÄT: Sperrtage prüfen (z.B. 24.12., 31.12.)
     closures = await get_closures_for_date(target_date)
     full_day_closure = None
     time_range_closures = []
@@ -336,7 +346,7 @@ async def calculate_effective_hours(target_date: date) -> dict:
             full_day_closure = closure_info
         result["closures"].append(closure_info)
     
-    # Wenn ganztägig geschlossen
+    # Wenn ganztägig geschlossen (Sperrtag hat IMMER Vorrang)
     if full_day_closure:
         result["is_open"] = False
         result["is_closed_full_day"] = True
@@ -351,11 +361,24 @@ async def calculate_effective_hours(target_date: date) -> dict:
         rules = period.get("rules_by_weekday", {})
         day_rules = rules.get(weekday_key, {})
         
+        # Prüfe ob Ruhetag
         if day_rules.get("is_closed", False):
-            result["is_open"] = False
-            result["is_closed_full_day"] = True
-            result["closure_reason"] = "Ruhetag"
-            return result
+            # FEIERTAG-OVERRIDE: Wenn Feiertag auf Ruhetag fällt → offen 12:00-20:00
+            if is_holiday:
+                result["is_open"] = True
+                result["is_closed_full_day"] = False
+                result["closure_reason"] = None
+                result["blocks"] = [
+                    {"start": "12:00", "end": "20:00", "reservable": True, "label": f"Feiertag: {holiday_name}"}
+                ]
+                logger.info(f"Feiertag-Override: {holiday_name} am {date_str} (normalerweise Ruhetag)")
+                return result
+            else:
+                # Normaler Ruhetag
+                result["is_open"] = False
+                result["is_closed_full_day"] = True
+                result["closure_reason"] = "Ruhetag"
+                return result
         
         # Zeitblöcke übernehmen
         blocks = day_rules.get("blocks", [])
