@@ -154,6 +154,7 @@ async def seed_staff_users() -> Dict[str, Any]:
     
     staff_users = [
         {"email": "schichtleiter@carlsburg.de", "name": "Schichtleiter Demo", "role": "schichtleiter", "password": "Schicht2025!"},
+        {"email": "service@carlsburg.de", "name": "Service iPad", "role": "service", "password": "Service2025!"},
         {"email": "mitarbeiter@carlsburg.de", "name": "Mitarbeiter Demo", "role": "mitarbeiter", "password": "Mitarbeiter2025!"},
     ]
     
