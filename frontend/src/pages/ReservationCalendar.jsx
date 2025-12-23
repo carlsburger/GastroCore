@@ -487,20 +487,6 @@ export default function ReservationCalendar() {
                   </div>
                 )}
               </div>
-              
-              {/* Legende - nur in Wochenansicht */}
-              {viewMode === 'week' && (
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-green-600 rounded"></div>
-                    <span>Offen</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-gray-400 rounded"></div>
-                    <span>Geschlossen</span>
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -535,23 +521,11 @@ export default function ReservationCalendar() {
           )
         )}
 
-        {/* Statistik - nur in Wochenansicht */}
+        {/* Statistik - entschlackt */}
         {!loading && !error && viewMode === 'week' && (
           <Card>
             <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {weekDates.filter(d => slotsData[d]?.open !== false && openingHours[d]?.is_open !== false).length}
-                  </div>
-                  <div className="text-sm text-gray-500">Tage geöffnet</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-600">
-                    {weekDates.filter(d => slotsData[d]?.open === false || openingHours[d]?.is_open === false).length}
-                  </div>
-                  <div className="text-sm text-gray-500">Tage geschlossen</div>
-                </div>
+              <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <div className="text-2xl font-bold text-[#002f02]">
                     {Object.values(reservationCounts).reduce((a, b) => a + b, 0)}
