@@ -1,12 +1,19 @@
 """
 GastroCore Opening Hours Master Module
 ================================================================================
-Öffnungszeiten-Perioden + Sperrtage (Closures)
+Öffnungszeiten-Perioden + Sperrtage (Closures) + Feiertage (Holidays)
 
 Features:
 1. Perioden mit Sommer/Winter-Logik und Priority
 2. Sperrtage (recurring + one_off)
-3. Effective Hours Endpoint für Reservierung & Dienstplan
+3. Feiertage mit Override (z.B. Mo/Di normalerweise zu, aber Feiertag offen)
+4. Effective Hours Endpoint für Reservierung & Dienstplan
+
+Prioritäten (höchste zuerst):
+1. closures (ganztags geschlossen)
+2. holidays (können Ruhetag überschreiben → offen)
+3. opening_hours_periods
+4. Fallback: geschlossen
 
 ADDITIV - Keine Breaking Changes
 """
