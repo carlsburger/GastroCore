@@ -231,9 +231,27 @@ export const Dashboard = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [guestCache, setGuestCache] = useState({}); // Cache for guest flags
+  
+  // Kulturveranstaltungen State
+  const [kulturEvents, setKulturEvents] = useState([]);
+  const [kulturLoading, setKulturLoading] = useState(false);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
+
+  // Fetch Kulturveranstaltungen
+  const fetchKulturEvents = useCallback(async () => {
+    setKulturLoading(true);
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/events/dashboard/kultur-summary`, { headers });
+      setKulturEvents(res.data.events || []);
+    } catch (err) {
+      console.error("Fehler beim Laden der Kulturveranstaltungen:", err);
+      setKulturEvents([]);
+    } finally {
+      setKulturLoading(false);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
