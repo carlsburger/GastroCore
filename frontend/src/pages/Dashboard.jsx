@@ -524,6 +524,99 @@ export const Dashboard = () => {
           ))}
         </div>
 
+        {/* Kulturveranstaltungen Kachel */}
+        {kulturEvents.length > 0 && (
+          <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Theater className="h-5 w-5 text-purple-600" />
+                <h3 className="font-semibold text-purple-900">Kulturveranstaltungen (nächste 60 Tage)</h3>
+                <Badge variant="outline" className="ml-auto text-purple-600 border-purple-300">
+                  {kulturEvents.length} Events
+                </Badge>
+              </div>
+              
+              {kulturLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {kulturEvents.slice(0, 8).map((event) => (
+                    <div 
+                      key={event.id}
+                      className="bg-white rounded-lg p-3 border border-purple-100 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">{event.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(event.date), "dd.MM.yyyy", { locale: de })}
+                            {event.start_time && ` • ${event.start_time}`}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs shrink-0 ${
+                            event.status === 'critical' 
+                              ? 'bg-red-100 text-red-700 border-red-300' 
+                              : event.status === 'warning'
+                                ? 'bg-amber-100 text-amber-700 border-amber-300'
+                                : 'bg-green-100 text-green-700 border-green-300'
+                          }`}
+                        >
+                          {Math.round(event.utilization)}%
+                        </Badge>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                        <div 
+                          className={`h-2 rounded-full transition-all ${
+                            event.status === 'critical' 
+                              ? 'bg-red-500' 
+                              : event.status === 'warning'
+                                ? 'bg-amber-500'
+                                : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(event.utilization, 100)}%` }}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {event.booked}/{event.capacity}
+                        </span>
+                        {event.is_default_capacity && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span className="text-purple-500 text-[10px]">Standard</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Standard-Kapazität (96 Plätze)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {kulturEvents.length > 8 && (
+                <div className="mt-3 text-center">
+                  <Button variant="ghost" size="sm" className="text-purple-600" onClick={() => window.location.href='/events'}>
+                    Alle {kulturEvents.length} Veranstaltungen anzeigen
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Filters - Larger inputs */}
         <Card className="bg-card">
           <CardContent className="p-4">
