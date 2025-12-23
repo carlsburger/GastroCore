@@ -132,6 +132,21 @@ frontend:
         agent: "main"
         comment: "Schedule lädt effective hours und zeigt geschlossene Tage mit rotem Banner und Hinweis."
 
+  - task: "Reservation Calendar Admin Page"
+    implemented: true
+    working: true
+    file: "ReservationCalendar.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Admin Kalender-Seite unter /reservation-calendar erstellt. Wochenansicht mit 7 Tages-Kacheln, Navigation, Status-Badges, Öffnungszeiten, Slots und Statistik."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE PASS: Admin Calendar fully functional. ✅ Login & Navigation: admin@carlsburg.de login successful, /reservation-calendar accessible. ✅ Wochenansicht: 7 day tiles (Mo-So), KW 52/2025 display, date range 22.12.-28.12. ✅ Navigation: Prev/Next/Heute buttons working. ✅ Tages-Kacheln: Status badges (OFFEN/GESCHLOSSEN), opening hours (12:00-18:00), slots as badges, blocked windows in red (12:05-13:55, 15:35-16:55). ✅ Statistics: 4 Tage offen, 3 Tage geschlossen, 48 Slots gesamt, 4 Sperrfenster. ✅ Screenshot captured. Fixed backend URL configuration issue. All requested features working perfectly."
+
   - task: "TESTBLOCK A: Routing & Auth"
     implemented: true
     working: true
