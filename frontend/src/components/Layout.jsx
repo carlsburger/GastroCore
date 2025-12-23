@@ -216,9 +216,9 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
     }
   }, [hasActiveChild, collapsed, location.pathname]);
 
-  // Filter children by role
+  // Filter children by role AND hidden flag
   const visibleChildren = group.children?.filter(child => 
-    !child.roles || child.roles.some(role => hasRole(role))
+    !child.hidden && (!child.roles || child.roles.some(role => hasRole(role)))
   ) || [];
 
   // Prüfe ob User Rolle hat
