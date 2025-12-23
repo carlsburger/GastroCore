@@ -358,21 +358,19 @@ async def calculate_effective_slots(target_date: date) -> dict:
                 for bw in exception["blocked_windows_override"]
             ]
     
-    # 4. Wenn keine Exception-Slots: Hole Regel
+    # 4. Wenn keine Exception-Slots: Hole Regel und generiere Slots
     if not result["slots"]:
         rule = await get_slot_rule_for_date(target_date)
         
         if rule:
             result["rule_name"] = rule.get("name")
             
-            # Exakte Slots oder generieren
-            if rule.get("allowed_start_times"):
-                result["slots"] = rule["allowed_start_times"].copy()
-            elif rule.get("generate_between"):
-                gen = rule["generate_between"]
+            # IMMER automatisch generieren (keine exakten Slot-Listen)
+            gen = rule.get("generate_between")
+            if gen:
                 result["slots"] = generate_slots_between(
-                    gen.get("start", "11:00"),
-                    gen.get("end", "22:00"),
+                    gen.get("start", "12:00"),
+                    gen.get("end", "18:30"),
                     gen.get("interval", 30)
                 )
             else:
@@ -380,10 +378,9 @@ async def calculate_effective_slots(target_date: date) -> dict:
                 blocks = effective_hours.get("blocks", [])
                 for block in blocks:
                     if block.get("reservable", True):
-                        start = block.get("start", "11:00")
-                        end = block.get("end", "22:00")
-                        interval = rule.get("slot_interval_minutes", DEFAULT_SLOT_INTERVAL)
-                        result["slots"].extend(generate_slots_between(start, end, interval))
+                        start = block.get("start", "12:00")
+                        end = block.get("end", "18:30")
+                        result["slots"].extend(generate_slots_between(start, end, DEFAULT_SLOT_INTERVAL))
             
             # Blocked Windows aus Regel
             if not blocked_windows and rule.get("blocked_windows"):
@@ -392,13 +389,13 @@ async def calculate_effective_slots(target_date: date) -> dict:
                     for bw in rule["blocked_windows"]
                 ]
         else:
-            # Fallback: generiere aus Öffnungszeiten
+            # Fallback ohne Regel: generiere aus Öffnungszeiten
             result["rule_name"] = "Auto (Öffnungszeiten)"
             blocks = effective_hours.get("blocks", [])
             for block in blocks:
                 if block.get("reservable", True):
-                    start = block.get("start", "11:00")
-                    end = block.get("end", "22:00")
+                    start = block.get("start", "12:00")
+                    end = block.get("end", "18:30")
                     result["slots"].extend(generate_slots_between(start, end, DEFAULT_SLOT_INTERVAL))
     
     # 5. Entferne Slots in blocked windows
