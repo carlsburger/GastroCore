@@ -421,7 +421,7 @@ export const Dashboard = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="font-serif text-3xl md:text-4xl font-medium text-primary">
-              Service-Terminal
+              Carlsburg Cockpit
             </h1>
             <p className="text-muted-foreground mt-1">
               {format(new Date(selectedDate), "EEEE, d. MMMM yyyy", { locale: de })}
