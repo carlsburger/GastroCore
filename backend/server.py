@@ -747,7 +747,7 @@ async def archive_reservation(reservation_id: str, user: dict = Depends(require_
 
 # ============== WALK-IN ENDPOINTS ==============
 @api_router.post("/walk-ins", tags=["Walk-ins"])
-async def create_walk_in(data: WalkInCreate, user: dict = Depends(require_manager)):
+async def create_walk_in(data: WalkInCreate, user: dict = Depends(require_terminal)):
     """Quick walk-in entry - immediately set to 'angekommen'"""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     now_time = datetime.now(timezone.utc).strftime("%H:%M")
