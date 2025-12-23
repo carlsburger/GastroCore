@@ -1130,7 +1130,7 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Layout>
+    </Wrapper>
   );
 };
 
