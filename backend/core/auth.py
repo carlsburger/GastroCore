@@ -99,6 +99,25 @@ def require_roles(*roles: UserRole):
 # Convenience dependencies for common role checks
 require_admin = require_roles(UserRole.ADMIN)
 require_manager = require_roles(UserRole.ADMIN, UserRole.SCHICHTLEITER)
+require_terminal = require_roles(UserRole.ADMIN, UserRole.SCHICHTLEITER, UserRole.SERVICE)
+
+
+def require_not_service():
+    """
+    Dependency that blocks service role from accessing admin endpoints.
+    Service users can only access terminal-related endpoints.
+    """
+    async def service_blocker(user: dict = Depends(get_current_user)):
+        if user.get("role") == UserRole.SERVICE.value:
+            raise ForbiddenException(
+                "Service-Mitarbeiter haben keinen Zugriff auf diesen Bereich"
+            )
+        return user
+    return service_blocker
+
+
+# Convenience dependency to block service role
+block_service = require_not_service()
 
 
 def can_user_access_resource(user: dict, resource_owner_id: str = None) -> bool:
