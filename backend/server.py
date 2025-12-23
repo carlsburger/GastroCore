@@ -2222,6 +2222,8 @@ app.include_router(reservation_config_router, prefix="/api")  # Sprint: Reservie
 # System Settings & Opening Hours Master Module
 app.include_router(system_settings_router, prefix="/api")
 app.include_router(opening_hours_router, prefix="/api")
+# Reservation Slots Module (Sprint: Slots & Durchgänge)
+app.include_router(slots_router, prefix="/api")
 # Table Module (Sprint: Tischplan & Belegung)
 app.include_router(table_router, prefix="/api")
 app.include_router(combination_router, prefix="/api")
