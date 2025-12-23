@@ -50,6 +50,68 @@ class ClosureScope(str, Enum):
     TIME_RANGE = "time_range"  # Nur bestimmte Uhrzeiten
 
 
+# ============== BRANDENBURG FEIERTAGE ==============
+# Gesetzliche Feiertage für Brandenburg (Region BB)
+BRANDENBURG_HOLIDAYS = {
+    # Feste Feiertage (MM-DD)
+    "01-01": "Neujahr",
+    "05-01": "Tag der Arbeit",
+    "10-03": "Tag der Deutschen Einheit",
+    "10-31": "Reformationstag",  # Brandenburg-spezifisch
+    "12-25": "1. Weihnachtsfeiertag",
+    "12-26": "2. Weihnachtsfeiertag",
+}
+
+# Bewegliche Feiertage werden dynamisch berechnet (Ostern-basiert)
+def calculate_easter(year: int) -> date:
+    """Berechne Ostersonntag nach Gauß-Algorithmus"""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def get_moveable_holidays(year: int) -> Dict[str, str]:
+    """Berechne bewegliche Feiertage für ein Jahr"""
+    easter = calculate_easter(year)
+    return {
+        (easter - timedelta(days=2)).strftime("%Y-%m-%d"): "Karfreitag",
+        (easter + timedelta(days=1)).strftime("%Y-%m-%d"): "Ostermontag",
+        (easter + timedelta(days=39)).strftime("%Y-%m-%d"): "Christi Himmelfahrt",
+        (easter + timedelta(days=50)).strftime("%Y-%m-%d"): "Pfingstmontag",
+    }
+
+
+def is_holiday_brandenburg(target_date: date) -> tuple:
+    """
+    Prüft ob ein Datum ein Feiertag in Brandenburg ist.
+    Returns: (is_holiday: bool, holiday_name: str or None)
+    """
+    # Feste Feiertage prüfen
+    mm_dd = target_date.strftime("%m-%d")
+    if mm_dd in BRANDENBURG_HOLIDAYS:
+        return True, BRANDENBURG_HOLIDAYS[mm_dd]
+    
+    # Bewegliche Feiertage prüfen
+    moveable = get_moveable_holidays(target_date.year)
+    date_str = target_date.strftime("%Y-%m-%d")
+    if date_str in moveable:
+        return True, moveable[date_str]
+    
+    return False, None
+
+
 # ============== PYDANTIC MODELS ==============
 
 # --- Time Block für Wochentage ---
