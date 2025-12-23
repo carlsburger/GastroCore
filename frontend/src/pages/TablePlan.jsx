@@ -668,9 +668,16 @@ export const TablePlan = () => {
                 <Button variant="outline" onClick={fetchData} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
-                <Button onClick={handlePrintPDF} className="bg-[#002f02] hover:bg-[#003300]">
+                <Button 
+                  onClick={() => {
+                    const printUrl = `/table-plan/print?date=${selectedDate}&slot=${selectedTimeSlot?.value || 'all'}`;
+                    window.open(printUrl, '_blank');
+                  }} 
+                  className="bg-[#002f02] hover:bg-[#003300]"
+                  disabled={!dayInfo.open}
+                >
                   <Printer className="h-4 w-4 mr-2" />
-                  PDF
+                  Drucken (A4)
                 </Button>
               </>
             )}
