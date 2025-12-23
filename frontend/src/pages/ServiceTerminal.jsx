@@ -161,6 +161,7 @@ const POLLING_INTERVAL = 20000;
 // LocalStorage Keys
 const LS_AREA_KEY = "carlsburg_service_area";
 const LS_SLOT_KEY = "carlsburg_service_slot";
+const LS_VIEW_MODE_KEY = "carlsburg_service_view_mode";
 
 export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
   const { user } = useAuth();
@@ -173,6 +174,11 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  
+  // View Mode: "day" | "week"
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem(LS_VIEW_MODE_KEY) || "day");
+  const [weekData, setWeekData] = useState([]);
+  const [loadingWeek, setLoadingWeek] = useState(false);
 
   // Filters - mit localStorage Persistenz
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
