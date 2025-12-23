@@ -760,8 +760,10 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* ===== STATS BAR ===== */}
+        {/* ===== STATS BAR (nur im Tag-Modus) ===== */}
+        {viewMode === "day" && (
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:hidden">
           <Card className="bg-white border-[#002f02]/20">
             <CardContent className="p-2 text-center">
