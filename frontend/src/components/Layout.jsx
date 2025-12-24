@@ -395,34 +395,44 @@ export const Layout = ({ children }) => {
           </nav>
         </ScrollArea>
 
-        {/* User Footer */}
+        {/* User Footer - Kompakt */}
         <div className={`
-          border-t border-[#003d03] p-3
+          border-t border-[#003d03] py-2 px-3
           ${sidebarCollapsed ? "text-center" : ""}
         `}>
           {!sidebarCollapsed && (
-            <div className="mb-3 px-2">
-              <p className="text-sm font-medium text-[#ffed00] truncate">{user?.name}</p>
-              <p className="text-xs text-[#fafbed]/60 capitalize">
-                {t(`users.roles.${user?.role}`)}
-              </p>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-[#ffed00] truncate">{user?.name}</p>
+                <p className="text-[10px] text-[#fafbed]/50 capitalize">
+                  {t(`users.roles.${user?.role}`)}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="h-7 px-2 text-[#fafbed]/70 hover:bg-[#003d03] hover:text-[#ffed00]"
+                data-testid="logout-button"
+                title="Abmelden"
+              >
+                <LogOut size={14} />
+              </Button>
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className={`
-              w-full text-[#fafbed] hover:bg-[#003d03] hover:text-[#ffed00]
-              ${sidebarCollapsed ? "px-2" : "justify-start"}
-            `}
-            data-testid="logout-button"
-          >
-            <LogOut size={18} />
-            {!sidebarCollapsed && <span className="ml-2">Abmelden</span>}
-          </Button>
+          {sidebarCollapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="w-full px-2 text-[#fafbed] hover:bg-[#003d03] hover:text-[#ffed00]"
+              data-testid="logout-button"
+            >
+              <LogOut size={16} />
+            </Button>
+          )}
           {buildId && !sidebarCollapsed && (
-            <p className="text-[10px] text-[#fafbed]/30 text-center mt-2 font-mono">
+            <p className="text-[9px] text-[#fafbed]/20 text-center font-mono">
               {buildId}
             </p>
           )}
