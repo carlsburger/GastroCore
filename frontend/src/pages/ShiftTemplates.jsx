@@ -60,7 +60,9 @@ const DAY_TYPES = [
 ];
 
 export default function ShiftTemplates() {
-  const { token } = useAuth();
+  const { user } = useAuth();
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   const [templates, setTemplates] = useState([]);
