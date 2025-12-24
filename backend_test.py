@@ -5480,6 +5480,52 @@ class GastroCoreAPITester:
         
         return all(test_results)
 
+    def test_myshifts_api_smoke_test(self):
+        """Test MyShifts API endpoint - SMOKE TEST as per review request"""
+        print("\n📋 Testing MyShifts API Endpoint (SMOKE TEST)...")
+        
+        # Test with Admin user (should return 404 as admin has no staff profile)
+        if "admin" not in self.tokens:
+            self.log_test("MyShifts API - Admin login", False, "Admin token not available")
+            return False
+        
+        # Test GET /api/staff/my-shifts with date range
+        params = {
+            "date_from": "2025-12-22",
+            "date_to": "2025-12-28"
+        }
+        
+        result = self.make_request("GET", "staff/my-shifts", params, 
+                                 self.tokens["admin"], expected_status=404)
+        
+        if result["success"]:
+            # Check if we got the expected 404 response
+            error_data = result["data"]
+            expected_detail = "Kein Mitarbeiterprofil verknüpft"
+            
+            if "detail" in error_data and expected_detail in error_data["detail"]:
+                self.log_test("MyShifts API - Expected 404 for Admin (no staff profile)", True, 
+                            f"Correct error: {error_data['detail']}")
+                
+                # Check response structure
+                required_fields = ["detail"]
+                missing_fields = [field for field in required_fields if field not in error_data]
+                
+                if not missing_fields:
+                    self.log_test("MyShifts API - Response structure", True, "All required fields present")
+                    return True
+                else:
+                    self.log_test("MyShifts API - Response structure", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("MyShifts API - Expected error message", False, 
+                            f"Expected '{expected_detail}', got: {error_data.get('detail', 'No detail')}")
+                return False
+        else:
+            self.log_test("MyShifts API - Expected 404 status", False, 
+                        f"Expected 404, got {result['status_code']}")
+            return False
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
