@@ -792,15 +792,15 @@ export default function OpeningHoursAdmin() {
           </DialogContent>
         </Dialog>
 
-        {/* CLOSURE DIALOG */}
+        {/* OVERRIDE DIALOG */}
         <Dialog open={showClosureDialog} onOpenChange={setShowClosureDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-[#002f02]">
-                {editingClosure?.id ? "Sperrtag bearbeiten" : "Neuer Sperrtag / Override"}
+                {editingClosure?.id ? "Override bearbeiten" : "Neuer Override"}
               </DialogTitle>
               <DialogDescription>
-                Sperrtage haben die höchste Priorität und überschreiben alle Öffnungszeiten-Perioden.
+                Overrides haben <strong>höchste Priorität</strong> und überschreiben Perioden & Feiertage.
               </DialogDescription>
             </DialogHeader>
             
@@ -808,89 +808,119 @@ export default function OpeningHoursAdmin() {
               {/* Datumsbereich */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Startdatum *</Label>
+                  <Label>Von Datum *</Label>
                   <Input
                     type="date"
-                    value={closureForm.start_date}
+                    value={closureForm.date_from}
                     onChange={(e) => setClosureForm(f => ({ 
                       ...f, 
-                      start_date: e.target.value,
-                      end_date: f.end_date || e.target.value
+                      date_from: e.target.value,
+                      date_to: f.date_to || e.target.value
                     }))}
                     className="mt-1"
                   />
                 </div>
                 <div>
-                  <Label>Enddatum (optional)</Label>
+                  <Label>Bis Datum</Label>
                   <Input
                     type="date"
-                    value={closureForm.end_date}
-                    onChange={(e) => setClosureForm(f => ({ ...f, end_date: e.target.value }))}
+                    value={closureForm.date_to}
+                    onChange={(e) => setClosureForm(f => ({ ...f, date_to: e.target.value }))}
                     className="mt-1"
-                    min={closureForm.start_date}
+                    min={closureForm.date_from}
                   />
                   <p className="text-xs text-gray-500 mt-1">Leer = Einzeltag</p>
                 </div>
               </div>
 
-              {/* Typ: Ganztags / Teilweise */}
+              {/* Status: Geschlossen / Offen */}
               <div>
-                <Label>Art der Sperrung</Label>
+                <Label>Status</Label>
                 <Select
-                  value={closureForm.type}
-                  onValueChange={(v) => setClosureForm(f => ({ ...f, type: v }))}
+                  value={closureForm.status}
+                  onValueChange={(v) => setClosureForm(f => ({ ...f, status: v }))}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="closed_all_day">Ganztags geschlossen</SelectItem>
-                    <SelectItem value="closed_partial">Teilweise geschlossen (ab Uhrzeit)</SelectItem>
+                    <SelectItem value="closed">🔴 Geschlossen</SelectItem>
+                    <SelectItem value="open">🟢 Offen (Sonderöffnung)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Zeitraum bei teilweiser Sperrung */}
-              {closureForm.type === "closed_partial" && (
-                <div className="grid grid-cols-2 gap-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <div>
-                    <Label>Geschlossen ab *</Label>
-                    <Input
-                      type="time"
-                      value={closureForm.start_time}
-                      onChange={(e) => setClosureForm(f => ({ ...f, start_time: e.target.value }))}
-                      className="mt-1"
-                    />
+              {/* Öffnungszeiten bei status=open */}
+              {closureForm.status === "open" && (
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-3">
+                  <p className="text-sm font-medium text-green-800">Sonderöffnungszeiten</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Öffnung *</Label>
+                      <Input
+                        type="time"
+                        value={closureForm.open_from}
+                        onChange={(e) => setClosureForm(f => ({ ...f, open_from: e.target.value }))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Schließung *</Label>
+                      <Input
+                        type="time"
+                        value={closureForm.open_to}
+                        onChange={(e) => setClosureForm(f => ({ ...f, open_to: e.target.value }))}
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <Label>Geschlossen bis *</Label>
+                    <Label>Letzte Reservierung (optional)</Label>
                     <Input
                       type="time"
-                      value={closureForm.end_time}
-                      onChange={(e) => setClosureForm(f => ({ ...f, end_time: e.target.value }))}
+                      value={closureForm.last_reservation_time}
+                      onChange={(e) => setClosureForm(f => ({ ...f, last_reservation_time: e.target.value }))}
                       className="mt-1"
+                      placeholder="z.B. 14:30 für Silvester"
                     />
+                    <p className="text-xs text-green-700 mt-1">
+                      Beispiel Silvester: Offen 12:00-16:00, letzte Reservierung 14:30
+                    </p>
                   </div>
-                  <p className="col-span-2 text-xs text-amber-700">
-                    Beispiel: 15:00 - 24:00 = "Geschlossen ab 15:00"
-                  </p>
                 </div>
               )}
 
-              {/* Grund */}
+              {/* Notiz */}
               <div>
-                <Label>Grund *</Label>
+                <Label>Notiz / Grund *</Label>
                 <Input
-                  value={closureForm.reason}
-                  onChange={(e) => setClosureForm(f => ({ ...f, reason: e.target.value }))}
-                  placeholder="z.B. Betriebsferien, Renovierung, Silvester"
+                  value={closureForm.note}
+                  onChange={(e) => setClosureForm(f => ({ ...f, note: e.target.value }))}
+                  placeholder="z.B. Heiligabend, Silvester, Betriebsferien"
                   className="mt-1"
                 />
+              </div>
+
+              {/* Priorität */}
+              <div>
+                <Label>Priorität</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="1000"
+                  value={closureForm.priority}
+                  onChange={(e) => setClosureForm(f => ({ ...f, priority: parseInt(e.target.value) || 100 }))}
+                  className="mt-1 w-32"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Höhere Werte gewinnen bei überlappenden Overrides (Standard: 100)
+                </p>
               </div>
               
               {/* Hinweis-Box */}
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm text-blue-800">
-                <strong>Priorität:</strong> Sperrtage überschreiben immer die normalen Öffnungszeiten.
+                <strong>💡 Tipp:</strong> Overrides überschreiben alles - auch Feiertage und Ruhetage.
+                Nutzen Sie "Offen" für Silvester (12:00-16:00, letzte Res. 14:30).
               </div>
             </div>
 
