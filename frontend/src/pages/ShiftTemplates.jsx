@@ -426,38 +426,15 @@ export default function ShiftTemplates() {
             <div className="space-y-2">
               <Label>Bereich *</Label>
               <Select
-                value={formData.work_area_id}
-                onValueChange={(value) => setFormData({ ...formData, work_area_id: value })}
+                value={formData.department}
+                onValueChange={(value) => setFormData({ ...formData, department: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Bereich wählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {workAreas.map((area) => (
-                    <SelectItem key={area.id} value={area.id}>
-                      {area.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Rolle */}
-            <div className="space-y-2">
-              <Label>Schichttyp</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="service">Service</SelectItem>
+                  <SelectItem value="kitchen">Küche</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -473,15 +450,44 @@ export default function ShiftTemplates() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Endzeit</Label>
-                <Input
-                  type="time"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  disabled={formData.use_close_offset}
-                />
+                <Label>Endzeit-Typ</Label>
+                <Select
+                  value={formData.end_time_type}
+                  onValueChange={(value) => setFormData({ ...formData, end_time_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Feste Zeit</SelectItem>
+                    <SelectItem value="close_plus_minutes">Schließung + X Min</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+
+            {/* Endzeit je nach Typ */}
+            {formData.end_time_type === "fixed" ? (
+              <div className="space-y-2">
+                <Label>Feste Endzeit</Label>
+                <Input
+                  type="time"
+                  value={formData.end_time_fixed}
+                  onChange={(e) => setFormData({ ...formData, end_time_fixed: e.target.value })}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Minuten nach Schließung</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={120}
+                  value={formData.close_plus_minutes}
+                  onChange={(e) => setFormData({ ...formData, close_plus_minutes: parseInt(e.target.value) || 30 })}
+                />
+              </div>
+            )}
 
             {/* Saison + Tage */}
             <div className="grid grid-cols-2 gap-4">
@@ -529,9 +535,9 @@ export default function ShiftTemplates() {
               <Input
                 type="number"
                 min={1}
-                max={20}
-                value={formData.headcount}
-                onChange={(e) => setFormData({ ...formData, headcount: parseInt(e.target.value) || 1 })}
+                max={10}
+                value={formData.headcount_default}
+                onChange={(e) => setFormData({ ...formData, headcount_default: parseInt(e.target.value) || 1 })}
               />
             </div>
           </div>
