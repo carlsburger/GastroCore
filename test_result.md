@@ -694,6 +694,18 @@ backend:
         agent: "testing"
         comment: "✅ SMOKE TEST PASS: Service Terminal Label Verification completed successfully. ✅ Admin Authentication: admin@carlsburg.de / Carlsburg2025! login working. ✅ GET /api/reservations: Retrieved reservations with valid status fields (neu, bestaetigt, angekommen, abgeschlossen, no_show, storniert). ✅ Status Validation: All reservation status values conform to expected labels. ✅ PATCH /api/reservations/{id}/status: Successfully changed reservation status from neu → bestaetigt → angekommen following proper status transition validation. ✅ Status Persistence: Status changes correctly persisted and returned in subsequent API calls. Backend endpoints working correctly for Service Terminal functionality."
 
+  - task: "MyShifts API Endpoint SMOKE TEST"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ SMOKE TEST PASS: MyShifts API endpoint working correctly. ✅ Admin Authentication: admin@carlsburg.de / Carlsburg2025! login successful. ✅ GET /api/staff/my-shifts?date_from=2025-12-22&date_to=2025-12-28: Returns expected HTTP 404 status. ✅ Error Message: Correct 'Kein Mitarbeiterprofil verknüpft. Bitte wende dich an die Schichtleitung.' message returned. ✅ Response Structure: Proper error response with 'detail' field. The 404 status is EXPECTED behavior since Admin user has no linked staff profile, and frontend will show 'Kein Mitarbeiterprofil' state as designed."
+
 frontend:
   - task: "MyShifts Stabilität & Endlos-Loading Fix"
     implemented: true
