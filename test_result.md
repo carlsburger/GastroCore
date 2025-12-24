@@ -739,6 +739,18 @@ backend:
         agent: "testing"
         comment: "✅ SMOKE TEST PASS: MyShifts API endpoint working correctly. ✅ Admin Authentication: admin@carlsburg.de / Carlsburg2025! login successful. ✅ GET /api/staff/my-shifts?date_from=2025-12-22&date_to=2025-12-28: Returns expected HTTP 404 status. ✅ Error Message: Correct 'Kein Mitarbeiterprofil verknüpft. Bitte wende dich an die Schichtleitung.' message returned. ✅ Response Structure: Proper error response with 'detail' field. The 404 status is EXPECTED behavior since Admin user has no linked staff profile, and frontend will show 'Kein Mitarbeiterprofil' state as designed."
 
+  - task: "Aktionen-Infrastruktur Verification SMOKE TEST"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ SMOKE TEST PASS: Aktionen-Infrastruktur correctly implemented. ✅ Admin Authentication: admin@carlsburg.de / Carlsburg2025! login successful. ✅ GET /api/events: Retrieved 11 events successfully. ✅ Content Category: All existing events have content_category='VERANSTALTUNG' as required. ✅ Aktionen Fields: All new Aktionen fields (action_type, menu_only, restriction_notice, guest_notice) are correctly null for existing Kultur-Events. ✅ No Breaking Changes: All existing events preserve title, start_datetime and other required fields. ✅ Backend Health: GET /api/health returns 'healthy' status. All requirements from review request verified successfully - no breaking changes detected."
+
 frontend:
   - task: "MyShifts Stabilität & Endlos-Loading Fix"
     implemented: true
