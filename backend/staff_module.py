@@ -1347,14 +1347,29 @@ async def get_my_shifts(
     Zeigt nur die eigenen Schichten des eingeloggten Mitarbeiters.
     Für alle Rollen verfügbar.
     
+    Verknüpfung wird geprüft:
+    1. Zuerst über staff_member_id im User-Dokument (explizite Verknüpfung)
+    2. Fallback: über Email-Matching (für Kompatibilität)
+    
     Returns 404 wenn kein Mitarbeiterprofil verknüpft.
     Returns leere Liste wenn keine Schichten vorhanden.
     """
-    # Finde Staff-Member anhand der User-Email
-    staff_member = await db.staff_members.find_one({
-        "email": user.get("email"),
-        "archived": False
-    })
+    staff_member = None
+    
+    # Methode 1: Explizite Verknüpfung über staff_member_id
+    staff_member_id = user.get("staff_member_id")
+    if staff_member_id:
+        staff_member = await db.staff_members.find_one({
+            "id": staff_member_id,
+            "archived": False
+        })
+    
+    # Methode 2: Fallback - Email-Matching (für Kompatibilität)
+    if not staff_member:
+        staff_member = await db.staff_members.find_one({
+            "email": user.get("email"),
+            "archived": False
+        })
     
     if not staff_member:
         # Kein Mitarbeiter-Profil gefunden - 404 mit klarer Meldung
@@ -1368,15 +1383,16 @@ async def get_my_shifts(
         "archived": False
     }
     
+    # Datum-Filter auf korrektem Feld (date statt shift_date)
     if date_from:
-        query["shift_date"] = {"$gte": date_from}
+        query["date"] = {"$gte": date_from}
     if date_to:
-        if "shift_date" in query:
-            query["shift_date"]["$lte"] = date_to
+        if "date" in query:
+            query["date"]["$lte"] = date_to
         else:
-            query["shift_date"] = {"$lte": date_to}
+            query["date"] = {"$lte": date_to}
     
-    shifts = await db.shifts.find(query, {"_id": 0}).sort("shift_date", 1).to_list(100)
+    shifts = await db.shifts.find(query, {"_id": 0}).sort("date", 1).to_list(100)
     
     # Bereichsnamen hinzufügen
     work_areas = await db.work_areas.find({"archived": False}, {"_id": 0}).to_list(100)
@@ -1384,8 +1400,19 @@ async def get_my_shifts(
     
     for shift in shifts:
         area = area_map.get(shift.get("work_area_id"), {})
-        shift["work_area_name"] = area.get("name", "Unbekannt")
-        shift["work_area_color"] = area.get("color", "#888888")
+        shift["work_area_name"] = area.get("name", shift.get("department", "Unbekannt"))
+        shift["work_area_color"] = area.get("color", "#3B82F6")
+        # Berechne Stunden wenn nicht vorhanden
+        if not shift.get("hours") and shift.get("start_time") and shift.get("end_time"):
+            try:
+                start = datetime.strptime(shift["start_time"], "%H:%M")
+                end = datetime.strptime(shift["end_time"], "%H:%M")
+                diff = (end - start).seconds / 3600
+                shift["hours"] = round(diff, 1)
+            except:
+                shift["hours"] = 0
+        # shift_date für Frontend-Kompatibilität
+        shift["shift_date"] = shift.get("date")
     
     return shifts
 
