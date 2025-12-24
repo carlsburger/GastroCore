@@ -34,6 +34,7 @@ import Staff from "./pages/Staff";
 import StaffDetail from "./pages/StaffDetail";
 import Schedule from "./pages/Schedule";
 import MyShifts from "./pages/MyShifts";
+import ShiftTemplates from "./pages/ShiftTemplates";
 // Tax Office Module (Sprint 6)
 import TaxOfficeExports from "./pages/TaxOfficeExports";
 // Marketing Module (Sprint 8)
