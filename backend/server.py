@@ -2413,7 +2413,13 @@ async def wordpress_sync_scheduler():
                                         "website_url": mapped["website_url"],
                                         "slug": mapped["slug"],
                                         "event_type": mapped["event_type"],
+                                        "content_category": mapped.get("content_category", "VERANSTALTUNG"),
                                         "wp_categories": mapped["wp_categories"],
+                                        # Aktionen-Felder (Sprint: Aktionen-Infrastruktur)
+                                        "action_type": mapped.get("action_type"),
+                                        "menu_only": mapped.get("menu_only"),
+                                        "restriction_notice": mapped.get("restriction_notice"),
+                                        "guest_notice": mapped.get("guest_notice"),
                                         "updated_at": now_str,
                                         "last_sync_at": now_str,
                                     }}
@@ -2440,8 +2446,13 @@ async def wordpress_sync_scheduler():
                                 "website_url": mapped["website_url"],
                                 "slug": mapped["slug"],
                                 "event_type": mapped["event_type"],
-                                "content_category": "VERANSTALTUNG",
+                                "content_category": mapped.get("content_category", "VERANSTALTUNG"),
                                 "wp_categories": mapped["wp_categories"],
+                                # Aktionen-Felder (Sprint: Aktionen-Infrastruktur)
+                                "action_type": mapped.get("action_type"),
+                                "menu_only": mapped.get("menu_only"),
+                                "restriction_notice": mapped.get("restriction_notice"),
+                                "guest_notice": mapped.get("guest_notice"),
                                 "status": "published",
                                 "capacity_total": 100,
                                 "booking_mode": "ticket_only",
