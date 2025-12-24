@@ -459,7 +459,7 @@ export default function OpeningHoursAdmin() {
               className="data-[state=active]:bg-[#002f02] data-[state=active]:text-white"
             >
               <CalendarX className="h-4 w-4 mr-2" />
-              Sperrtage
+              Sperrtage & Overrides
             </TabsTrigger>
           </TabsList>
 
