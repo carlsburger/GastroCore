@@ -100,6 +100,20 @@ export const Schedule = () => {
   const [editingShift, setEditingShift] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  
+  // NEW: Department Filter (Sprint: Dienstplan Service live-tauglich)
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  
+  // NEW: Event Warnings (Sprint: Dienstplan Service live-tauglich)
+  const [eventWarnings, setEventWarnings] = useState([]);
+  
+  // NEW: Apply Templates Dialog
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+  const [templateSettings, setTemplateSettings] = useState({
+    departments: ["service"],
+    season: null, // null = auto-detect
+  });
+  const [applyingTemplates, setApplyingTemplates] = useState(false);
 
   const [shiftData, setShiftData] = useState({
     staff_member_id: "",
