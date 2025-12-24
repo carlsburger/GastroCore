@@ -599,20 +599,17 @@ export default function OpeningHoursAdmin() {
                           {formatClosureDate(closure)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={closure.type === "recurring" ? "border-amber-500 text-amber-700" : "border-blue-500 text-blue-700"}>
-                            {closure.type === "recurring" ? "Jährlich" : "Einmalig"}
+                          <Badge variant="outline" className={
+                            closure.type === "closed_all_day" || closure.scope === "full_day" 
+                              ? "border-red-500 text-red-700" 
+                              : "border-amber-500 text-amber-700"
+                          }>
+                            {formatClosureType(closure)}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {closure.scope === "full_day" ? (
-                            "Ganzer Tag"
-                          ) : (
-                            `${closure.start_time} - ${closure.end_time}`
-                          )}
                         </TableCell>
                         <TableCell>{closure.reason}</TableCell>
                         <TableCell>
-                          {closure.active ? (
+                          {closure.active !== false ? (
                             <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
                           ) : (
                             <Badge variant="secondary">Inaktiv</Badge>
