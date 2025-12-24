@@ -21,7 +21,8 @@ const ROLE_LABELS = {
 const LOADING_TIMEOUT_MS = 5000;
 
 export default function MyShifts() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
+  const token = localStorage.getItem("token");  // Token aus localStorage holen
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
