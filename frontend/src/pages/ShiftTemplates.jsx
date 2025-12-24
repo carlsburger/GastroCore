@@ -61,7 +61,6 @@ export default function ShiftTemplates() {
   const { toast } = useToast();
   
   const [templates, setTemplates] = useState([]);
-  const [workAreas, setWorkAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [applyingTemplates, setApplyingTemplates] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
