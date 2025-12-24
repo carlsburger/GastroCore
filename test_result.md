@@ -642,6 +642,18 @@ backend:
         agent: "testing"
         comment: "✅ COMPREHENSIVE PASS: Service Terminal RBAC fully functional. Service user (service@carlsburg.de / Service2025!) can authenticate successfully. ✅ Service Access: Can access /api/reservations, /api/areas, /api/walk-ins (required for service terminal functionality). ✅ Admin Blockade: Correctly blocked from /api/users, /api/audit-logs, /api/settings, /api/email-logs with 403 Forbidden. ✅ Admin Functionality: Admin user (admin@carlsburg.de / Carlsburg2025!) retains full access to all endpoints. ✅ RBAC Working: Role-based access control properly implemented and enforced. Created missing schichtleiter and mitarbeiter users for complete testing."
 
+  - task: "Service Terminal Label Verification SMOKE TEST"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ SMOKE TEST PASS: Service Terminal Label Verification completed successfully. ✅ Admin Authentication: admin@carlsburg.de / Carlsburg2025! login working. ✅ GET /api/reservations: Retrieved reservations with valid status fields (neu, bestaetigt, angekommen, abgeschlossen, no_show, storniert). ✅ Status Validation: All reservation status values conform to expected labels. ✅ PATCH /api/reservations/{id}/status: Successfully changed reservation status from neu → bestaetigt → angekommen following proper status transition validation. ✅ Status Persistence: Status changes correctly persisted and returned in subsequent API calls. Backend endpoints working correctly for Service Terminal functionality."
+
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
 #====================================================================================================
