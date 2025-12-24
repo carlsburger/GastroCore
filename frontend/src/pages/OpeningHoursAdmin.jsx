@@ -575,7 +575,7 @@ export default function OpeningHoursAdmin() {
                   <CalendarX className="h-12 w-12 mx-auto text-[#002f02]/30 mb-4" />
                   <p className="text-[#002f02]/70">Keine Sperrtage definiert.</p>
                   <p className="text-sm text-[#002f02]/50 mt-1">
-                    Fügen Sie Feiertage oder Betriebsferien hinzu.
+                    Fügen Sie Feiertage, Betriebsferien oder temporäre Schließungen hinzu.
                   </p>
                 </CardContent>
               </Card>
@@ -584,9 +584,8 @@ export default function OpeningHoursAdmin() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Umfang</TableHead>
+                      <TableHead>Datum / Zeitraum</TableHead>
+                      <TableHead>Art</TableHead>
                       <TableHead>Grund</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Aktionen</TableHead>
