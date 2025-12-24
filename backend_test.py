@@ -6337,6 +6337,12 @@ def main():
     
     tester = GastroCoreAPITester()
     
+    # Check if we should run Aktionen-Infrastruktur smoke test
+    if len(sys.argv) > 1 and sys.argv[1] == "--aktionen-infrastruktur":
+        print("Running Aktionen-Infrastruktur Verification SMOKE TEST...")
+        success = tester.run_aktionen_infrastruktur_smoke_test()
+        return 0 if success else 1
+    
     # Check if we should run smoke test
     if len(sys.argv) > 1 and sys.argv[1] == "--smoke-test":
         print("Running Service Terminal Label Verification SMOKE TEST...")
@@ -6355,8 +6361,8 @@ def main():
         success = tester.run_full_qa_audit()
         return 0 if success else 1
     
-    # Default: Run smoke test (as per review request)
-    success = tester.run_smoke_test()
+    # Default: Run Aktionen-Infrastruktur smoke test (as per current review request)
+    success = tester.run_aktionen_infrastruktur_smoke_test()
     return 0 if success else 1
 
 if __name__ == "__main__":
