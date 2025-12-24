@@ -1164,11 +1164,6 @@ def determine_content_category(event_type: str, categories: List[str] = None) ->
     return CONTENT_CATEGORY_MAPPING.get(event_type, "VERANSTALTUNG")
 
 
-def now_iso() -> str:
-    """ISO timestamp"""
-    return datetime.now(timezone.utc).isoformat()
-
-
 def decode_html_entities(text: str) -> str:
     """
     Dekodiert HTML-Entities wie &#8211; &amp; &quot; etc.
