@@ -83,15 +83,15 @@ export default function ShiftTemplates() {
   // Form State
   const [formData, setFormData] = useState({
     name: "",
-    work_area_id: "",
+    department: "service",
     season: "all",
     day_type: "all",
-    role: "frueh",
     start_time: "10:00",
-    end_time: "18:00",
-    use_close_offset: false,
-    close_offset_minutes: 30,
-    headcount: 1,
+    end_time_type: "fixed",
+    end_time_fixed: "18:00",
+    close_plus_minutes: 30,
+    headcount_default: 1,
+    active: true,
   });
 
   const getHeaders = useCallback(() => ({
