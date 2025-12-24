@@ -5645,6 +5645,10 @@ class GastroCoreAPITester:
         test_results.append(self.test_health_endpoint())
         test_results.append(self.test_error_handling())
         
+        # SMOKE TEST: Shift Templates (Carlsburg Cockpit) - as per review request
+        print("\n🔄 SHIFT TEMPLATES SMOKE TEST (CARLSBURG COCKPIT):")
+        test_results.append(self.test_shift_templates_smoke_test())
+        
         # Summary
         print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
