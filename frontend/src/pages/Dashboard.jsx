@@ -580,8 +580,150 @@ export const Dashboard = () => {
           ))}
         </div>
 
+        {/* ==================== DASHBOARD v1.1 KACHELN (nur Admin/Schichtleiter) ==================== */}
+        {isSchichtleiter && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            {/* 7-Tage Übersicht mit Auslastungsampel */}
+            <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-900">Nächste 7 Tage</h3>
+                </div>
+                
+                {weekSummaryLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {weekSummary.days.map((day, idx) => {
+                      const loadStatus = getLoadStatus(day.guests);
+                      const isToday = idx === 0;
+                      return (
+                        <div 
+                          key={day.date} 
+                          className={`flex items-center justify-between p-2 rounded-lg ${
+                            isToday ? "bg-blue-100 border border-blue-300" : "bg-white/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{loadStatus.icon}</span>
+                            <span className={`font-medium ${isToday ? "text-blue-900" : "text-gray-700"}`}>
+                              {day.weekday} {day.date.slice(5).replace("-", ".")}
+                            </span>
+                            {isToday && <Badge className="bg-blue-600 text-xs">Heute</Badge>}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="text-gray-600">{day.reservations} Res.</span>
+                            <Badge className={getLoadColor(day.guests)}>
+                              {day.guests} Gäste
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                <div className="mt-3 pt-3 border-t border-blue-200 flex justify-between text-xs text-blue-700">
+                  <span>🟢 &lt;120</span>
+                  <span>🟡 120-139</span>
+                  <span>🔴 ≥140 Gäste</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* WordPress Sync Status */}
+            <Card className={`border-gray-200 ${
+              wpSyncStatus?.last_result === 'error' 
+                ? 'bg-gradient-to-r from-red-50 to-orange-50 border-red-300' 
+                : 'bg-gradient-to-r from-gray-50 to-slate-50'
+            }`}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <RefreshCw className={`h-5 w-5 ${
+                    wpSyncStatus?.last_result === 'error' ? 'text-red-600' : 'text-gray-600'
+                  }`} />
+                  <h3 className={`font-semibold ${
+                    wpSyncStatus?.last_result === 'error' ? 'text-red-900' : 'text-gray-900'
+                  }`}>WordPress Event Sync</h3>
+                  {wpSyncStatus?.last_result === 'error' && (
+                    <Badge className="bg-red-600 text-white ml-auto">Fehler!</Badge>
+                  )}
+                </div>
+                
+                {wpSyncLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
+                  </div>
+                ) : wpSyncStatus ? (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Letzter Lauf:</span>
+                      <span className="font-medium">
+                        {wpSyncStatus.last_run_at 
+                          ? new Date(wpSyncStatus.last_run_at).toLocaleString("de-DE", {
+                              day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+                            })
+                          : "Nie"
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <Badge className={
+                        wpSyncStatus.last_result === 'success' 
+                          ? 'bg-green-100 text-green-700' 
+                          : wpSyncStatus.last_result === 'partial'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-700'
+                      }>
+                        {wpSyncStatus.last_result === 'success' ? '✓ Erfolgreich' : 
+                         wpSyncStatus.last_result === 'partial' ? '⚠ Teilweise' : '✗ Fehler'}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">WordPress Events:</span>
+                      <span className="font-medium">{wpSyncStatus.current_wordpress_events || 0}</span>
+                    </div>
+                    {wpSyncStatus.counts && (
+                      <div className="pt-2 border-t border-gray-200 grid grid-cols-4 gap-1 text-xs text-center">
+                        <div>
+                          <div className="font-bold text-green-600">{wpSyncStatus.counts.created}</div>
+                          <div className="text-gray-500">Neu</div>
+                        </div>
+                        <div>
+                          <div className="font-bold text-blue-600">{wpSyncStatus.counts.updated}</div>
+                          <div className="text-gray-500">Geändert</div>
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-600">{wpSyncStatus.counts.unchanged}</div>
+                          <div className="text-gray-500">Gleich</div>
+                        </div>
+                        <div>
+                          <div className="font-bold text-orange-600">{wpSyncStatus.counts.archived}</div>
+                          <div className="text-gray-500">Archiv</div>
+                        </div>
+                      </div>
+                    )}
+                    {wpSyncStatus.last_error && (
+                      <div className="mt-2 p-2 bg-red-100 rounded text-red-700 text-xs">
+                        {wpSyncStatus.last_error}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">Kein Sync-Status verfügbar</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Kulturveranstaltungen Kachel - Dashboard v1 */}
-        {kulturEvents.length > 0 && (
+        {isSchichtleiter && kulturEvents.length > 0 && (
           <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-4">
