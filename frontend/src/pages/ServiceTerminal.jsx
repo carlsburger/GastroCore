@@ -306,7 +306,7 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
             // Reservierungsliste für Wochenübersicht (max 6 pro Tag)
             reservations: dayReservations.slice(0, 6).map(r => ({
               time: r.time?.substring(0, 5) || "–",
-              name: r.guest_name?.split(" ")[0] || "Gast",
+              name: formatShortName(r.guest_name),
               party_size: r.party_size || 0,
             })),
             hasMore: dayReservations.length > 6,
