@@ -237,13 +237,41 @@ export const Users = () => {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
+                        {/* Staff-Verknüpfungs-Status */}
+                        {user.role !== "admin" && (
+                          <div className="flex items-center gap-1 mt-1">
+                            {user.staff_member_id ? (
+                              <span className="text-xs text-green-600 flex items-center gap-1">
+                                <UserCheck size={12} />
+                                Verknüpft: {getStaffName(user.staff_member_id)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-amber-600 flex items-center gap-1">
+                                <AlertTriangle size={12} />
+                                Nicht verknüpft
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className={ROLE_BADGES[user.role]}>
+                      <Badge className={ROLE_BADGES[user.role] || ROLE_BADGES.mitarbeiter}>
                         <Shield size={12} className="mr-1" />
                         {t(`users.roles.${user.role}`)}
                       </Badge>
+                      {/* Link/Unlink Button - nur für Nicht-Admins */}
+                      {user.role !== "admin" && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openLinkDialog(user)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          title={user.staff_member_id ? "Verknüpfung bearbeiten" : "Mit Mitarbeiter verknüpfen"}
+                        >
+                          {user.staff_member_id ? <Link size={16} className="text-green-600" /> : <LinkOff size={16} className="text-amber-600" />}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
