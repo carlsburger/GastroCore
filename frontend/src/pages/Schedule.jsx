@@ -46,6 +46,9 @@ import {
   Copy,
   AlertTriangle,
   CalendarX,
+  Filter,
+  Wand2,
+  AlertCircle,
 } from "lucide-react";
 import axios from "axios";
 
@@ -66,6 +69,13 @@ const SHIFT_ROLES = {
   kueche: { label: "Küche", color: "#f97316" },
   bar: { label: "Bar", color: "#8b5cf6" },
   aushilfe: { label: "Aushilfe", color: "#6b7280" },
+};
+
+// Department Filter Options
+const DEPARTMENT_FILTER = {
+  all: { label: "Alle", color: "bg-gray-100 text-gray-700" },
+  service: { label: "Service", color: "bg-green-100 text-green-700" },
+  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700" },
 };
 
 // Helper to get current calendar week
