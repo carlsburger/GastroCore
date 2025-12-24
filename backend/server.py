@@ -148,6 +148,7 @@ class UserResponse(BaseModel):
     is_active: bool
     must_change_password: bool
     created_at: str
+    staff_member_id: Optional[str] = None  # Verknüpfung mit Mitarbeiterprofil
 
 class TokenResponse(BaseModel):
     access_token: str
