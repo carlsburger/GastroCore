@@ -126,15 +126,18 @@ class ShiftTemplatesAPITester:
             close_plus_minutes_check = True
             for template in templates:
                 close_plus_minutes = template.get("close_plus_minutes")
-                if close_plus_minutes is None:
-                    # Should be 0 if not set, not None/undefined
+                end_time_type = template.get("end_time_type", "fixed")
+                
+                # If end_time_type is "close_plus_minutes", then close_plus_minutes must be defined
+                if end_time_type == "close_plus_minutes" and close_plus_minutes is None:
                     close_plus_minutes_check = False
                     break
+                # If end_time_type is "fixed", close_plus_minutes can be undefined (not relevant)
             
             if close_plus_minutes_check:
-                self.log_test("close_plus_minutes nie undefined (0 wenn nicht gesetzt)", True, "All templates have close_plus_minutes defined")
+                self.log_test("close_plus_minutes nie undefined (0 wenn nicht gesetzt)", True, "All templates have close_plus_minutes defined when needed")
             else:
-                self.log_test("close_plus_minutes nie undefined (0 wenn nicht gesetzt)", False, "Some templates have undefined close_plus_minutes")
+                self.log_test("close_plus_minutes nie undefined (0 wenn nicht gesetzt)", False, "Some templates with close_plus_minutes end_time_type have undefined close_plus_minutes")
                 shift_templates_success = False
                 
         else:
