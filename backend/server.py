@@ -2250,7 +2250,209 @@ async def startup():
     
     await init_default_settings()
     await init_default_reminder_rules()
+    
+    # WordPress Sync Scheduler starten
+    import asyncio
+    asyncio.create_task(wordpress_sync_scheduler())
+    
     logger.info("GastroCore v7.0.0 started - Events + Payment + Staff + TaxOffice + Loyalty Module enabled")
+
+
+# ============== WORDPRESS SYNC SCHEDULER ==============
+async def wordpress_sync_scheduler():
+    """
+    Hintergrund-Scheduler für WordPress Event Sync.
+    Läuft alle 60 Minuten automatisch.
+    """
+    import asyncio
+    from pathlib import Path
+    
+    SYNC_INTERVAL_SECONDS = 3600  # 60 Minuten
+    LOCK_FILE = Path("/tmp/wp_sync.lock")
+    INITIAL_DELAY = 120  # 2 Minuten nach Start warten
+    
+    logger.info(f"[WP-SYNC] Scheduler gestartet (Intervall: {SYNC_INTERVAL_SECONDS}s)")
+    
+    # Initiale Verzögerung damit alle Services hochgefahren sind
+    await asyncio.sleep(INITIAL_DELAY)
+    logger.info("[WP-SYNC] Initiale Verzögerung abgeschlossen, starte Sync-Loop")
+    
+    while True:
+        try:
+            # Lock prüfen
+            if LOCK_FILE.exists():
+                try:
+                    lock_age = (datetime.now(timezone.utc) - 
+                               datetime.fromtimestamp(LOCK_FILE.stat().st_mtime, tz=timezone.utc)).total_seconds()
+                    if lock_age > 3600:
+                        logger.warning(f"[WP-SYNC] Veralteter Lock gefunden ({lock_age:.0f}s), entferne...")
+                        LOCK_FILE.unlink()
+                    else:
+                        logger.info("[WP-SYNC] Sync übersprungen (Lock aktiv)")
+                        await asyncio.sleep(SYNC_INTERVAL_SECONDS)
+                        continue
+                except Exception:
+                    pass
+            
+            # Lock setzen
+            LOCK_FILE.write_text(f"scheduler:{datetime.now(timezone.utc).isoformat()}")
+            
+            try:
+                logger.info("[WP-SYNC] Starte automatischen Sync...")
+                
+                # Sync direkt ausführen (Funktion aus events_module)
+                from events_module import (
+                    fetch_wordpress_events, map_wordpress_event_to_gastrocore,
+                    has_real_changes, SYNC_SOURCE, WORDPRESS_EVENTS_API
+                )
+                import time
+                
+                start_time = time.time()
+                
+                report = {
+                    "fetched": 0, "created": 0, "updated": 0, 
+                    "unchanged": 0, "archived": 0, "skipped": 0, "errors": []
+                }
+                
+                # Events holen
+                wp_events = await fetch_wordpress_events()
+                report["fetched"] = len(wp_events)
+                
+                seen_external_ids = set()
+                
+                for wp_event in wp_events:
+                    try:
+                        mapped = map_wordpress_event_to_gastrocore(wp_event)
+                        external_id = mapped["external_id"]
+                        seen_external_ids.add(external_id)
+                        
+                        existing = await db.events.find_one({
+                            "external_source": SYNC_SOURCE,
+                            "external_id": external_id,
+                            "archived": {"$ne": True}
+                        })
+                        
+                        now_str = datetime.now(timezone.utc).isoformat()
+                        
+                        if existing:
+                            if has_real_changes(existing, mapped):
+                                await db.events.update_one(
+                                    {"id": existing["id"]},
+                                    {"$set": {
+                                        "title": mapped["title"],
+                                        "description": mapped["description"],
+                                        "short_description": mapped["short_description"],
+                                        "image_url": mapped["image_url"],
+                                        "start_datetime": mapped["start_datetime"],
+                                        "end_datetime": mapped["end_datetime"],
+                                        "entry_price": mapped["entry_price"],
+                                        "website_url": mapped["website_url"],
+                                        "slug": mapped["slug"],
+                                        "event_type": mapped["event_type"],
+                                        "wp_categories": mapped["wp_categories"],
+                                        "updated_at": now_str,
+                                        "last_sync_at": now_str,
+                                    }}
+                                )
+                                report["updated"] += 1
+                            else:
+                                await db.events.update_one(
+                                    {"id": existing["id"]},
+                                    {"$set": {"last_sync_at": now_str}}
+                                )
+                                report["unchanged"] += 1
+                        else:
+                            new_event = {
+                                "id": str(uuid.uuid4()),
+                                "external_source": mapped["external_source"],
+                                "external_id": mapped["external_id"],
+                                "title": mapped["title"],
+                                "description": mapped["description"],
+                                "short_description": mapped["short_description"],
+                                "image_url": mapped["image_url"],
+                                "start_datetime": mapped["start_datetime"],
+                                "end_datetime": mapped["end_datetime"],
+                                "entry_price": mapped["entry_price"],
+                                "website_url": mapped["website_url"],
+                                "slug": mapped["slug"],
+                                "event_type": mapped["event_type"],
+                                "content_category": "VERANSTALTUNG",
+                                "wp_categories": mapped["wp_categories"],
+                                "status": "published",
+                                "capacity_total": 100,
+                                "booking_mode": "ticket_only",
+                                "pricing_mode": "free_config",
+                                "requires_payment": False,
+                                "is_public": True,
+                                "archived": False,
+                                "created_at": now_str,
+                                "updated_at": now_str,
+                                "last_sync_at": now_str,
+                            }
+                            await db.events.insert_one(new_event)
+                            report["created"] += 1
+                            
+                    except Exception as e:
+                        report["errors"].append(str(e))
+                        report["skipped"] += 1
+                
+                # Archivieren
+                cutoff_date = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+                all_wp_in_db = await db.events.find({
+                    "external_source": SYNC_SOURCE,
+                    "archived": {"$ne": True}
+                }).to_list(1000)
+                
+                for db_event in all_wp_in_db:
+                    ext_id = db_event.get("external_id")
+                    end_dt = db_event.get("end_datetime")
+                    should_archive = ext_id not in seen_external_ids or (end_dt and end_dt < cutoff_date)
+                    
+                    if should_archive:
+                        await db.events.update_one(
+                            {"id": db_event["id"]},
+                            {"$set": {"archived": True, "status": "archived", "updated_at": datetime.now(timezone.utc).isoformat()}}
+                        )
+                        report["archived"] += 1
+                
+                # Import-Log
+                duration_ms = int((time.time() - start_time) * 1000)
+                await db.import_logs.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "type": "wordpress_events_sync",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "user": "scheduler",
+                    "source": WORDPRESS_EVENTS_API,
+                    "fetched": report["fetched"],
+                    "created": report["created"],
+                    "updated": report["updated"],
+                    "unchanged": report["unchanged"],
+                    "archived": report["archived"],
+                    "skipped": report["skipped"],
+                    "errors": report["errors"][:10],
+                    "duration_ms": duration_ms,
+                    "success": len(report["errors"]) == 0,
+                    "result": "success" if len(report["errors"]) == 0 else "partial",
+                })
+                
+                logger.info(f"[WP-SYNC] Abgeschlossen: {report['created']} neu, {report['updated']} geändert, {report['unchanged']} unverändert ({duration_ms}ms)")
+                
+            finally:
+                # Lock freigeben
+                if LOCK_FILE.exists():
+                    LOCK_FILE.unlink()
+                    
+        except Exception as e:
+            logger.error(f"[WP-SYNC] Fehler: {e}")
+            # Lock freigeben bei Fehler
+            try:
+                if LOCK_FILE.exists():
+                    LOCK_FILE.unlink()
+            except:
+                pass
+        
+        # Warten bis zum nächsten Lauf
+        await asyncio.sleep(SYNC_INTERVAL_SECONDS)
 
 @app.on_event("shutdown")
 async def shutdown():
