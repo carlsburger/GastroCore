@@ -799,10 +799,10 @@ export const Schedule = () => {
                                 shifts: {}
                               };
                             }
-                            if (!staffShifts[staffId].shifts[shift.shift_date]) {
-                              staffShifts[staffId].shifts[shift.shift_date] = [];
+                            if (!staffShifts[staffId].shifts[shift.date]) {
+                              staffShifts[staffId].shifts[shift.date] = [];
                             }
-                            staffShifts[staffId].shifts[shift.shift_date].push(shift);
+                            staffShifts[staffId].shifts[shift.date].push(shift);
                           });
                           
                           return Object.entries(staffShifts).map(([staffId, data]) => {
