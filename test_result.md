@@ -812,6 +812,19 @@ frontend:
         agent: "main"
         comment: "MyShifts komplett überarbeitet: (1) 5-Sekunden-Timeout für Loading, (2) Klare Fehlerzustände (no_profile, timeout, offline, unauthorized, generic), (3) Retry-Buttons bei Fehlern, (4) Saubere Empty States, (5) Hilfetext unter Titel, (6) Begriffe geprüft (kein 'Urlaubieren' vorhanden)"
 
+backend:
+  - task: "Shift Templates Smoke Test (Carlsburg Cockpit)"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE PASS: Shift Templates Smoke Test completed successfully. ✅ GET /api/staff/shift-templates: Found 9 templates as expected. ✅ event_mode field validation: All templates have valid event_mode (normal/kultur). ✅ close_plus_minutes validation: All templates have close_plus_minutes defined when needed (for end_time_type='close_plus_minutes'). ✅ POST /api/staff/schedules/{schedule_id}/apply-templates: Idempotency working correctly (shifts_created=0, skipped_existing=35). ✅ GET /api/staff/shifts: Found 42 shifts for KW2/2026 schedule. ✅ Kitchen shift times validation: No kitchen shifts ending at 22:00 without Kultur designation. All requirements from review request verified successfully."
+
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
 #====================================================================================================
