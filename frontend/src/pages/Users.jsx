@@ -269,7 +269,7 @@ export const Users = () => {
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                           title={user.staff_member_id ? "Verknüpfung bearbeiten" : "Mit Mitarbeiter verknüpfen"}
                         >
-                          {user.staff_member_id ? <Link size={16} className="text-green-600" /> : <LinkOff size={16} className="text-amber-600" />}
+                          {user.staff_member_id ? <Link2 size={16} className="text-green-600" /> : <Unlink size={16} className="text-amber-600" />}
                         </Button>
                       )}
                       <Button
@@ -390,7 +390,7 @@ export const Users = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl flex items-center gap-2">
-              <Link size={20} />
+              <Link2 size={20} />
               Mitarbeiterprofil verknüpfen
             </DialogTitle>
             <DialogDescription>
@@ -458,7 +458,7 @@ export const Users = () => {
                 disabled={linkingUser}
                 className="rounded-full text-amber-600 border-amber-300 hover:bg-amber-50"
               >
-                <LinkOff size={16} className="mr-2" />
+                <Unlink size={16} className="mr-2" />
                 Verknüpfung aufheben
               </Button>
             )}
@@ -476,7 +476,7 @@ export const Users = () => {
               disabled={linkingUser || !selectedStaffId}
               className="rounded-full"
             >
-              {linkingUser ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link size={16} className="mr-2" />}
+              {linkingUser ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link2 size={16} className="mr-2" />}
               Verknüpfen
             </Button>
           </DialogFooter>
