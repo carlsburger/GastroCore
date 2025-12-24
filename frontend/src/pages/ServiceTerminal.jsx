@@ -158,6 +158,16 @@ const TIME_SLOTS = [
 // Polling interval in ms
 const POLLING_INTERVAL = 20000;
 
+// Helper: Namen kürzen auf "V. Nachname"
+const formatShortName = (fullName) => {
+  if (!fullName) return "Gast";
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) return parts[0];
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(" ");
+  return `${firstName.charAt(0)}. ${lastName}`;
+};
+
 // LocalStorage Keys
 const LS_AREA_KEY = "carlsburg_service_area";
 const LS_SLOT_KEY = "carlsburg_service_slot";
