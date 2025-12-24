@@ -298,77 +298,71 @@ export default function OpeningHoursAdmin() {
     });
   };
 
-  // ============== CLOSURE FUNCTIONS ==============
+  // ============== CLOSURE FUNCTIONS (Einfaches Datumsbereich-Format) ==============
   
   const openClosureDialog = (closure = null) => {
     if (closure) {
       setEditingClosure(closure);
       setClosureForm({
-        type: closure.type,
-        recurring_rule: closure.recurring_rule || { month: 12, day: 24 },
-        one_off_rule: closure.one_off_rule || { date: "" },
-        scope: closure.scope,
+        start_date: closure.start_date || closure.one_off_rule?.date || "",
+        end_date: closure.end_date || closure.start_date || closure.one_off_rule?.date || "",
+        type: closure.type === "closed_all_day" || closure.scope === "full_day" ? "closed_all_day" : "closed_partial",
         start_time: closure.start_time || "",
         end_time: closure.end_time || "",
-        reason: closure.reason,
-        active: closure.active !== false,
+        reason: closure.reason || "",
       });
     } else {
       setEditingClosure(null);
+      // Default: Heute als Einzeltag, ganztags geschlossen
+      const today = new Date().toISOString().split("T")[0];
       setClosureForm({
-        type: "one_off",
-        recurring_rule: { month: 12, day: 24 },
-        one_off_rule: { date: new Date().toISOString().split("T")[0] },
-        scope: "full_day",
+        start_date: today,
+        end_date: today,
+        type: "closed_all_day",
         start_time: "",
         end_time: "",
         reason: "",
-        active: true,
       });
     }
     setShowClosureDialog(true);
   };
 
   const saveClosure = async () => {
+    // Validierung
     if (!closureForm.reason) {
       toast.error("Bitte geben Sie einen Grund an");
       return;
     }
-    
-    if (closureForm.scope === "time_range" && (!closureForm.start_time || !closureForm.end_time)) {
-      toast.error("Bitte geben Sie Start- und Endzeit an");
+    if (!closureForm.start_date) {
+      toast.error("Bitte geben Sie ein Startdatum an");
+      return;
+    }
+    if (closureForm.type === "closed_partial" && (!closureForm.start_time || !closureForm.end_time)) {
+      toast.error("Bei teilweiser Sperrung: Bitte Start- und Endzeit angeben");
       return;
     }
     
     setSavingClosure(true);
     try {
       const payload = {
+        start_date: closureForm.start_date,
+        end_date: closureForm.end_date || closureForm.start_date,
         type: closureForm.type,
-        scope: closureForm.scope,
         reason: closureForm.reason,
-        active: closureForm.active,
       };
       
-      if (closureForm.type === "recurring") {
-        payload.recurring_rule = closureForm.recurring_rule;
-      } else {
-        payload.one_off_rule = closureForm.one_off_rule;
-      }
-      
-      if (closureForm.scope === "time_range") {
+      if (closureForm.type === "closed_partial") {
         payload.start_time = closureForm.start_time;
         payload.end_time = closureForm.end_time;
       }
       
       if (editingClosure?.id) {
-        await axios.patch(
-          `${BACKEND_URL}/api/closures/${editingClosure.id}`,
-          { scope: payload.scope, start_time: payload.start_time, end_time: payload.end_time, reason: payload.reason, active: payload.active },
-          { headers }
-        );
+        // Update: Löschen und neu anlegen (einfacher als PATCH für neues Format)
+        await axios.delete(`${BACKEND_URL}/api/opening-hours/closures/${editingClosure.id}`, { headers });
+        await axios.post(`${BACKEND_URL}/api/opening-hours/closures`, payload, { headers });
         toast.success("Sperrtag aktualisiert");
       } else {
-        await axios.post(`${BACKEND_URL}/api/closures`, payload, { headers });
+        await axios.post(`${BACKEND_URL}/api/opening-hours/closures`, payload, { headers });
         toast.success("Sperrtag erstellt");
       }
       setShowClosureDialog(false);
