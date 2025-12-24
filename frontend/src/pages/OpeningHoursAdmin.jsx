@@ -801,101 +801,64 @@ export default function OpeningHoursAdmin() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="text-[#002f02]">
-                {editingClosure?.id ? "Sperrtag bearbeiten" : "Neuer Sperrtag"}
+                {editingClosure?.id ? "Sperrtag bearbeiten" : "Neuer Sperrtag / Override"}
               </DialogTitle>
               <DialogDescription>
-                Definieren Sie einen Tag oder Zeitraum, an dem das Restaurant geschlossen ist.
+                Sperrtage haben die höchste Priorität und überschreiben alle Öffnungszeiten-Perioden.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              {/* Type Selection */}
-              {!editingClosure?.id && (
+              {/* Datumsbereich */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Typ</Label>
-                  <Select
-                    value={closureForm.type}
-                    onValueChange={(v) => setClosureForm(f => ({ ...f, type: v }))}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="one_off">Einmalig (bestimmtes Datum)</SelectItem>
-                      <SelectItem value="recurring">Jährlich wiederkehrend</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Date Selection */}
-              {closureForm.type === "one_off" ? (
-                <div>
-                  <Label>Datum *</Label>
+                  <Label>Startdatum *</Label>
                   <Input
                     type="date"
-                    value={closureForm.one_off_rule.date}
-                    onChange={(e) => setClosureForm(f => ({ ...f, one_off_rule: { date: e.target.value } }))}
+                    value={closureForm.start_date}
+                    onChange={(e) => setClosureForm(f => ({ 
+                      ...f, 
+                      start_date: e.target.value,
+                      end_date: f.end_date || e.target.value
+                    }))}
                     className="mt-1"
-                    disabled={!!editingClosure?.id}
                   />
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Tag *</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="31"
-                      value={closureForm.recurring_rule.day}
-                      onChange={(e) => setClosureForm(f => ({ ...f, recurring_rule: { ...f.recurring_rule, day: parseInt(e.target.value) } }))}
-                      className="mt-1"
-                      disabled={!!editingClosure?.id}
-                    />
-                  </div>
-                  <div>
-                    <Label>Monat *</Label>
-                    <Select
-                      value={String(closureForm.recurring_rule.month)}
-                      onValueChange={(v) => setClosureForm(f => ({ ...f, recurring_rule: { ...f.recurring_rule, month: parseInt(v) } }))}
-                      disabled={!!editingClosure?.id}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map((m) => (
-                          <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Enddatum (optional)</Label>
+                  <Input
+                    type="date"
+                    value={closureForm.end_date}
+                    onChange={(e) => setClosureForm(f => ({ ...f, end_date: e.target.value }))}
+                    className="mt-1"
+                    min={closureForm.start_date}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leer = Einzeltag</p>
                 </div>
-              )}
+              </div>
 
-              {/* Scope */}
+              {/* Typ: Ganztags / Teilweise */}
               <div>
-                <Label>Umfang</Label>
+                <Label>Art der Sperrung</Label>
                 <Select
-                  value={closureForm.scope}
-                  onValueChange={(v) => setClosureForm(f => ({ ...f, scope: v }))}
+                  value={closureForm.type}
+                  onValueChange={(v) => setClosureForm(f => ({ ...f, type: v }))}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="full_day">Ganzer Tag geschlossen</SelectItem>
-                    <SelectItem value="time_range">Nur bestimmte Uhrzeiten</SelectItem>
+                    <SelectItem value="closed_all_day">Ganztags geschlossen</SelectItem>
+                    <SelectItem value="closed_partial">Teilweise geschlossen (ab Uhrzeit)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Time Range */}
-              {closureForm.scope === "time_range" && (
-                <div className="grid grid-cols-2 gap-4">
+              {/* Zeitraum bei teilweiser Sperrung */}
+              {closureForm.type === "closed_partial" && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                   <div>
-                    <Label>Ab *</Label>
+                    <Label>Geschlossen ab *</Label>
                     <Input
                       type="time"
                       value={closureForm.start_time}
@@ -904,7 +867,7 @@ export default function OpeningHoursAdmin() {
                     />
                   </div>
                   <div>
-                    <Label>Bis *</Label>
+                    <Label>Geschlossen bis *</Label>
                     <Input
                       type="time"
                       value={closureForm.end_time}
@@ -912,27 +875,26 @@ export default function OpeningHoursAdmin() {
                       className="mt-1"
                     />
                   </div>
+                  <p className="col-span-2 text-xs text-amber-700">
+                    Beispiel: 15:00 - 24:00 = "Geschlossen ab 15:00"
+                  </p>
                 </div>
               )}
 
-              {/* Reason */}
+              {/* Grund */}
               <div>
                 <Label>Grund *</Label>
                 <Input
                   value={closureForm.reason}
                   onChange={(e) => setClosureForm(f => ({ ...f, reason: e.target.value }))}
-                  placeholder="z.B. Heiligabend, Betriebsferien, Renovierung"
+                  placeholder="z.B. Betriebsferien, Renovierung, Silvester"
                   className="mt-1"
                 />
               </div>
-
-              {/* Active */}
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={closureForm.active}
-                  onCheckedChange={(v) => setClosureForm(f => ({ ...f, active: v }))}
-                />
-                <Label>Aktiv</Label>
+              
+              {/* Hinweis-Box */}
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm text-blue-800">
+                <strong>Priorität:</strong> Sperrtage überschreiben immer die normalen Öffnungszeiten.
               </div>
             </div>
 
