@@ -300,30 +300,34 @@ export default function OpeningHoursAdmin() {
     });
   };
 
-  // ============== CLOSURE FUNCTIONS (Einfaches Datumsbereich-Format) ==============
+  // ============== OVERRIDE FUNCTIONS (Neues Format mit status=open/closed) ==============
   
-  const openClosureDialog = (closure = null) => {
-    if (closure) {
-      setEditingClosure(closure);
+  const openClosureDialog = (override = null) => {
+    if (override) {
+      setEditingClosure(override);
       setClosureForm({
-        start_date: closure.start_date || closure.one_off_rule?.date || "",
-        end_date: closure.end_date || closure.start_date || closure.one_off_rule?.date || "",
-        type: closure.type === "closed_all_day" || closure.scope === "full_day" ? "closed_all_day" : "closed_partial",
-        start_time: closure.start_time || "",
-        end_time: closure.end_time || "",
-        reason: closure.reason || "",
+        date_from: override.date_from || override.start_date || "",
+        date_to: override.date_to || override.end_date || override.date_from || "",
+        status: override.status || (override.type === "closed_all_day" ? "closed" : "closed"),
+        open_from: override.open_from || "",
+        open_to: override.open_to || "",
+        last_reservation_time: override.last_reservation_time || "",
+        note: override.note || override.reason || "",
+        priority: override.priority || 100,
       });
     } else {
       setEditingClosure(null);
-      // Default: Heute als Einzeltag, ganztags geschlossen
+      // Default: Heute als Einzeltag, geschlossen
       const today = new Date().toISOString().split("T")[0];
       setClosureForm({
-        start_date: today,
-        end_date: today,
-        type: "closed_all_day",
-        start_time: "",
-        end_time: "",
-        reason: "",
+        date_from: today,
+        date_to: today,
+        status: "closed",
+        open_from: "",
+        open_to: "",
+        last_reservation_time: "",
+        note: "",
+        priority: 100,
       });
     }
     setShowClosureDialog(true);
@@ -331,41 +335,44 @@ export default function OpeningHoursAdmin() {
 
   const saveClosure = async () => {
     // Validierung
-    if (!closureForm.reason) {
-      toast.error("Bitte geben Sie einen Grund an");
+    if (!closureForm.note) {
+      toast.error("Bitte geben Sie eine Notiz/Grund an");
       return;
     }
-    if (!closureForm.start_date) {
+    if (!closureForm.date_from) {
       toast.error("Bitte geben Sie ein Startdatum an");
       return;
     }
-    if (closureForm.type === "closed_partial" && (!closureForm.start_time || !closureForm.end_time)) {
-      toast.error("Bei teilweiser Sperrung: Bitte Start- und Endzeit angeben");
+    if (closureForm.status === "open" && (!closureForm.open_from || !closureForm.open_to)) {
+      toast.error("Bei 'Offen' müssen Öffnungszeiten angegeben werden");
       return;
     }
     
     setSavingClosure(true);
     try {
       const payload = {
-        start_date: closureForm.start_date,
-        end_date: closureForm.end_date || closureForm.start_date,
-        type: closureForm.type,
-        reason: closureForm.reason,
+        date_from: closureForm.date_from,
+        date_to: closureForm.date_to || closureForm.date_from,
+        status: closureForm.status,
+        note: closureForm.note,
+        priority: closureForm.priority || 100,
       };
       
-      if (closureForm.type === "closed_partial") {
-        payload.start_time = closureForm.start_time;
-        payload.end_time = closureForm.end_time;
+      if (closureForm.status === "open") {
+        payload.open_from = closureForm.open_from;
+        payload.open_to = closureForm.open_to;
+        if (closureForm.last_reservation_time) {
+          payload.last_reservation_time = closureForm.last_reservation_time;
+        }
       }
       
       if (editingClosure?.id) {
-        // Update: Löschen und neu anlegen (einfacher als PATCH für neues Format)
-        await axios.delete(`${BACKEND_URL}/api/opening-hours/closures/${editingClosure.id}`, { headers });
-        await axios.post(`${BACKEND_URL}/api/opening-hours/closures`, payload, { headers });
-        toast.success("Sperrtag aktualisiert");
+        // Update via PUT
+        await axios.put(`${BACKEND_URL}/api/opening-hours/overrides/${editingClosure.id}`, payload, { headers });
+        toast.success("Override aktualisiert");
       } else {
-        await axios.post(`${BACKEND_URL}/api/opening-hours/closures`, payload, { headers });
-        toast.success("Sperrtag erstellt");
+        await axios.post(`${BACKEND_URL}/api/opening-hours/overrides`, payload, { headers });
+        toast.success("Override erstellt");
       }
       setShowClosureDialog(false);
       fetchData();
@@ -377,43 +384,32 @@ export default function OpeningHoursAdmin() {
     }
   };
 
-  const deleteClosure = async (closureId) => {
-    if (!window.confirm("Sperrtag wirklich löschen?")) return;
+  const deleteClosure = async (overrideId) => {
+    if (!window.confirm("Override wirklich löschen?")) return;
     
     try {
-      await axios.delete(`${BACKEND_URL}/api/opening-hours/closures/${closureId}`, { headers });
-      toast.success("Sperrtag gelöscht");
+      await axios.delete(`${BACKEND_URL}/api/opening-hours/overrides/${overrideId}`, { headers });
+      toast.success("Override gelöscht");
       fetchData();
     } catch (err) {
       toast.error("Fehler beim Löschen");
     }
   };
 
-  const formatClosureDate = (closure) => {
-    // Neues Format: start_date / end_date
-    if (closure.start_date) {
-      if (closure.end_date && closure.end_date !== closure.start_date) {
-        return `${closure.start_date} bis ${closure.end_date}`;
-      }
-      return closure.start_date;
+  const formatClosureDate = (override) => {
+    const from = override.date_from || override.start_date || "";
+    const to = override.date_to || override.end_date || "";
+    if (to && to !== from) {
+      return `${from} bis ${to}`;
     }
-    // Legacy: recurring
-    if (closure.type === "recurring") {
-      const month = MONTHS.find(m => m.value === closure.recurring_rule?.month)?.label || "";
-      return `${closure.recurring_rule?.day}. ${month} (jährlich)`;
-    }
-    // Legacy: one_off
-    return closure.one_off_rule?.date || "";
+    return from;
   };
   
-  const formatClosureType = (closure) => {
-    if (closure.type === "closed_all_day" || closure.scope === "full_day") {
-      return "Ganztags geschlossen";
+  const formatClosureStatus = (override) => {
+    if (override.status === "open") {
+      return `Offen ${override.open_from || "?"} - ${override.open_to || "?"}`;
     }
-    if (closure.type === "closed_partial" || closure.scope === "time_range") {
-      return `Geschlossen ${closure.start_time || "?"} - ${closure.end_time || "?"}`;
-    }
-    return closure.type;
+    return "Geschlossen";
   };
 
   // ============== RENDER ==============
