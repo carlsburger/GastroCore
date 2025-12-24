@@ -633,11 +633,16 @@ export const Schedule = () => {
                 const eventWarning = getEventWarningForDate(date);
 
                 return (
-                  <Card key={date} className={`${isToday ? "ring-2 ring-primary" : ""} ${isClosed ? "bg-red-50" : ""} ${eventWarning ? "border-amber-400" : ""}`}>
+                  <Card key={date} className={`
+                    ${isToday ? "ring-2 ring-primary" : ""} 
+                    ${isClosed ? "bg-red-50" : ""} 
+                    ${eventWarning ? "border-amber-400" : ""}
+                    ${isWknd && !isClosed ? "bg-amber-50/50" : ""}
+                  `}>
                     <CardHeader className="pb-2 px-3 pt-3">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-bold text-lg">{DAYS[idx]}</p>
+                          <p className={`font-bold text-lg ${isWknd ? "text-amber-700" : ""}`}>{DAYS[idx]}</p>
                           <p className="text-sm text-muted-foreground">
                             {dayDate.getDate()}.{dayDate.getMonth() + 1}.
                           </p>
@@ -670,7 +675,7 @@ export const Schedule = () => {
                         </TooltipProvider>
                       )}
                     </CardHeader>
-                    <CardContent className="px-3 pb-3 space-y-2">
+                    <CardContent className="px-3 pb-3 space-y-1">
                       {isClosed ? (
                         <p className="text-xs text-red-600 text-center py-4">Geschlossen</p>
                       ) : shifts.length === 0 ? (
