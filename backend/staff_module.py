@@ -2306,7 +2306,12 @@ async def apply_templates_to_schedule(
             continue  # Day is closed, skip
         
         for template in templates:
-            # Check day_type filter
+            # Check days_of_week filter (wenn vorhanden)
+            days_of_week = template.get("days_of_week")
+            if days_of_week is not None and current_date.weekday() not in days_of_week:
+                continue  # Dieser Tag ist nicht in den erlaubten Tagen
+            
+            # Check day_type filter (Legacy)
             tpl_day_type = template.get("day_type", "all")
             if tpl_day_type == "weekday" and is_wknd:
                 continue
