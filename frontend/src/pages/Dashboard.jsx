@@ -235,9 +235,35 @@ export const Dashboard = () => {
   // Kulturveranstaltungen State
   const [kulturEvents, setKulturEvents] = useState([]);
   const [kulturLoading, setKulturLoading] = useState(false);
+  
+  // Dashboard v1.1: 7-Tage Übersicht + WordPress Sync Status
+  const [weekSummary, setWeekSummary] = useState({ days: [] });
+  const [weekSummaryLoading, setWeekSummaryLoading] = useState(false);
+  const [wpSyncStatus, setWpSyncStatus] = useState(null);
+  const [wpSyncLoading, setWpSyncLoading] = useState(false);
+  
+  // Auslastungs-Schwellen (Gäste pro Tag)
+  const LOAD_THRESHOLDS = {
+    GREEN: 120,   // < 120 Gäste = grün
+    YELLOW: 140,  // 120-139 = gelb
+    // >= 140 = rot
+  };
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
+  
+  // Helper: Ampelfarbe für Gästeanzahl
+  const getLoadColor = (guests) => {
+    if (guests < LOAD_THRESHOLDS.GREEN) return "bg-green-100 text-green-700 border-green-300";
+    if (guests < LOAD_THRESHOLDS.YELLOW) return "bg-amber-100 text-amber-700 border-amber-300";
+    return "bg-red-100 text-red-700 border-red-300";
+  };
+  
+  const getLoadStatus = (guests) => {
+    if (guests < LOAD_THRESHOLDS.GREEN) return { icon: "🟢", label: "Normal" };
+    if (guests < LOAD_THRESHOLDS.YELLOW) return { icon: "🟡", label: "Hoch" };
+    return { icon: "🔴", label: "Kritisch" };
+  };
 
   // Fetch Kulturveranstaltungen
   const fetchKulturEvents = useCallback(async () => {
