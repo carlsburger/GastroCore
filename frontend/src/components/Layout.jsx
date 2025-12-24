@@ -206,6 +206,7 @@ const NavItem = ({ item, isActive, collapsed, onClick }) => {
 // Menügruppe (auf-/zuklappbar) - Standard eingeklappt
 const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const groupRef = React.useRef(null);
   const Icon = group.icon;
   
   // Prüfe ob ein Child aktiv ist
@@ -222,6 +223,17 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
       setIsOpen(false);
     }
   }, [hasActiveChild, collapsed, location.pathname]);
+
+  // Auto-Scroll zum geöffneten Menü
+  useEffect(() => {
+    if (isOpen && groupRef.current && !collapsed) {
+      // Kurze Verzögerung für Animation
+      const timer = setTimeout(() => {
+        groupRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, collapsed]);
 
   // Filter children by role AND hidden flag
   const visibleChildren = group.children?.filter(child => 
