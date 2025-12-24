@@ -187,7 +187,62 @@ async def get_time_slot_config_for_day(day_of_week: int) -> Optional[dict]:
 async def get_opening_hours_for_date(date_str: str) -> Optional[dict]:
     """
     Hole Öffnungszeiten für ein bestimmtes Datum.
-    Prüft erst zeitraumbasierte Perioden, dann Default.
+    Verwendet calculate_effective_hours aus opening_hours_module für korrekte
+    Berücksichtigung von Closures, Overrides und Feiertagen.
+    """
+    try:
+        from opening_hours_module import calculate_effective_hours
+        from datetime import datetime
+        
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        day_of_week = target_date.weekday()
+        
+        # Effektive Öffnungszeiten berechnen (inkl. Closures, Overrides, Feiertage)
+        effective = await calculate_effective_hours(target_date)
+        
+        # Wenn geschlossen
+        if not effective.get("is_open", True) or effective.get("is_closed_full_day", False):
+            return {
+                "day_of_week": day_of_week,
+                "is_closed": True,
+                "open_time": None,
+                "close_time": None,
+                "period_name": effective.get("period_name", "Geschlossen"),
+                "closure_reason": effective.get("closure_reason")
+            }
+        
+        # Öffnungszeiten aus Blöcken extrahieren
+        blocks = effective.get("blocks", [])
+        if blocks:
+            # Erster und letzter Block für Open/Close Zeit
+            open_time = blocks[0].get("start", "11:00")
+            close_time = blocks[-1].get("end", "22:00")
+        else:
+            open_time = "11:00"
+            close_time = "22:00"
+        
+        return {
+            "day_of_week": day_of_week,
+            "open_time": open_time,
+            "close_time": close_time,
+            "is_closed": False,
+            "period_name": effective.get("period_name", "Standard"),
+            "is_holiday": effective.get("is_holiday", False),
+            "holiday_name": effective.get("holiday_name"),
+            "last_reservation_time": effective.get("last_reservation_time"),
+            "override_note": effective.get("override_note")
+        }
+        
+    except Exception as e:
+        logger.error(f"Fehler beim Laden der Öffnungszeiten: {e}")
+        # Fallback auf alte Logik
+        return await get_opening_hours_for_date_legacy(date_str)
+
+
+async def get_opening_hours_for_date_legacy(date_str: str) -> Optional[dict]:
+    """
+    Legacy-Funktion für Öffnungszeiten (ohne Closures/Overrides).
+    Wird als Fallback verwendet.
     """
     try:
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -243,7 +298,7 @@ async def get_opening_hours_for_date(date_str: str) -> Optional[dict]:
         }
         
     except Exception as e:
-        logger.error(f"Fehler beim Laden der Öffnungszeiten: {e}")
+        logger.error(f"Fehler beim Laden der Öffnungszeiten (Legacy): {e}")
         return None
 
 
