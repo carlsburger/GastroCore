@@ -1416,7 +1416,7 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
         
         return {
             "success": True,
-            "message": f"Sync abgeschlossen: {report['created']} neu, {report['updated']} aktualisiert, {report['archived']} archiviert",
+            "message": f"Sync abgeschlossen: {report['created']} neu, {report['updated']} geändert, {report['unchanged']} unverändert, {report['archived']} archiviert",
             "report": report
         }
         
