@@ -337,17 +337,25 @@ export const Schedule = () => {
     if (!schedule) return;
     try {
       const response = await axios.get(
-        `${BACKEND_URL}/api/staff/export/schedule/${schedule.id}/pdf`,
+        `${BACKEND_URL}/api/staff/schedules/${schedule.id}/export-pdf`,
         { headers, responseType: "blob" }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `dienstplan_kw${week}_${year}.pdf`);
+      // Dateiendung basierend auf Content-Type (HTML oder PDF)
+      const contentType = response.headers?.["content-type"] || "";
+      const ext = contentType.includes("pdf") ? "pdf" : "html";
+      link.setAttribute("download", `dienstplan_kw${week}_${year}.${ext}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success("PDF heruntergeladen");
+      // Kommunikation: HTML als Druckansicht
+      if (ext === "html") {
+        toast.success("Druckansicht (HTML) heruntergeladen – PDF folgt später");
+      } else {
+        toast.success("PDF heruntergeladen");
+      }
     } catch (err) {
       toast.error("Fehler beim Export");
     }
