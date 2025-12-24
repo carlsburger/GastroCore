@@ -1243,6 +1243,7 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
         "fetched": 0,
         "created": 0,
         "updated": 0,
+        "unchanged": 0,  # NEU: Events ohne echte Änderungen
         "archived": 0,
         "skipped": 0,
         "errors": [],
@@ -1271,28 +1272,37 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
                 })
                 
                 if existing:
-                    # UPDATE - Nur gemappte Felder aktualisieren
-                    update_fields = {
-                        "title": mapped["title"],
-                        "description": mapped["description"],
-                        "short_description": mapped["short_description"],
-                        "image_url": mapped["image_url"],
-                        "start_datetime": mapped["start_datetime"],
-                        "end_datetime": mapped["end_datetime"],
-                        "entry_price": mapped["entry_price"],
-                        "website_url": mapped["website_url"],
-                        "slug": mapped["slug"],
-                        "event_type": mapped["event_type"],
-                        "wp_categories": mapped["wp_categories"],
-                        "updated_at": now_iso(),
-                        "last_sync_at": now_iso(),
-                    }
-                    
-                    await db.events.update_one(
-                        {"id": existing["id"]},
-                        {"$set": update_fields}
-                    )
-                    report["updated"] += 1
+                    # Prüfe ob sich wirklich etwas geändert hat
+                    if has_real_changes(existing, mapped):
+                        # ECHTES UPDATE - Nur gemappte Felder aktualisieren
+                        update_fields = {
+                            "title": mapped["title"],
+                            "description": mapped["description"],
+                            "short_description": mapped["short_description"],
+                            "image_url": mapped["image_url"],
+                            "start_datetime": mapped["start_datetime"],
+                            "end_datetime": mapped["end_datetime"],
+                            "entry_price": mapped["entry_price"],
+                            "website_url": mapped["website_url"],
+                            "slug": mapped["slug"],
+                            "event_type": mapped["event_type"],
+                            "wp_categories": mapped["wp_categories"],
+                            "updated_at": now_iso(),
+                            "last_sync_at": now_iso(),
+                        }
+                        
+                        await db.events.update_one(
+                            {"id": existing["id"]},
+                            {"$set": update_fields}
+                        )
+                        report["updated"] += 1
+                    else:
+                        # Keine echten Änderungen - nur last_sync_at aktualisieren
+                        await db.events.update_one(
+                            {"id": existing["id"]},
+                            {"$set": {"last_sync_at": now_iso()}}
+                        )
+                        report["unchanged"] += 1
                     
                 else:
                     # CREATE - Neues Event
