@@ -1377,6 +1377,12 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
         duration_ms = int((time.time() - start_time) * 1000)
         report["duration_ms"] = duration_ms
         
+        # Bestimme Ergebnis-Status
+        if len(report["errors"]) > 0:
+            result_status = "partial" if report["created"] > 0 or report["updated"] > 0 else "error"
+        else:
+            result_status = "success"
+        
         import_log = {
             "id": str(uuid.uuid4()),
             "type": "wordpress_events_sync",
@@ -1386,11 +1392,13 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
             "fetched": report["fetched"],
             "created": report["created"],
             "updated": report["updated"],
+            "unchanged": report["unchanged"],
             "archived": report["archived"],
             "skipped": report["skipped"],
             "errors": report["errors"][:10],  # Max 10 Fehler loggen
             "duration_ms": duration_ms,
-            "success": len(report["errors"]) == 0,
+            "success": result_status == "success",
+            "result": result_status,
         }
         
         await db.import_logs.insert_one(import_log)
