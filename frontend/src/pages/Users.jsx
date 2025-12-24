@@ -121,6 +121,70 @@ export const Users = () => {
     }
   };
 
+  // Staff-Link Dialog öffnen
+  const openLinkDialog = (user) => {
+    setSelectedUser(user);
+    setSelectedStaffId(user.staff_member_id || "");
+    setShowLinkDialog(true);
+  };
+
+  // Staff-Verknüpfung speichern
+  const handleLinkStaff = async () => {
+    if (!selectedUser) return;
+    
+    setLinkingUser(true);
+    try {
+      const res = await axios.post(
+        `${BACKEND_URL}/api/users/${selectedUser.id}/link-staff`,
+        null,
+        { 
+          headers,
+          params: { staff_member_id: selectedStaffId || null }
+        }
+      );
+      
+      toast.success(res.data.message);
+      if (res.data.warning) {
+        toast.warning(res.data.warning);
+      }
+      
+      setShowLinkDialog(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Verknüpfen");
+    } finally {
+      setLinkingUser(false);
+    }
+  };
+
+  // Staff-Verknüpfung aufheben
+  const handleUnlinkStaff = async () => {
+    if (!selectedUser) return;
+    
+    setLinkingUser(true);
+    try {
+      const res = await axios.post(
+        `${BACKEND_URL}/api/users/${selectedUser.id}/link-staff`,
+        null,
+        { headers }
+      );
+      
+      toast.success("Verknüpfung aufgehoben");
+      setShowLinkDialog(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Aufheben");
+    } finally {
+      setLinkingUser(false);
+    }
+  };
+
+  // Hilfsfunktion: Staff-Name aus ID
+  const getStaffName = (staffId) => {
+    const staff = staffMembers.find(s => s.id === staffId);
+    return staff ? `${staff.first_name} ${staff.last_name}` : "Unbekannt";
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
