@@ -91,13 +91,12 @@ export default function ShiftTemplates() {
     setLoading(true);
     
     try {
-      const [templatesRes, areasRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/api/staff/shift-templates`, { headers: getHeaders() }),
-        axios.get(`${BACKEND_URL}/api/staff/work-areas`, { headers: getHeaders() }),
-      ]);
+      const templatesRes = await axios.get(
+        `${BACKEND_URL}/api/staff/shift-templates`, 
+        { headers: getHeaders() }
+      );
       
       setTemplates(templatesRes.data || []);
-      setWorkAreas(areasRes.data || []);
     } catch (err) {
       console.error("Fehler beim Laden:", err);
       toast({
