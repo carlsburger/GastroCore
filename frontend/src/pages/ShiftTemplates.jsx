@@ -246,9 +246,10 @@ export default function ShiftTemplates() {
       start_time: template.start_time || "10:00",
       end_time_type: template.end_time_type || "fixed",
       end_time_fixed: template.end_time_fixed || "18:00",
-      close_plus_minutes: template.close_plus_minutes || 30,
+      close_plus_minutes: template.close_plus_minutes ?? 30,
       headcount_default: template.headcount_default || 1,
       active: template.active !== false,
+      event_mode: template.event_mode || "normal",
     });
     setDialogOpen(true);
   };
