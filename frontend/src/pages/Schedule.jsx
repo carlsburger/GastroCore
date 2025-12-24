@@ -141,6 +141,9 @@ export const Schedule = () => {
   // NEW: Department Filter (Sprint: Dienstplan Service live-tauglich)
   const [departmentFilter, setDepartmentFilter] = useState("all");
   
+  // NEW: View Mode (Woche vs Monat)
+  const [viewMode, setViewMode] = useState("week"); // "week" oder "month"
+  
   // NEW: Event Warnings (Sprint: Dienstplan Service live-tauglich)
   const [eventWarnings, setEventWarnings] = useState([]);
   
