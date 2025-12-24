@@ -6317,10 +6317,18 @@ class GastroCoreAPITester:
         print(f"🎯 Target: {self.base_url}")
         print("=" * 80)
         
-        # Authenticate first
-        auth_success = self.test_authentication()
-        if not auth_success:
-            print("❌ Authentication failed - cannot proceed with smoke test")
+        # Only authenticate admin (required for events access)
+        admin_creds = self.credentials["admin"]
+        result = self.make_request("POST", "auth/login", admin_creds, expected_status=200)
+        
+        if result["success"] and "access_token" in result["data"]:
+            self.tokens["admin"] = result["data"]["access_token"]
+            user_data = result["data"]["user"]
+            self.log_test("Admin login for Aktionen-Infrastruktur test", True, 
+                        f"admin@carlsburg.de authenticated successfully")
+        else:
+            self.log_test("Admin login for Aktionen-Infrastruktur test", False, 
+                        f"Status: {result['status_code']}")
             return False
         
         # Run the Aktionen-Infrastruktur verification
