@@ -669,6 +669,39 @@ agent_communication:
       
       OVERALL RESULT: 100% SUCCESS - Service Terminal Label Verification SMOKE TEST PASSED!
 
+  - agent: "testing"
+    message: |
+      ✅ MYSHIFTS API ENDPOINT SMOKE TEST - COMPLETE SUCCESS
+      
+      TESTING PERFORMED:
+      - Backend API endpoint testing for MyShifts functionality
+      - Authentication testing with admin@carlsburg.de / Carlsburg2025!
+      - Expected 404 response validation for users without staff profiles
+      
+      ✅ ALL SMOKE TEST REQUIREMENTS SUCCESSFULLY VERIFIED:
+      
+      1. ✅ ADMIN AUTHENTICATION:
+         - admin@carlsburg.de / Carlsburg2025! login successful
+         - Token generation and authentication working correctly
+      
+      2. ✅ GET /api/staff/my-shifts ENDPOINT:
+         - Successfully tested with date range: date_from=2025-12-22&date_to=2025-12-28
+         - Returns expected HTTP 404 status for admin user (no staff profile)
+         - Error message validation confirmed: "Kein Mitarbeiterprofil verknüpft"
+      
+      3. ✅ RESPONSE STRUCTURE VALIDATION:
+         - Proper error response format with 'detail' field
+         - Complete error message: "Kein Mitarbeiterprofil verknüpft. Bitte wende dich an die Schichtleitung."
+         - Response structure matches API specification
+      
+      TECHNICAL VERIFICATION:
+      - Backend URL: https://eedfb453-8e3e-4947-a192-ce606618d044.preview.emergentagent.com
+      - API endpoint: GET /api/staff/my-shifts
+      - Expected behavior confirmed: 404 status is CORRECT for admin without staff profile
+      - Frontend will properly display "Kein Mitarbeiterprofil" state as designed
+      
+      OVERALL RESULT: 100% SUCCESS - MyShifts API Endpoint SMOKE TEST PASSED!
+
 backend:
   - task: "Service Terminal RBAC Authentication"
     implemented: true
