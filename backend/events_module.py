@@ -111,6 +111,14 @@ class EventCreate(BaseModel):
     requires_menu_choice: bool = False
     menu_options: Optional[List[dict]] = None  # [{option_id, title, description, price_delta}]
     content_category: Optional[str] = None  # VERANSTALTUNG, AKTION, AKTION_MENUE
+    
+    # ============== AKTIONEN-FELDER (Sprint: Aktionen-Infrastruktur) ==============
+    # Diese Felder sind für zukünftige Aktionen vorbereitet, aktuell nullable
+    action_type: Optional[str] = None  # RIPPCHEN, ENTE, SPARGEL, etc.
+    menu_only: Optional[bool] = None  # True = nur eingeschränkte Karte verfügbar
+    restriction_notice: Optional[str] = None  # Hinweis für Service: "Nur eingeschränkte Karte"
+    guest_notice: Optional[str] = None  # Hinweis für Gäste bei Buchung
+    last_alacarte_time: Optional[str] = None  # Letzte à-la-carte Bestellung (z.B. "18:30")
 
 
 class EventUpdate(BaseModel):
@@ -132,6 +140,13 @@ class EventUpdate(BaseModel):
     requires_menu_choice: Optional[bool] = None
     menu_options: Optional[List[dict]] = None
     content_category: Optional[str] = None
+    
+    # ============== AKTIONEN-FELDER (Sprint: Aktionen-Infrastruktur) ==============
+    action_type: Optional[str] = None
+    menu_only: Optional[bool] = None
+    restriction_notice: Optional[str] = None
+    guest_notice: Optional[str] = None
+    last_alacarte_time: Optional[str] = None
 
 
 # --- EventProduct Models (Vorbestell-Items) ---
