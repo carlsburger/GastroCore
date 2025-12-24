@@ -500,7 +500,7 @@ export const Schedule = () => {
 
   const getWeekDates = () => {
     if (!schedule) return [];
-    const start = new Date(schedule.week_start);
+    const start = new Date(schedule.start_date);
     return Array.from({ length: 7 }, (_, i) => {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
