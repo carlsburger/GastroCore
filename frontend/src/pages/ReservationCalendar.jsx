@@ -12,7 +12,10 @@ import {
   Settings,
   CalendarDays,
   CalendarRange,
-  ArrowLeft
+  ArrowLeft,
+  Phone,
+  Globe,
+  User
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -20,6 +23,16 @@ import { Badge } from '../components/ui/badge';
 import Layout from '../components/Layout';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || '';
+
+// Helper: Namen kürzen auf "V. Nachname"
+const formatShortName = (fullName) => {
+  if (!fullName) return "Gast";
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) return parts[0];
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(" ");
+  return `${firstName.charAt(0)}. ${lastName}`;
+};
 
 // Hilfsfunktionen
 const getWeekDates = (date) => {
