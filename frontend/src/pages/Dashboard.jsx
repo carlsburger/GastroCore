@@ -609,10 +609,11 @@ export const Dashboard = () => {
                 </div>
               )}
               
-              {kulturEvents.length > 8 && (
+              {/* Link zu allen Events wenn mehr als 4 */}
+              {kulturEvents.length > 4 && (
                 <div className="mt-3 text-center">
                   <Button variant="ghost" size="sm" className="text-purple-600" onClick={() => window.location.href='/events'}>
-                    Alle {kulturEvents.length} Veranstaltungen anzeigen
+                    Alle {kulturEvents.length} Veranstaltungen anzeigen →
                   </Button>
                 </div>
               )}
