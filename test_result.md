@@ -662,7 +662,7 @@ agent_communication:
          - API responses return correct updated status values
       
       TECHNICAL VERIFICATION:
-      - Backend URL: https://eedfb453-8e3e-4947-a192-ce606618d044.preview.emergentagent.com
+      - Backend URL: https://resto-command-20.preview.emergentagent.com
       - All API endpoints responding correctly with proper HTTP status codes
       - Status transition validation working as designed
       - No critical issues found in Service Terminal backend functionality
@@ -695,7 +695,7 @@ agent_communication:
          - Response structure matches API specification
       
       TECHNICAL VERIFICATION:
-      - Backend URL: https://eedfb453-8e3e-4947-a192-ce606618d044.preview.emergentagent.com
+      - Backend URL: https://resto-command-20.preview.emergentagent.com
       - API endpoint: GET /api/staff/my-shifts
       - Expected behavior confirmed: 404 status is CORRECT for admin without staff profile
       - Frontend will properly display "Kein Mitarbeiterprofil" state as designed
@@ -742,7 +742,7 @@ agent_communication:
          - Backend is fully operational
       
       TECHNICAL VERIFICATION:
-      - Backend URL: https://eedfb453-8e3e-4947-a192-ce606618d044.preview.emergentagent.com
+      - Backend URL: https://resto-command-20.preview.emergentagent.com
       - API endpoint: GET /api/events
       - Events tested: 11 total events verified
       - All events from WordPress sync properly categorized as VERANSTALTUNG
