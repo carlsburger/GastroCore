@@ -271,14 +271,26 @@ export default function ShiftTemplates() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Schichtmodelle / Vorlagen</h1>
-          <p className="text-gray-600 mt-1">
-            Definiere Standard-Schichten, die automatisch auf den Dienstplan angewendet werden können.
-          </p>
+    <Layout>
+    <div className="space-y-6">
+      {/* Header mit Zurück-Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/schedule")}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Zurück zum Dienstplan
+          </Button>
+          <div>
+            <h1 className="font-serif text-3xl font-medium text-primary">Schichtmodelle / Vorlagen</h1>
+            <p className="text-muted-foreground">
+              Definiere Standard-Schichten für automatische Anwendung auf den Dienstplan.
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button
