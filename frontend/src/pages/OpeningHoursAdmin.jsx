@@ -102,17 +102,19 @@ export default function OpeningHoursAdmin() {
   });
   const [savingPeriod, setSavingPeriod] = useState(false);
   
-  // Closure Dialog - erweitert für Datumsbereich
+  // Closure Dialog - erweitert für Datumsbereich und OFFEN/GESCHLOSSEN
   const [showClosureDialog, setShowClosureDialog] = useState(false);
   const [editingClosure, setEditingClosure] = useState(null);
   const [closureForm, setClosureForm] = useState({
-    // Neues einfaches Format mit Datumsbereich
-    start_date: "",
-    end_date: "",
-    type: "closed_all_day", // closed_all_day oder closed_partial
-    start_time: "",
-    end_time: "",
-    reason: "",
+    // Neues Override-Format
+    date_from: "",
+    date_to: "",
+    status: "closed", // "closed" oder "open"
+    open_from: "",    // Bei status=open
+    open_to: "",      // Bei status=open
+    last_reservation_time: "", // Optional
+    note: "",
+    priority: 100,
   });
   const [savingClosure, setSavingClosure] = useState(false);
 
