@@ -344,7 +344,9 @@ export const Dashboard = () => {
   useEffect(() => {
     fetchData();
     fetchKulturEvents();
-  }, [fetchData, fetchKulturEvents]);
+    fetchWeekSummary();
+    fetchWpSyncStatus();
+  }, [fetchData, fetchKulturEvents, fetchWeekSummary, fetchWpSyncStatus]);
 
   // Polling every 30 seconds
   useEffect(() => {
