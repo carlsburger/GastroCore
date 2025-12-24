@@ -187,9 +187,22 @@ export const Schedule = () => {
           console.log("Could not load effective hours:", effErr);
           setClosedDays({});
         }
+        
+        // NEW: Fetch Event Warnings
+        try {
+          const warningsRes = await axios.get(
+            `${BACKEND_URL}/api/staff/schedules/${existingSchedule.id}/event-warnings`,
+            { headers }
+          );
+          setEventWarnings(warningsRes.data.warnings || []);
+        } catch (warnErr) {
+          console.log("Could not load event warnings:", warnErr);
+          setEventWarnings([]);
+        }
       } else {
         setSchedule(null);
         setClosedDays({});
+        setEventWarnings([]);
       }
 
       // Get hours overview
@@ -204,6 +217,50 @@ export const Schedule = () => {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // NEW: Apply Templates to Schedule
+  const handleApplyTemplates = async () => {
+    if (!schedule) return;
+    setApplyingTemplates(true);
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/staff/schedules/${schedule.id}/apply-templates`,
+        {
+          schedule_id: schedule.id,
+          departments: templateSettings.departments,
+          season: templateSettings.season,
+        },
+        { headers }
+      );
+      toast.success(`${response.data.message} (Saison: ${response.data.season})`);
+      setShowTemplatesDialog(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Anwenden der Vorlagen");
+    } finally {
+      setApplyingTemplates(false);
+    }
+  };
+  
+  // Filter shifts by department
+  const getFilteredShifts = (shifts) => {
+    if (departmentFilter === "all") return shifts;
+    return shifts.filter(shift => {
+      const role = shift.role || "";
+      if (departmentFilter === "service") {
+        return ["service", "schichtleiter", "bar", "aushilfe"].includes(role);
+      }
+      if (departmentFilter === "kitchen") {
+        return role === "kueche";
+      }
+      return true;
+    });
+  };
+  
+  // Get event warning for a specific date
+  const getEventWarningForDate = (date) => {
+    return eventWarnings.find(w => w.date === date);
   };
 
   const handleCreateSchedule = async () => {
