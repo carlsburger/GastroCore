@@ -524,9 +524,29 @@ export const Schedule = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="font-serif text-3xl font-medium text-primary">Dienstplan</h1>
-            <p className="text-muted-foreground">KW {week} / {year} • Wochenübersicht</p>
+            <p className="text-muted-foreground">KW {week} / {year} • {viewMode === "week" ? "Wochenübersicht" : "Monatsübersicht"}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {/* View Mode Toggle (Woche/Monat) */}
+            <div className="flex bg-gray-100 rounded-full p-1">
+              <Button
+                variant={viewMode === "week" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("week")}
+                className={`rounded-full px-3 ${viewMode === "week" ? "bg-primary text-white" : ""}`}
+              >
+                Woche
+              </Button>
+              <Button
+                variant={viewMode === "month" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("month")}
+                className={`rounded-full px-3 ${viewMode === "month" ? "bg-primary text-white" : ""}`}
+              >
+                Monat
+              </Button>
+            </div>
+            
             {/* Department Filter Toggle */}
             <div className="flex bg-gray-100 rounded-full p-1">
               {Object.entries(DEPARTMENT_FILTER).map(([key, config]) => (
