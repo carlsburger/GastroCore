@@ -2249,12 +2249,31 @@ async def apply_templates_to_schedule(
     
     # Get matching templates
     dept_values = [d.value for d in data.departments]
+    
+    # Flexible Template-Query: Unterstützt sowohl alte als auch neue Feldnamen
     templates = await db.shift_templates.find({
         "department": {"$in": dept_values},
-        "season": {"$in": [season, "all"]},
-        "active": True,
+        "$or": [
+            {"season": {"$in": [season, "all"]}},
+            {"season": {"$exists": False}},  # Templates ohne season-Feld
+        ],
+        "$or": [
+            {"active": True},
+            {"is_active": True},  # Alternative Feldname
+        ],
         "archived": False
-    }, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    }, {"_id": 0}).to_list(100)
+    
+    # Fallback: Wenn keine Templates gefunden, versuche ohne season-Filter
+    if not templates:
+        templates = await db.shift_templates.find({
+            "department": {"$in": dept_values},
+            "$or": [
+                {"active": True},
+                {"is_active": True},
+            ],
+            "archived": False
+        }, {"_id": 0}).to_list(100)
     
     if not templates:
         return {"message": "Keine passenden Vorlagen gefunden", "created": 0}
