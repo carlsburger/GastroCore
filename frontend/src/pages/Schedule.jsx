@@ -264,24 +264,32 @@ export const Schedule = () => {
     }
   };
   
-  // Filter shifts by department
+  // Filter shifts by department - erweitert
   const getFilteredShifts = (shifts) => {
-    if (departmentFilter === "all") return shifts;
-    return shifts.filter(shift => {
+    // Eismacher NIE anzeigen
+    const filtered = shifts.filter(s => !EXCLUDED_ROLES.includes(s.role));
+    
+    if (departmentFilter === "all") return filtered;
+    
+    const filterConfig = DEPARTMENT_FILTER[departmentFilter];
+    if (!filterConfig || !filterConfig.roles.length) return filtered;
+    
+    return filtered.filter(shift => {
       const role = shift.role || "";
-      if (departmentFilter === "service") {
-        return ["service", "schichtleiter", "bar", "aushilfe"].includes(role);
-      }
-      if (departmentFilter === "kitchen") {
-        return role === "kueche";
-      }
-      return true;
+      return filterConfig.roles.includes(role);
     });
   };
   
   // Get event warning for a specific date
   const getEventWarningForDate = (date) => {
     return eventWarnings.find(w => w.date === date);
+  };
+  
+  // Helper: Check if date is weekend (Saturday or Sunday)
+  const isWeekend = (dateStr) => {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
   };
 
   const handleCreateSchedule = async () => {
