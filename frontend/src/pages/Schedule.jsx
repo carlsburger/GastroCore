@@ -668,7 +668,8 @@ export const Schedule = () => {
               </Card>
             )}
             
-            {/* Week Grid */}
+            {/* Week Grid (nur bei viewMode === "week") */}
+            {viewMode === "week" && (
             <div className="grid grid-cols-7 gap-2">
               {weekDates.map((date, idx) => {
                 const shifts = getShiftsForDate(date);
