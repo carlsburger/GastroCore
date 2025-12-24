@@ -798,8 +798,11 @@ export const Schedule = () => {
                           filteredShifts.forEach(shift => {
                             const staffId = shift.staff_member_id;
                             if (!staffShifts[staffId]) {
+                              const staffFullName = shift.staff_member 
+                                ? `${shift.staff_member.first_name || ''} ${shift.staff_member.last_name || ''}`.trim()
+                                : "?";
                               staffShifts[staffId] = {
-                                name: shift.staff_member?.full_name || "?",
+                                name: staffFullName,
                                 shifts: {}
                               };
                             }
