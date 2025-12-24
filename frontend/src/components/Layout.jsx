@@ -273,7 +273,7 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
   if (visibleChildren.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" ref={groupRef}>
       {/* Group Header */}
       <button
         onClick={() => !collapsed && setIsOpen(!isOpen)}
@@ -286,7 +286,7 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
           }
           ${collapsed ? "justify-center" : "justify-between"}
         `}
-        title={collapsed ? (group.fullLabel || group.label) : (group.fullLabel || undefined)}
+        title={group.fullLabel || group.label}
         data-testid={`nav-group-${group.id}`}
       >
         <div className="flex items-center gap-3">
