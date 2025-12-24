@@ -512,6 +512,94 @@ async def archive_user(user_id: str, user: dict = Depends(require_admin)):
     return {"message": "Benutzer archiviert", "success": True}
 
 
+@api_router.post("/users/{user_id}/link-staff", tags=["Users"])
+async def link_user_to_staff(user_id: str, staff_member_id: str = None, user: dict = Depends(require_admin)):
+    """
+    Verknüpft einen User mit einem Mitarbeiterprofil (Admin-only).
+    
+    - User und Staff bleiben getrennte Entitäten
+    - Admin entscheidet bewusst über Verknüpfung
+    - Admin-Accounts sollten nicht verknüpft werden
+    """
+    # User existiert?
+    target_user = await db.users.find_one({"id": user_id, "archived": False}, {"_id": 0})
+    if not target_user:
+        raise NotFoundException("Benutzer")
+    
+    # Admin-Accounts nicht verknüpfen (Warnung)
+    if target_user.get("role") == "admin":
+        raise ValidationException("Admin-Accounts sollten nicht mit Mitarbeiterprofilen verknüpft werden")
+    
+    # Wenn staff_member_id = None, dann Verknüpfung aufheben
+    if not staff_member_id:
+        before = safe_dict_for_audit(target_user)
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"staff_member_id": None, "updated_at": now_iso()}}
+        )
+        await create_audit_log(user, "user", user_id, "unlink_staff", before, {**before, "staff_member_id": None})
+        return {"message": "Verknüpfung aufgehoben", "success": True}
+    
+    # Staff existiert?
+    staff = await db.staff_members.find_one({"id": staff_member_id, "archived": False}, {"_id": 0})
+    if not staff:
+        raise NotFoundException("Mitarbeiterprofil")
+    
+    # Prüfe ob bereits ein anderer User verknüpft ist (Warnung, kein Blocker)
+    existing_link = await db.users.find_one({
+        "staff_member_id": staff_member_id, 
+        "id": {"$ne": user_id},
+        "archived": False
+    })
+    
+    warning = None
+    if existing_link:
+        warning = f"Hinweis: Dieses Profil ist bereits mit {existing_link.get('email')} verknüpft"
+    
+    # Verknüpfung erstellen
+    before = safe_dict_for_audit(target_user)
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"staff_member_id": staff_member_id, "updated_at": now_iso()}}
+    )
+    
+    staff_name = f"{staff.get('first_name', '')} {staff.get('last_name', '')}".strip()
+    await create_audit_log(user, "user", user_id, "link_staff", before, {**before, "staff_member_id": staff_member_id})
+    
+    return {
+        "message": f"Benutzer erfolgreich mit '{staff_name}' verknüpft",
+        "success": True,
+        "staff_member_id": staff_member_id,
+        "staff_name": staff_name,
+        "warning": warning
+    }
+
+
+@api_router.get("/users/{user_id}/staff-link", tags=["Users"])
+async def get_user_staff_link(user_id: str, user: dict = Depends(require_admin)):
+    """Zeigt den aktuellen Verknüpfungsstatus eines Users"""
+    target_user = await db.users.find_one({"id": user_id, "archived": False}, {"_id": 0})
+    if not target_user:
+        raise NotFoundException("Benutzer")
+    
+    staff_member_id = target_user.get("staff_member_id")
+    
+    if not staff_member_id:
+        return {
+            "linked": False,
+            "staff_member_id": None,
+            "staff_name": None
+        }
+    
+    staff = await db.staff_members.find_one({"id": staff_member_id}, {"_id": 0})
+    
+    return {
+        "linked": True,
+        "staff_member_id": staff_member_id,
+        "staff_name": f"{staff.get('first_name', '')} {staff.get('last_name', '')}".strip() if staff else "Unbekannt"
+    }
+
+
 # ============== AREA ENDPOINTS ==============
 @api_router.get("/areas", tags=["Areas"])
 async def get_areas(user: dict = Depends(get_current_user)):
