@@ -87,7 +87,10 @@ export default function ShiftTemplates() {
 
   // Daten laden
   const fetchData = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     
     try {
