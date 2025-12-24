@@ -1267,6 +1267,26 @@ def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
     excerpt_clean = re.sub(r'<[^>]+>', '', excerpt).strip()
     excerpt_clean = decode_html_entities(excerpt_clean)
     
+    # ============== AKTIONEN-LOGIK (Sprint: Aktionen-Infrastruktur) ==============
+    # Bestimme content_category basierend auf event_type
+    content_category = determine_content_category(event_type)
+    
+    # Für Aktionen: Zusätzliche Felder ermitteln
+    action_type = None
+    menu_only = None
+    restriction_notice = None
+    guest_notice = None
+    
+    if content_category in ("AKTION", "AKTION_MENUE"):
+        # Aktionstyp aus Titel erkennen
+        action_type = detect_action_type(title)
+        
+        # Menü-Aktionen haben eingeschränkte Karte
+        if content_category == "AKTION_MENUE":
+            menu_only = True
+            restriction_notice = "Während dieser Aktion steht nur eine eingeschränkte à la carte Karte zur Verfügung."
+            guest_notice = "Bitte beachten Sie: Während dieser Aktion ist nur eine reduzierte Speisekarte verfügbar."
+    
     return {
         "external_source": SYNC_SOURCE,
         "external_id": str(wp_event.get("id", "")),
@@ -1280,8 +1300,13 @@ def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
         "website_url": wp_event.get("url", ""),
         "slug": wp_event.get("slug", ""),
         "event_type": event_type,
-        "content_category": "VERANSTALTUNG",
+        "content_category": content_category,
         "wp_categories": [c.get("name") for c in categories],
+        # Aktionen-Felder (nullable, nur gefüllt für Aktionen)
+        "action_type": action_type,
+        "menu_only": menu_only,
+        "restriction_notice": restriction_notice,
+        "guest_notice": guest_notice,
     }
 
 
