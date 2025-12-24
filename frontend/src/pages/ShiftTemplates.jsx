@@ -227,15 +227,15 @@ export default function ShiftTemplates() {
   const resetForm = () => {
     setFormData({
       name: "",
-      work_area_id: "",
+      department: "service",
       season: "all",
       day_type: "all",
-      role: "frueh",
       start_time: "10:00",
-      end_time: "18:00",
-      use_close_offset: false,
-      close_offset_minutes: 30,
-      headcount: 1,
+      end_time_type: "fixed",
+      end_time_fixed: "18:00",
+      close_plus_minutes: 30,
+      headcount_default: 1,
+      active: true,
     });
     setEditingTemplate(null);
   };
@@ -245,28 +245,28 @@ export default function ShiftTemplates() {
     setEditingTemplate(template);
     setFormData({
       name: template.name || "",
-      work_area_id: template.work_area_id || "",
+      department: template.department || "service",
       season: template.season || "all",
       day_type: template.day_type || "all",
-      role: template.role || "frueh",
       start_time: template.start_time || "10:00",
-      end_time: template.end_time || "18:00",
-      use_close_offset: !!template.close_offset_minutes,
-      close_offset_minutes: template.close_offset_minutes || 30,
-      headcount: template.headcount || 1,
+      end_time_type: template.end_time_type || "fixed",
+      end_time_fixed: template.end_time_fixed || "18:00",
+      close_plus_minutes: template.close_plus_minutes || 30,
+      headcount_default: template.headcount_default || 1,
+      active: template.active !== false,
     });
     setDialogOpen(true);
   };
 
-  // Hilfsfunktion: Work Area Name finden
-  const getWorkAreaName = (id) => {
-    const area = workAreas.find((a) => a.id === id);
-    return area?.name || "Unbekannt";
+  // Department Label
+  const getDepartmentLabel = (dept) => {
+    const labels = { service: "Service", kitchen: "Küche" };
+    return labels[dept] || dept;
   };
 
-  const getWorkAreaColor = (id) => {
-    const area = workAreas.find((a) => a.id === id);
-    return area?.color || "#6B7280";
+  const getDepartmentColor = (dept) => {
+    const colors = { service: "#3B82F6", kitchen: "#EF4444" };
+    return colors[dept] || "#6B7280";
   };
 
   if (loading) {
