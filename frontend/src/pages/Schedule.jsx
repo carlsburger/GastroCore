@@ -964,7 +964,7 @@ export const Schedule = () => {
                 <SelectContent>
                   {staffMembers.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.full_name}
+                      {`${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unbekannt'}
                     </SelectItem>
                   ))}
                 </SelectContent>
