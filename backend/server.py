@@ -453,7 +453,8 @@ async def get_me(user: dict = Depends(get_current_user)):
     return UserResponse(
         id=user["id"], email=user["email"], name=user["name"], role=user["role"],
         is_active=user["is_active"], must_change_password=user.get("must_change_password", False),
-        created_at=user["created_at"]
+        created_at=user["created_at"],
+        staff_member_id=user.get("staff_member_id")
     )
 
 @api_router.post("/auth/change-password", tags=["Auth"])
