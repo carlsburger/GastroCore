@@ -590,6 +590,70 @@ async def get_reservations(
     
     return reservations
 
+
+@api_router.get("/reservations/summary", tags=["Reservations"])
+async def get_reservations_summary(
+    days: int = Query(default=7, ge=1, le=30, description="Anzahl Tage"),
+    start: Optional[str] = Query(default=None, description="Startdatum (YYYY-MM-DD), default=heute"),
+    user: dict = Depends(require_manager)
+):
+    """
+    7-Tage Übersicht für Dashboard.
+    Liefert pro Tag: Anzahl Reservierungen + Summe Gäste.
+    
+    Nur für Admin/Schichtleiter.
+    """
+    from datetime import datetime, timedelta
+    
+    # Startdatum bestimmen
+    if start:
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Ungültiges Datumsformat (YYYY-MM-DD)")
+    else:
+        start_date = datetime.now().date()
+    
+    result = {
+        "start": start_date.isoformat(),
+        "days": []
+    }
+    
+    # Für jeden Tag aggregieren
+    for i in range(days):
+        current_date = start_date + timedelta(days=i)
+        date_str = current_date.isoformat()
+        
+        # Aggregation: Zähle Reservierungen und summiere Gäste
+        pipeline = [
+            {"$match": {"date": date_str, "archived": False}},
+            {"$group": {
+                "_id": None,
+                "reservations": {"$sum": 1},
+                "guests": {"$sum": {"$ifNull": ["$party_size", 0]}}
+            }}
+        ]
+        
+        agg_result = await db.reservations.aggregate(pipeline).to_list(1)
+        
+        if agg_result:
+            result["days"].append({
+                "date": date_str,
+                "weekday": current_date.strftime("%a"),
+                "reservations": agg_result[0]["reservations"],
+                "guests": agg_result[0]["guests"]
+            })
+        else:
+            result["days"].append({
+                "date": date_str,
+                "weekday": current_date.strftime("%a"),
+                "reservations": 0,
+                "guests": 0
+            })
+    
+    return result
+
+
 @api_router.get("/reservations/{reservation_id}", tags=["Reservations"])
 async def get_reservation(reservation_id: str, user: dict = Depends(get_current_user)):
     if user["role"] == UserRole.MITARBEITER.value:
