@@ -33,7 +33,7 @@ import {
 } from "../components/ui/select";
 import { Label } from "../components/ui/label";
 import { toast } from "sonner";
-import { Plus, User, Trash2, Loader2, Shield, Clock, Link, LinkOff, UserCheck, AlertTriangle } from "lucide-react";
+import { Plus, User, Trash2, Loader2, Shield, Clock, Link2, Unlink, UserCheck, AlertTriangle } from "lucide-react";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
