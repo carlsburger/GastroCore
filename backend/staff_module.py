@@ -2120,31 +2120,37 @@ async def apply_templates_to_current_week(user: dict = Depends(require_manager))
 
 @staff_router.post("/shift-templates/seed-defaults")
 async def seed_default_templates(user: dict = Depends(require_admin)):
-    """Seed default Carlsburg shift templates"""
+    """Seed default Carlsburg shift templates - Normal + Kulturabend Varianten"""
     # Check if templates already exist
     existing = await db.shift_templates.count_documents({"archived": False})
     if existing > 0:
         return {"message": "Vorlagen existieren bereits", "seeded": False, "count": existing}
     
     default_templates = [
-        # Sommer - Wochentag
-        {"department": "service", "name": "S10 Vorbereitung", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekday", "headcount_default": 1, "sort_order": 10},
-        {"department": "service", "name": "S11 Früh", "start_time": "11:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekday", "headcount_default": 1, "sort_order": 11},
-        {"department": "service", "name": "S12 Schluss", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "summer", "day_type": "weekday", "headcount_default": 2, "sort_order": 12},
+        # ============ NORMALBETRIEB ============
+        # Service - Normal
+        {"department": "service", "name": "Service Früh", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "15:00", "season": "all", "day_type": "all", "event_mode": "normal", "headcount_default": 1, "sort_order": 10},
+        {"department": "service", "name": "Service Spät", "start_time": "17:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "all", "day_type": "all", "event_mode": "normal", "headcount_default": 2, "sort_order": 11},
         
-        # Sommer - Wochenende
-        {"department": "service", "name": "S10 Vorbereitung WE", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekend", "headcount_default": 1, "sort_order": 20},
-        {"department": "service", "name": "S11 Früh WE", "start_time": "11:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekend", "headcount_default": 2, "sort_order": 21},
-        {"department": "service", "name": "S12 Schluss WE", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "summer", "day_type": "weekend", "headcount_default": 2, "sort_order": 22},
-        {"department": "service", "name": "S13 Patisserie WE", "start_time": "13:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "summer", "day_type": "weekend", "headcount_default": 1, "sort_order": 23},
+        # Küche - Normal (KEIN fixes 22:00!)
+        {"department": "kitchen", "name": "Küche Früh", "start_time": "09:00", "end_time_type": "fixed", "end_time_fixed": "15:00", "season": "all", "day_type": "all", "event_mode": "normal", "headcount_default": 1, "sort_order": 20},
+        {"department": "kitchen", "name": "Küche Spät", "start_time": "16:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "all", "day_type": "all", "event_mode": "normal", "headcount_default": 1, "sort_order": 21},
         
-        # Winter - Standard
-        {"department": "service", "name": "W11 Service", "start_time": "11:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "winter", "day_type": "all", "headcount_default": 1, "sort_order": 30},
-        {"department": "service", "name": "W12 Service", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "winter", "day_type": "all", "headcount_default": 1, "sort_order": 31},
+        # Schichtleiter - Normal  
+        {"department": "service", "name": "Schichtleiter", "start_time": "11:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 0, "season": "all", "day_type": "all", "event_mode": "normal", "headcount_default": 1, "sort_order": 30},
         
-        # Küche (generisch)
-        {"department": "kitchen", "name": "K10 Küche Früh", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "all", "day_type": "all", "headcount_default": 1, "sort_order": 50},
-        {"department": "kitchen", "name": "K12 Küche Schluss", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "all", "day_type": "all", "headcount_default": 1, "sort_order": 51},
+        # Reinigung - Normal
+        {"department": "reinigung", "name": "Reinigung", "start_time": "06:00", "end_time_type": "fixed", "end_time_fixed": "10:00", "season": "all", "day_type": "all", "event_mode": "normal", "headcount_default": 1, "sort_order": 40},
+        
+        # ============ KULTURABEND (bis 00:00) ============
+        # Service - Kulturabend
+        {"department": "service", "name": "Service Spät Kultur", "start_time": "17:00", "end_time_type": "fixed", "end_time_fixed": "00:00", "season": "all", "day_type": "all", "event_mode": "kultur", "headcount_default": 3, "sort_order": 110},
+        
+        # Küche - Kulturabend
+        {"department": "kitchen", "name": "Küche Spät Kultur", "start_time": "16:00", "end_time_type": "fixed", "end_time_fixed": "00:00", "season": "all", "day_type": "all", "event_mode": "kultur", "headcount_default": 2, "sort_order": 120},
+        
+        # Schichtleiter - Kulturabend
+        {"department": "service", "name": "Schichtleiter Kultur", "start_time": "11:00", "end_time_type": "fixed", "end_time_fixed": "00:00", "season": "all", "day_type": "all", "event_mode": "kultur", "headcount_default": 1, "sort_order": 130},
     ]
     
     for tpl_data in default_templates:
@@ -2152,7 +2158,7 @@ async def seed_default_templates(user: dict = Depends(require_admin)):
         await db.shift_templates.insert_one(tpl)
     
     await create_audit_log(user, "shift_template", "seed", "seed_defaults", None, {"count": len(default_templates)})
-    return {"message": "Standard-Vorlagen erstellt", "seeded": True, "count": len(default_templates)}
+    return {"message": "Carlsburg-Vorlagen erstellt (Normal + Kulturabend)", "seeded": True, "count": len(default_templates)}
 
 
 # ----- APPLY TEMPLATES TO SCHEDULE -----
