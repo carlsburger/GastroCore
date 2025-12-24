@@ -5538,6 +5538,10 @@ class GastroCoreAPITester:
         test_results.append(self.test_authentication())
         test_results.append(self.test_password_change_requirement())
         
+        # SMOKE TEST: MyShifts API Endpoint (as per review request)
+        print("\n📋 MYSHIFTS API SMOKE TEST:")
+        test_results.append(self.test_myshifts_api_smoke_test())
+        
         # PRIORITY: Service-Terminal Tests (Sprint 8) - CRITICAL
         print("\n🖥️ SERVICE-TERMINAL (SPRINT 8) TESTING - CRITICAL:")
         test_results.append(self.test_service_terminal_rbac())
