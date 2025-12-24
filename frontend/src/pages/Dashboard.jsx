@@ -524,13 +524,13 @@ export const Dashboard = () => {
           ))}
         </div>
 
-        {/* Kulturveranstaltungen Kachel */}
+        {/* Kulturveranstaltungen Kachel - Dashboard v1 */}
         {kulturEvents.length > 0 && (
           <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Theater className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-purple-900">Kulturveranstaltungen (nächste 60 Tage)</h3>
+                <h3 className="font-semibold text-purple-900">Kulturveranstaltungen (nächste 90 Tage)</h3>
                 <Badge variant="outline" className="ml-auto text-purple-600 border-purple-300">
                   {kulturEvents.length} Events
                 </Badge>
@@ -541,8 +541,8 @@ export const Dashboard = () => {
                   <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {kulturEvents.slice(0, 8).map((event) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {kulturEvents.slice(0, 4).map((event) => (
                     <div 
                       key={event.id}
                       className="bg-white rounded-lg p-3 border border-purple-100 hover:shadow-md transition-shadow"
