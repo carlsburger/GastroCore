@@ -2249,7 +2249,7 @@ async def get_current_season() -> str:
 @staff_router.post("/schedules/{schedule_id}/apply-templates")
 async def apply_templates_to_schedule(
     schedule_id: str,
-    data: ApplyTemplatesRequest,
+    data: ApplyTemplatesBody,
     user: dict = Depends(require_manager)
 ):
     """
