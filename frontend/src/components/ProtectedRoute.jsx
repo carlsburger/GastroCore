@@ -62,9 +62,9 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
     if (user?.role === "service") {
       return <Navigate to="/service" replace />;
     }
-    // Mitarbeiter trying to access restricted area
+    // Mitarbeiter trying to access restricted area -> zu MyShifts (nicht no-access)
     if (user?.role === "mitarbeiter") {
-      return <Navigate to="/no-access" replace />;
+      return <Navigate to="/my-shifts" replace />;
     }
     return <Navigate to="/" replace />;
   }
