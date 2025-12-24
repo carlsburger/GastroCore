@@ -694,6 +694,19 @@ backend:
         agent: "testing"
         comment: "✅ SMOKE TEST PASS: Service Terminal Label Verification completed successfully. ✅ Admin Authentication: admin@carlsburg.de / Carlsburg2025! login working. ✅ GET /api/reservations: Retrieved reservations with valid status fields (neu, bestaetigt, angekommen, abgeschlossen, no_show, storniert). ✅ Status Validation: All reservation status values conform to expected labels. ✅ PATCH /api/reservations/{id}/status: Successfully changed reservation status from neu → bestaetigt → angekommen following proper status transition validation. ✅ Status Persistence: Status changes correctly persisted and returned in subsequent API calls. Backend endpoints working correctly for Service Terminal functionality."
 
+frontend:
+  - task: "MyShifts Stabilität & Endlos-Loading Fix"
+    implemented: true
+    working: true
+    file: "MyShifts.jsx"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "MyShifts komplett überarbeitet: (1) 5-Sekunden-Timeout für Loading, (2) Klare Fehlerzustände (no_profile, timeout, offline, unauthorized, generic), (3) Retry-Buttons bei Fehlern, (4) Saubere Empty States, (5) Hilfetext unter Titel, (6) Begriffe geprüft (kein 'Urlaubieren' vorhanden)"
+
 #====================================================================================================
 # Testing Protocol (DO NOT EDIT)
 #====================================================================================================
