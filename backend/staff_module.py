@@ -1336,6 +1336,9 @@ async def get_my_shifts(
     """
     Zeigt nur die eigenen Schichten des eingeloggten Mitarbeiters.
     Für alle Rollen verfügbar.
+    
+    Returns 404 wenn kein Mitarbeiterprofil verknüpft.
+    Returns leere Liste wenn keine Schichten vorhanden.
     """
     # Finde Staff-Member anhand der User-Email
     staff_member = await db.staff_members.find_one({
@@ -1344,7 +1347,11 @@ async def get_my_shifts(
     })
     
     if not staff_member:
-        return []  # Kein Mitarbeiter-Profil gefunden
+        # Kein Mitarbeiter-Profil gefunden - 404 mit klarer Meldung
+        raise HTTPException(
+            status_code=404,
+            detail="Kein Mitarbeiterprofil verknüpft. Bitte wende dich an die Schichtleitung."
+        )
     
     query = {
         "staff_member_id": staff_member["id"],
