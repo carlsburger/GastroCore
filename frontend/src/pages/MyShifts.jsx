@@ -133,7 +133,7 @@ export default function MyShifts() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-green-600">{totalHours.toFixed(1)}h</div>
-            <div className="text-sm text-gray-500">Stunden (netto)</div>
+            <div className="text-sm text-gray-500">Stunden</div>
           </CardContent>
         </Card>
       </div>
