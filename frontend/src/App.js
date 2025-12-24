@@ -117,6 +117,16 @@ function App() {
             }
           />
 
+          {/* Schichtmodelle/Vorlagen - Admin & Schichtleiter */}
+          <Route
+            path="/shift-templates"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <ShiftTemplates />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Dashboard - Admin & Schichtleiter */}
           <Route
             path="/"
