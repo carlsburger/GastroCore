@@ -1922,6 +1922,10 @@ class EndTimeType(str, Enum):
     FIXED = "fixed"
     CLOSE_PLUS_MINUTES = "close_plus_minutes"
 
+class EventMode(str, Enum):
+    NORMAL = "normal"
+    KULTUR = "kultur"
+
 class SeasonType(str, Enum):
     SUMMER = "summer"
     WINTER = "winter"
@@ -1948,6 +1952,7 @@ class ShiftTemplateCreate(BaseModel):
     close_plus_minutes: Optional[int] = Field(None, ge=0, le=120)  # if close_plus_minutes
     season: SeasonType = SeasonType.ALL
     day_type: DayType = DayType.ALL
+    event_mode: EventMode = EventMode.NORMAL  # Normal oder Kulturabend
     headcount_default: int = Field(default=1, ge=1, le=10)
     active: bool = True
     sort_order: int = Field(default=0)
@@ -1962,6 +1967,7 @@ class ShiftTemplateUpdate(BaseModel):
     close_plus_minutes: Optional[int] = None
     season: Optional[SeasonType] = None
     day_type: Optional[DayType] = None
+    event_mode: Optional[EventMode] = None
     headcount_default: Optional[int] = None
     active: Optional[bool] = None
     sort_order: Optional[int] = None
