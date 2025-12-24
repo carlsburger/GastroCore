@@ -5991,11 +5991,133 @@ class GastroCoreAPITester:
         
         return exports_success
 
+    def test_service_terminal_label_verification(self):
+        """Test Service Terminal Label Verification - SMOKE TEST as per review request"""
+        print("\n🏪 SMOKE TEST - Service Terminal Label Verification...")
+        
+        # 1. Login als Admin: admin@carlsburg.de / Carlsburg2025!
+        admin_creds = {"email": "admin@carlsburg.de", "password": "Carlsburg2025!"}
+        result = self.make_request("POST", "auth/login", admin_creds, expected_status=200)
+        
+        if not result["success"] or "access_token" not in result["data"]:
+            self.log_test("Admin login for smoke test", False, f"Status: {result['status_code']}")
+            return False
+        
+        admin_token = result["data"]["access_token"]
+        self.log_test("Admin login for smoke test", True, "admin@carlsburg.de authenticated successfully")
+        
+        # 2. Prüfe GET /api/reservations - Hole Reservierungen und prüfe ob status-Feld korrekte Werte hat
+        result = self.make_request("GET", "reservations", token=admin_token, expected_status=200)
+        
+        if not result["success"]:
+            self.log_test("GET /api/reservations", False, f"Status: {result['status_code']}")
+            return False
+        
+        reservations = result["data"]
+        self.log_test("GET /api/reservations", True, f"Retrieved {len(reservations)} reservations")
+        
+        # Check status field values
+        valid_statuses = ["neu", "bestaetigt", "angekommen", "abgeschlossen", "no_show", "storniert"]
+        status_check_passed = True
+        found_statuses = set()
+        
+        for reservation in reservations:
+            status = reservation.get("status")
+            found_statuses.add(status)
+            if status not in valid_statuses:
+                self.log_test("Status field validation", False, f"Invalid status found: {status}")
+                status_check_passed = False
+                break
+        
+        if status_check_passed:
+            self.log_test("Status field validation", True, f"All statuses valid. Found: {sorted(found_statuses)}")
+        
+        # Find a reservation to test status change
+        test_reservation_id = None
+        for reservation in reservations:
+            if reservation.get("status") in ["neu", "bestaetigt"]:
+                test_reservation_id = reservation["id"]
+                break
+        
+        if not test_reservation_id:
+            # Create a test reservation if none found
+            today = datetime.now().strftime("%Y-%m-%d")
+            reservation_data = {
+                "guest_name": "Smoke Test Reservation",
+                "guest_phone": "+49 170 1111111",
+                "party_size": 2,
+                "date": today,
+                "time": "18:00"
+            }
+            
+            result = self.make_request("POST", "reservations", reservation_data, admin_token, expected_status=200)
+            if result["success"] and "id" in result["data"]:
+                test_reservation_id = result["data"]["id"]
+                self.log_test("Create test reservation for status change", True, f"ID: {test_reservation_id}")
+            else:
+                self.log_test("Create test reservation for status change", False, f"Status: {result['status_code']}")
+                return False
+        
+        # 3. Ändere Status einer Reservierung mit PATCH /api/reservations/{id}/status?new_status=angekommen
+        result = self.make_request("PATCH", f"reservations/{test_reservation_id}/status?new_status=angekommen", 
+                                 {}, admin_token, expected_status=200)
+        
+        if result["success"]:
+            updated_reservation = result["data"]
+            if updated_reservation.get("status") == "angekommen":
+                self.log_test("PATCH reservation status to 'angekommen'", True, 
+                            f"Status successfully changed to: {updated_reservation.get('status')}")
+            else:
+                self.log_test("PATCH reservation status to 'angekommen'", False, 
+                            f"Expected 'angekommen', got: {updated_reservation.get('status')}")
+                return False
+        else:
+            self.log_test("PATCH reservation status to 'angekommen'", False, f"Status: {result['status_code']}")
+            return False
+        
+        # 4. Bestätige dass die Status-Werte korrekt zurückgegeben werden
+        result = self.make_request("GET", f"reservations/{test_reservation_id}", token=admin_token, expected_status=200)
+        
+        if result["success"]:
+            reservation = result["data"]
+            if reservation.get("status") == "angekommen":
+                self.log_test("Verify status change persisted", True, 
+                            f"Status correctly persisted as: {reservation.get('status')}")
+            else:
+                self.log_test("Verify status change persisted", False, 
+                            f"Expected 'angekommen', got: {reservation.get('status')}")
+                return False
+        else:
+            self.log_test("Verify status change persisted", False, f"Status: {result['status_code']}")
+            return False
+        
+        return True
+
+    def run_smoke_test(self):
+        """Run only the smoke test for Service Terminal Label Verification"""
+        print("🚀 Starting Service Terminal Label Verification SMOKE TEST...")
+        print(f"🎯 Target: {self.base_url}")
+        print("=" * 80)
+        
+        # Run only the smoke test
+        smoke_test_result = self.test_service_terminal_label_verification()
+        
+        # Print summary
+        self.print_summary([("Service Terminal Label Verification SMOKE TEST", smoke_test_result)])
+        
+        return smoke_test_result
+
 def main():
     """Main test execution"""
     import sys
     
     tester = GastroCoreAPITester()
+    
+    # Check if we should run smoke test
+    if len(sys.argv) > 1 and sys.argv[1] == "--smoke-test":
+        print("Running Service Terminal Label Verification SMOKE TEST...")
+        success = tester.run_smoke_test()
+        return 0 if success else 1
     
     # Check if we should run System Settings & Opening Hours Master tests
     if len(sys.argv) > 1 and sys.argv[1] == "--system-settings":
@@ -6009,8 +6131,8 @@ def main():
         success = tester.run_full_qa_audit()
         return 0 if success else 1
     
-    # Default: Run System Settings & Opening Hours Master tests (as per review request)
-    success = tester.run_system_settings_tests()
+    # Default: Run smoke test (as per review request)
+    success = tester.run_smoke_test()
     return 0 if success else 1
 
 if __name__ == "__main__":
