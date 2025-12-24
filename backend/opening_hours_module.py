@@ -1259,3 +1259,360 @@ async def get_reservable_slots_for_date(target_date: date) -> List[dict]:
     ]
     
     return reservable_blocks
+
+
+# ============== OVERRIDE FUNCTIONS (NEU) ==============
+
+async def get_override_for_date(target_date: date) -> Optional[dict]:
+    """
+    Suche Override für ein Datum.
+    Bei mehreren Overlaps gewinnt höchste Priority.
+    """
+    date_str = target_date.strftime("%Y-%m-%d")
+    
+    overrides = await db.opening_overrides.find(
+        {"active": {"$ne": False}, "archived": {"$ne": True}}
+    ).to_list(500)
+    
+    matching = []
+    for override in overrides:
+        date_from = override.get("date_from", "")
+        date_to = override.get("date_to", date_from)
+        
+        if date_from <= date_str <= date_to:
+            matching.append(override)
+    
+    if not matching:
+        return None
+    
+    # Sortiere nach Priority (höchste zuerst)
+    matching.sort(key=lambda x: x.get("priority", 100), reverse=True)
+    return matching[0]
+
+
+async def resolve_opening_hours(target_date: date) -> dict:
+    """
+    MASTER-RESOLVER für Öffnungszeiten.
+    
+    Prioritäten (höchste zuerst):
+    1. Overrides (opening_overrides Collection) - ABSOLUT HÖCHSTE PRIORITÄT
+    2. Feiertage (Brandenburg) - können Ruhetage überschreiben → offen 12:00-20:00
+    3. Perioden (opening_hours_master) - Sommer/Winter Regelwerk
+    4. Fallback: geschlossen
+    
+    Returns:
+    {
+        date, status, open_from, open_to, last_reservation_time,
+        reason: "override" | "holiday" | "period" | "weekday_closed" | "fallback",
+        meta: { holiday_name?, period_name?, override_note? }
+    }
+    """
+    date_str = target_date.strftime("%Y-%m-%d")
+    weekday = target_date.weekday()
+    weekday_key = weekday_name(weekday)
+    
+    # Basis-Response
+    result = {
+        "date": date_str,
+        "weekday": weekday_key,
+        "weekday_de": weekday_name_de(weekday),
+        "status": "closed",
+        "open_from": None,
+        "open_to": None,
+        "last_reservation_time": None,
+        "reason": "fallback",
+        "meta": {}
+    }
+    
+    # ========== 1. OVERRIDES (HÖCHSTE PRIORITÄT) ==========
+    override = await get_override_for_date(target_date)
+    if override:
+        if override.get("status") == "closed":
+            result["status"] = "closed"
+            result["reason"] = "override"
+            result["meta"] = {
+                "override_note": override.get("note", ""),
+                "override_id": override.get("id")
+            }
+            logger.info(f"Override CLOSED für {date_str}: {override.get('note')}")
+            return result
+        
+        elif override.get("status") == "open":
+            result["status"] = "open"
+            result["open_from"] = override.get("open_from")
+            result["open_to"] = override.get("open_to")
+            result["last_reservation_time"] = override.get("last_reservation_time")
+            result["reason"] = "override"
+            result["meta"] = {
+                "override_note": override.get("note", ""),
+                "override_id": override.get("id")
+            }
+            logger.info(f"Override OPEN für {date_str}: {override.get('open_from')}-{override.get('open_to')}")
+            return result
+    
+    # ========== 2. FEIERTAGE (Brandenburg) ==========
+    is_holiday, holiday_name_str = is_holiday_brandenburg(target_date)
+    
+    # ========== 3. PERIODEN ==========
+    period = await get_active_period_for_date(target_date)
+    
+    if period:
+        rules = period.get("rules_by_weekday", {})
+        day_rules = rules.get(weekday_key, {})
+        
+        # Prüfe ob Ruhetag
+        if day_rules.get("is_closed", False):
+            # FEIERTAG-OVERRIDE: Wenn Feiertag auf Ruhetag fällt → offen 12:00-20:00
+            if is_holiday:
+                result["status"] = "open"
+                result["open_from"] = "12:00"
+                result["open_to"] = "20:00"
+                result["reason"] = "holiday"
+                result["meta"] = {
+                    "holiday_name": holiday_name_str,
+                    "period_name": period.get("name"),
+                    "note": f"Feiertag '{holiday_name_str}' überschreibt Ruhetag"
+                }
+                logger.info(f"Feiertag-Override: {holiday_name_str} am {date_str}")
+                return result
+            else:
+                # Normaler Ruhetag
+                result["status"] = "closed"
+                result["reason"] = "weekday_closed"
+                result["meta"] = {
+                    "period_name": period.get("name"),
+                    "note": f"Ruhetag ({weekday_name_de(weekday)})"
+                }
+                return result
+        
+        # Normale Öffnung aus Periode
+        blocks = day_rules.get("blocks", [])
+        if blocks:
+            # Ersten und letzten Block für open_from/open_to
+            result["status"] = "open"
+            result["open_from"] = blocks[0].get("start")
+            result["open_to"] = blocks[-1].get("end")
+            result["reason"] = "period"
+            result["meta"] = {
+                "period_name": period.get("name"),
+                "blocks": blocks
+            }
+            
+            # Wenn Feiertag, erweitern auf 12:00-20:00 (falls kürzer)
+            if is_holiday:
+                result["meta"]["holiday_name"] = holiday_name_str
+                # Optional: Zeiten anpassen bei Feiertag
+            
+            return result
+    
+    # ========== 4. FALLBACK ==========
+    # Keine Periode gefunden - Standard-Öffnung oder geschlossen
+    if is_holiday:
+        result["status"] = "open"
+        result["open_from"] = "12:00"
+        result["open_to"] = "20:00"
+        result["reason"] = "holiday"
+        result["meta"] = {"holiday_name": holiday_name_str}
+        return result
+    
+    result["status"] = "closed"
+    result["reason"] = "fallback"
+    result["meta"] = {"note": "Keine Periode konfiguriert"}
+    return result
+
+
+# ============== API ENDPOINTS: OVERRIDES (NEU) ==============
+
+@opening_hours_router.get(
+    "/opening-hours/overrides",
+    summary="Alle Overrides abrufen",
+    description="Listet alle Datum-Overrides für Öffnungszeiten. Admin only."
+)
+async def list_overrides(
+    from_date: Optional[str] = Query(None, alias="from", description="Ab Datum (YYYY-MM-DD)"),
+    to_date: Optional[str] = Query(None, alias="to", description="Bis Datum (YYYY-MM-DD)"),
+    current_user: dict = Depends(require_admin)
+):
+    """GET /api/opening-hours/overrides"""
+    query = {"archived": {"$ne": True}}
+    
+    overrides = await db.opening_overrides.find(query, {"_id": 0}).sort("date_from", 1).to_list(500)
+    
+    # Filtern wenn Zeitraum angegeben
+    if from_date and to_date:
+        filtered = []
+        for o in overrides:
+            o_from = o.get("date_from", "")
+            o_to = o.get("date_to", o_from)
+            if o_from <= to_date and o_to >= from_date:
+                filtered.append(o)
+        return filtered
+    
+    return overrides
+
+
+@opening_hours_router.post(
+    "/opening-hours/overrides",
+    status_code=201,
+    summary="Neuen Override erstellen",
+    description="Erstellt einen Override (offen oder geschlossen). HÖCHSTE PRIORITÄT - überschreibt alles."
+)
+async def create_override(
+    data: OpeningOverrideCreate,
+    current_user: dict = Depends(require_admin)
+):
+    """POST /api/opening-hours/overrides"""
+    
+    # Validierung: Bei status=open müssen Zeiten angegeben sein
+    if data.status == "open":
+        if not data.open_from or not data.open_to:
+            raise ValidationException("Bei status='open' müssen open_from und open_to angegeben werden")
+    
+    date_to = data.date_to if data.date_to else data.date_from
+    
+    override = {
+        "id": str(uuid.uuid4()),
+        "date_from": data.date_from,
+        "date_to": date_to,
+        "status": data.status,
+        "open_from": data.open_from,
+        "open_to": data.open_to,
+        "last_reservation_time": data.last_reservation_time,
+        "note": data.note,
+        "priority": data.priority,
+        "active": True,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+        "archived": False
+    }
+    
+    await db.opening_overrides.insert_one(override)
+    
+    # Audit Log
+    await create_audit_log(
+        actor=current_user,
+        action="create",
+        entity="opening_override",
+        entity_id=override["id"],
+        after=safe_dict_for_audit(override)
+    )
+    
+    date_range = f"{data.date_from}" if data.date_from == date_to else f"{data.date_from} bis {date_to}"
+    status_text = "GESCHLOSSEN" if data.status == "closed" else f"OFFEN {data.open_from}-{data.open_to}"
+    logger.info(f"Override erstellt: {date_range} → {status_text} ({data.note}) von {current_user.get('email')}")
+    
+    override.pop("_id", None)
+    return override
+
+
+@opening_hours_router.put(
+    "/opening-hours/overrides/{override_id}",
+    summary="Override aktualisieren",
+    description="Aktualisiert einen bestehenden Override. Admin only."
+)
+async def update_override(
+    override_id: str,
+    data: OpeningOverrideUpdate,
+    current_user: dict = Depends(require_admin)
+):
+    """PUT /api/opening-hours/overrides/{id}"""
+    
+    override = await db.opening_overrides.find_one(
+        {"id": override_id, "archived": {"$ne": True}},
+        {"_id": 0}
+    )
+    
+    if not override:
+        raise NotFoundException("Override nicht gefunden")
+    
+    old_override = override.copy()
+    update_data = data.model_dump(exclude_unset=True)
+    
+    if not update_data:
+        raise ValidationException("Keine Änderungen übergeben")
+    
+    update_data["updated_at"] = now_iso()
+    
+    await db.opening_overrides.update_one(
+        {"id": override_id},
+        {"$set": update_data}
+    )
+    
+    # Audit Log
+    await create_audit_log(
+        actor=current_user,
+        action="update",
+        entity="opening_override",
+        entity_id=override_id,
+        before=safe_dict_for_audit(old_override),
+        after=safe_dict_for_audit(update_data)
+    )
+    
+    updated = await db.opening_overrides.find_one({"id": override_id}, {"_id": 0})
+    logger.info(f"Override '{override_id}' aktualisiert von {current_user.get('email')}")
+    return updated
+
+
+@opening_hours_router.delete(
+    "/opening-hours/overrides/{override_id}",
+    status_code=204,
+    summary="Override löschen",
+    description="Soft Delete eines Overrides. Admin only."
+)
+async def delete_override(
+    override_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """DELETE /api/opening-hours/overrides/{id}"""
+    
+    override = await db.opening_overrides.find_one(
+        {"id": override_id, "archived": {"$ne": True}}
+    )
+    
+    if not override:
+        raise NotFoundException("Override nicht gefunden")
+    
+    await db.opening_overrides.update_one(
+        {"id": override_id},
+        {"$set": {"archived": True, "updated_at": now_iso()}}
+    )
+    
+    # Audit Log
+    await create_audit_log(
+        actor=current_user,
+        action="delete",
+        entity="opening_override",
+        entity_id=override_id
+    )
+    
+    logger.info(f"Override '{override_id}' gelöscht von {current_user.get('email')}")
+    return None
+
+
+# ============== API ENDPOINT: RESOLVE (NEU) ==============
+
+@opening_hours_router.get(
+    "/opening-hours/resolve",
+    summary="Öffnungszeiten für Datum auflösen",
+    description="Berechnet die effektiven Öffnungszeiten mit vollständiger Prioritätslogik."
+)
+async def resolve_opening_hours_endpoint(
+    date: str = Query(..., description="Datum (YYYY-MM-DD)"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    GET /api/opening-hours/resolve?date=YYYY-MM-DD
+    
+    Returns:
+    {
+        date, status: "open"|"closed", open_from, open_to, last_reservation_time,
+        reason: "override"|"holiday"|"period"|"weekday_closed"|"fallback",
+        meta: { holiday_name?, period_name?, override_note? }
+    }
+    """
+    try:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise ValidationException("Ungültiges Datumsformat (YYYY-MM-DD erwartet)")
+    
+    return await resolve_opening_hours(target_date)
