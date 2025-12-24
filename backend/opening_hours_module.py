@@ -407,10 +407,11 @@ async def calculate_effective_hours(target_date: date) -> dict:
     Berechne die effektiven Öffnungszeiten für ein Datum.
     
     Prioritäten (höchste zuerst):
-    1. closures (ganztags geschlossen) - HÖCHSTE PRIORITÄT
-    2. holidays (können Ruhetag überschreiben → offen 12:00-20:00)
+    0. opening_overrides (ABSOLUT HÖCHSTE PRIORITÄT - auch über Closures!)
+    1. closures (ganztags geschlossen)
+    2. holidays (können Ruhetag überschreiben → offen 11:30-20:00)
     3. opening_hours_periods (Sommer/Winter Regelwerk)
-    4. Fallback: geschlossen
+    4. Fallback: Standard-Öffnungszeiten
     """
     date_str = target_date.strftime("%Y-%m-%d")
     weekday = target_date.weekday()
@@ -430,10 +431,37 @@ async def calculate_effective_hours(target_date: date) -> dict:
         "is_holiday": is_holiday,
         "holiday_name": holiday_name,
         "blocks": [],
-        "closures": []
+        "closures": [],
+        "last_reservation_time": None,
+        "override_note": None
     }
     
-    # 1. HÖCHSTE PRIORITÄT: Sperrtage prüfen (z.B. 24.12., 31.12.)
+    # ========== 0. OPENING OVERRIDES (ABSOLUT HÖCHSTE PRIORITÄT) ==========
+    override = await get_override_for_date(target_date)
+    if override:
+        if override.get("status") == "closed":
+            result["is_open"] = False
+            result["is_closed_full_day"] = True
+            result["closure_reason"] = override.get("note", "Override: Geschlossen")
+            result["override_note"] = override.get("note")
+            logger.info(f"Override CLOSED für {date_str}: {override.get('note')}")
+            return result
+        
+        elif override.get("status") == "open":
+            result["is_open"] = True
+            result["is_closed_full_day"] = False
+            open_from = override.get("open_from", "11:30")
+            open_to = override.get("open_to", "20:00")
+            result["blocks"] = [
+                {"start": open_from, "end": open_to, "reservable": True, "label": override.get("note", "Override")}
+            ]
+            result["last_reservation_time"] = override.get("last_reservation_time")
+            result["override_note"] = override.get("note")
+            result["period_name"] = "Override"
+            logger.info(f"Override OPEN für {date_str}: {open_from}-{open_to}")
+            return result
+    
+    # ========== 1. CLOSURES (SPERRTAGE) ==========
     closures = await get_closures_for_date(target_date)
     full_day_closure = None
     time_range_closures = []
@@ -453,14 +481,25 @@ async def calculate_effective_hours(target_date: date) -> dict:
             full_day_closure = closure_info
         result["closures"].append(closure_info)
     
-    # Wenn ganztägig geschlossen (Sperrtag hat IMMER Vorrang)
+    # Wenn ganztägig geschlossen (Sperrtag hat Vorrang)
     if full_day_closure:
         result["is_open"] = False
         result["is_closed_full_day"] = True
         result["closure_reason"] = full_day_closure["reason"]
         return result
     
-    # 2. Periode laden
+    # ========== 2. FEIERTAGE ==========
+    # Feiertage überschreiben Ruhetage → offen 11:30-20:00
+    if is_holiday:
+        result["is_open"] = True
+        result["is_closed_full_day"] = False
+        result["blocks"] = [
+            {"start": "11:30", "end": "20:00", "reservable": True, "label": f"Feiertag: {holiday_name}"}
+        ]
+        result["period_name"] = "Feiertag"
+        return result
+    
+    # ========== 3. PERIODEN ==========
     period = await get_active_period_for_date(target_date)
     
     if period:
