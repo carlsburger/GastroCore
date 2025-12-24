@@ -130,7 +130,7 @@ export default function ShiftTemplates() {
 
   // Template erstellen/bearbeiten
   const handleSubmit = async () => {
-    if (!formData.name || !formData.work_area_id) {
+    if (!formData.name || !formData.department) {
       toast({
         variant: "destructive",
         title: "Fehler",
@@ -142,8 +142,6 @@ export default function ShiftTemplates() {
     try {
       const payload = {
         ...formData,
-        end_time: formData.use_close_offset ? null : formData.end_time,
-        close_offset_minutes: formData.use_close_offset ? formData.close_offset_minutes : null,
       };
 
       if (editingTemplate) {
