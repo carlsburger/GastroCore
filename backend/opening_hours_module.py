@@ -222,6 +222,36 @@ class ClosureUpdate(BaseModel):
     active: Optional[bool] = None
 
 
+# --- Neues einfaches Closure-Modell mit Datumsbereich ---
+class SimpleClosure(BaseModel):
+    """Einfacher Sperrtag/Override mit Datumsbereich - HÖCHSTE PRIORITÄT"""
+    start_date: str  # YYYY-MM-DD
+    end_date: str    # YYYY-MM-DD (default = start_date für Einzeltag)
+    type: str = Field(default="closed_all_day", pattern="^(closed_all_day|closed_partial)$")
+    start_time: Optional[str] = None  # HH:MM nur bei closed_partial
+    end_time: Optional[str] = None    # HH:MM nur bei closed_partial
+    reason: str = Field(..., min_length=2, max_length=200)
+    
+    @field_validator('start_date', 'end_date')
+    @classmethod
+    def validate_date(cls, v):
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"Ungültiges Datumsformat: {v} (YYYY-MM-DD erwartet)")
+        return v
+    
+    @field_validator('start_time', 'end_time')
+    @classmethod
+    def validate_time(cls, v):
+        if v:
+            try:
+                datetime.strptime(v, "%H:%M")
+            except ValueError:
+                raise ValueError(f"Ungültiges Zeitformat: {v} (HH:MM erwartet)")
+        return v
+
+
 # ============== HELPER FUNCTIONS ==============
 
 def now_iso() -> str:
