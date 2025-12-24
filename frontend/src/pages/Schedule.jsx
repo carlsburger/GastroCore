@@ -118,8 +118,15 @@ if (typeof window !== 'undefined' && window.console) {
 }
 
 export const Schedule = () => {
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [week, setWeek] = useState(getCurrentWeek());
+  // URL-Parameter für Deep-Links (?week=52&year=2025)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlWeek = urlParams.get('week');
+  const urlYear = urlParams.get('year');
+  
+  // Initialisierung: URL-Params oder aktuelle ISO-Woche
+  const initData = getISOWeekData();
+  const [year, setYear] = useState(urlYear ? parseInt(urlYear) : initData.year);
+  const [week, setWeek] = useState(urlWeek ? parseInt(urlWeek) : initData.week);
   const [schedule, setSchedule] = useState(null);
   const [staffMembers, setStaffMembers] = useState([]);
   const [workAreas, setWorkAreas] = useState([]);
