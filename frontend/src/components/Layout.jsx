@@ -124,9 +124,16 @@ const navigationGroups = [
     children: [
       { path: "/staff", label: "Übersicht", icon: UserCog },
       { path: "/schedule", label: "Dienstplan", icon: CalendarClock },
-      { path: "/my-shifts", label: "Meine Schichten", icon: CalendarCheck },
+      { path: "/shift-templates", label: "Schichtmodelle", icon: FileText },
       { path: "/taxoffice", label: "Steuerbüro-Export", icon: FileSpreadsheet, roles: ["admin"] },
     ],
+  },
+  {
+    id: "my-shifts",
+    label: "Meine Schichten",
+    icon: CalendarCheck,
+    path: "/my-shifts",
+    roles: ["admin", "schichtleiter", "service", "mitarbeiter"], // Für alle authentifizierten Benutzer
   },
   {
     id: "marketing",
