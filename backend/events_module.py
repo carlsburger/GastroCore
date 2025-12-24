@@ -1058,6 +1058,53 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def decode_html_entities(text: str) -> str:
+    """
+    Dekodiert HTML-Entities wie &#8211; &amp; &quot; etc.
+    Macht Texte lesbar für das Cockpit.
+    """
+    if not text:
+        return text
+    import html
+    # Doppelt dekodieren falls nötig (manchmal sind Entities verschachtelt)
+    decoded = html.unescape(text)
+    # Nochmal falls &#xxx; Entities übrig sind
+    decoded = html.unescape(decoded)
+    return decoded
+
+
+def has_real_changes(existing: dict, mapped: dict) -> bool:
+    """
+    Prüft ob sich relevante Felder wirklich geändert haben.
+    Nur dann zählt es als "echtes Update".
+    """
+    # Felder die verglichen werden
+    compare_fields = [
+        ("title", "title"),
+        ("short_description", "short_description"),
+        ("description", "description"),
+        ("start_datetime", "start_datetime"),
+        ("end_datetime", "end_datetime"),
+        ("image_url", "image_url"),
+        ("entry_price", "entry_price"),
+    ]
+    
+    for existing_key, mapped_key in compare_fields:
+        existing_val = existing.get(existing_key) or ""
+        mapped_val = mapped.get(mapped_key) or ""
+        
+        # Normalisiere für Vergleich
+        if isinstance(existing_val, str):
+            existing_val = existing_val.strip()
+        if isinstance(mapped_val, str):
+            mapped_val = mapped_val.strip()
+        
+        if existing_val != mapped_val:
+            return True
+    
+    return False
+
+
 def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
     """
     Mappt ein WordPress/Tribe Event auf das GastroCore Event-Schema.
