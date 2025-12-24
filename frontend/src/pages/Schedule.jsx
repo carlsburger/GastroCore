@@ -613,7 +613,7 @@ export const Schedule = () => {
                 <h2 className="text-2xl font-bold">KW {week} / {year}</h2>
                 {schedule && (
                   <p className="text-muted-foreground">
-                    {new Date(schedule.week_start).toLocaleDateString("de-DE")} - {new Date(schedule.week_end).toLocaleDateString("de-DE")}
+                    {new Date(schedule.start_date).toLocaleDateString("de-DE")} - {new Date(schedule.end_date).toLocaleDateString("de-DE")}
                   </p>
                 )}
                 {schedule && (
