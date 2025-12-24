@@ -11,7 +11,20 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 class GastroCoreAPITester:
-    def __init__(self, base_url: str = "http://localhost:8001"):
+    def __init__(self, base_url: str = None):
+        # Use the backend URL from frontend .env if not provided
+        if base_url is None:
+            try:
+                with open('/app/frontend/.env', 'r') as f:
+                    for line in f:
+                        if line.startswith('REACT_APP_BACKEND_URL='):
+                            base_url = line.split('=', 1)[1].strip()
+                            break
+                if base_url is None:
+                    base_url = "http://localhost:8001"
+            except:
+                base_url = "http://localhost:8001"
+        
         self.base_url = base_url
         self.tokens = {}
         self.test_data = {}
