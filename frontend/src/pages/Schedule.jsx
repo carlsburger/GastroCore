@@ -683,18 +683,21 @@ export const Schedule = () => {
                       ) : (
                         shifts.map((shift) => {
                           const area = workAreas.find((a) => a.id === shift.work_area_id);
+                          const staffName = shift.staff_member?.full_name 
+                            ? formatShortName(shift.staff_member.full_name) 
+                            : "?";
+                          // Format: "A. Nachname 11–20" (vereinfacht, A4-tauglich)
+                          const timeRange = `${shift.start_time?.slice(0,5) || "?"}-${shift.end_time?.slice(0,5) || "?"}`;
+                          
                           return (
                             <div
                               key={shift.id}
-                              className="p-2 rounded-lg text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                              style={{ backgroundColor: area?.color + "20", borderLeft: `3px solid ${area?.color}` }}
+                              className="px-2 py-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                              style={{ backgroundColor: area?.color + "15", borderLeft: `2px solid ${area?.color}` }}
                               onClick={() => schedule.status !== "archiviert" && openShiftDialog(date, shift)}
                             >
-                              <p className="font-medium truncate">{shift.staff_member?.full_name || "?"}</p>
-                              <p className="text-muted-foreground">
-                                {shift.start_time} - {shift.end_time}
-                              </p>
-                              <p className="text-muted-foreground truncate">{area?.name}</p>
+                              <span className="font-medium">{staffName}</span>
+                              <span className="text-muted-foreground ml-1">{timeRange}</span>
                             </div>
                           );
                         })
@@ -730,7 +733,7 @@ export const Schedule = () => {
                       <tbody>
                         {hoursOverview.overview.map((row) => (
                           <tr key={row.staff_member_id} className="border-b hover:bg-muted/50">
-                            <td className="py-2 px-3 font-medium">{row.name}</td>
+                            <td className="py-2 px-3 font-medium">{formatShortName(row.name)}</td>
                             <td className="py-2 px-3 text-center">
                               <Badge variant="outline" className="text-xs">
                                 {row.employment_type}
