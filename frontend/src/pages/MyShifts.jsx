@@ -22,6 +22,7 @@ export default function MyShifts() {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [error, setError] = useState(null); // NEU: Fehler-Status für nicht verknüpftes Profil
 
   // Berechne Start/Ende der aktuellen Woche
   const getWeekRange = (offset = 0) => {
@@ -44,6 +45,7 @@ export default function MyShifts() {
     if (!token) return;
     
     setLoading(true);
+    setError(null);
     try {
       const range = getWeekRange(weekOffset);
       const headers = { Authorization: `Bearer ${token}` };
@@ -54,6 +56,12 @@ export default function MyShifts() {
       setShifts(response.data);
     } catch (error) {
       console.error("Fehler beim Laden der Schichten:", error);
+      // Prüfe auf spezifische Fehler (z.B. 404 = kein Profil verknüpft)
+      if (error.response?.status === 404 || error.response?.data?.detail?.includes("nicht verknüpft")) {
+        setError("no_profile");
+      } else {
+        setError("generic");
+      }
     } finally {
       setLoading(false);
     }
