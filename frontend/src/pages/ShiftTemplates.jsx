@@ -545,6 +545,26 @@ export default function ShiftTemplates() {
               </div>
             </div>
 
+            {/* Event-Modus (Normal vs Kulturabend) */}
+            <div className="space-y-2">
+              <Label>Betriebsart</Label>
+              <Select
+                value={formData.event_mode}
+                onValueChange={(value) => setFormData({ ...formData, event_mode: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normalbetrieb</SelectItem>
+                  <SelectItem value="kultur">Kulturabend (bis 00:00)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Kulturabend-Vorlagen werden nur an Tagen mit Veranstaltungen angewendet.
+              </p>
+            </div>
+
             {/* Headcount */}
             <div className="space-y-2">
               <Label>Headcount (Anzahl Mitarbeiter)</Label>
