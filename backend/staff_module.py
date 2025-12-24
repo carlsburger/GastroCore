@@ -2297,11 +2297,19 @@ async def apply_templates_to_schedule(
     week_start_str = schedule.get("start_date") or schedule.get("week_start")
     week_start = datetime.fromisoformat(week_start_str).date()
     created_shifts = []
+    skipped_existing = 0
     
     for day_offset in range(7):
         current_date = week_start + timedelta(days=day_offset)
         date_str = current_date.isoformat()
         is_wknd = current_date.weekday() >= 5
+        
+        # Check if this day has a Kultur-Event
+        has_kultur_event = await db.events.find_one({
+            "start_datetime": {"$regex": f"^{date_str}"},
+            "content_category": {"$in": ["VERANSTALTUNG", "veranstaltung", "kultur"]},
+            "archived": False
+        })
         
         # Get closing time for this day
         closing_time = await get_closing_time_for_date(date_str)
@@ -2309,6 +2317,28 @@ async def apply_templates_to_schedule(
             continue  # Day is closed, skip
         
         for template in templates:
+            # Check event_mode: Skip normal templates on Kultur days (for affected templates)
+            event_mode = template.get("event_mode", "normal")
+            template_name = template.get("name", "")
+            
+            # Logic: On Kultur days, use Kultur variants; on normal days, use normal variants
+            if has_kultur_event:
+                # Skip normal Spät/Schichtleiter if Kultur variant exists
+                if event_mode == "normal" and any(x in template_name for x in ["Spät", "Schichtleiter"]) and not "Früh" in template_name:
+                    # Check if we have a Kultur variant for this
+                    kultur_variant_exists = any(
+                        t.get("event_mode") == "kultur" and 
+                        template.get("department") == t.get("department") and
+                        "Spät" in t.get("name", "") or "Schichtleiter" in t.get("name", "")
+                        for t in templates
+                    )
+                    if kultur_variant_exists:
+                        continue  # Skip normal, Kultur variant will be used
+            else:
+                # Normal day: skip Kultur templates
+                if event_mode == "kultur":
+                    continue
+            
             # Check days_of_week filter (wenn vorhanden)
             days_of_week = template.get("days_of_week")
             if days_of_week is not None and current_date.weekday() not in days_of_week:
@@ -2321,8 +2351,38 @@ async def apply_templates_to_schedule(
             if tpl_day_type == "weekend" and not is_wknd:
                 continue
             
-            # Calculate end time
-            end_time = calculate_end_time(template, closing_time)
+            # Calculate end time based on end_time_type
+            end_time_type = template.get("end_time_type", "fixed")
+            if end_time_type == "close" and closing_time:
+                close_offset = template.get("close_plus_minutes", 0)
+                # Parse closing time and add offset
+                try:
+                    close_dt = datetime.strptime(closing_time, "%H:%M")
+                    close_dt = close_dt + timedelta(minutes=close_offset)
+                    end_time = close_dt.strftime("%H:%M")
+                except:
+                    end_time = template.get("end_time") or template.get("end_time_fixed", "23:00")
+            else:
+                end_time = template.get("end_time") or template.get("end_time_fixed", "23:00")
+            
+            start_time = template.get("start_time")
+            department = template.get("department")
+            template_id = template.get("id")
+            
+            # IDEMPOTENT CHECK: Skip if shift already exists
+            existing_shift = await db.shifts.find_one({
+                "schedule_id": schedule_id,
+                "date": date_str,
+                "start_time": start_time,
+                "end_time": end_time,
+                "department": department,
+                "template_id": template_id,
+                "archived": False
+            })
+            
+            if existing_shift:
+                skipped_existing += 1
+                continue  # Shift already exists, skip
             
             # Create N shifts based on headcount_default
             headcount = template.get("headcount_default", 1)
@@ -2331,15 +2391,15 @@ async def apply_templates_to_schedule(
                     "schedule_id": schedule_id,
                     "staff_member_id": None,  # Unassigned
                     "work_area_id": get_area_id(template.get("department", "service")),
-                    "date": date_str,  # Konsistent mit bestehenden Shifts
-                    "shift_date": date_str,  # Legacy-Feld für Kompatibilität
-                    "start_time": template.get("start_time"),
-                    "end_time": end_time or template.get("end_time"),
+                    "date": date_str,
+                    "shift_date": date_str,  # Legacy
+                    "start_time": start_time,
+                    "end_time": end_time,
                     "shift_name": template.get("name"),
                     "role": template.get("role", "service"),
-                    "department": template.get("department"),
+                    "department": department,
                     "notes": f"Aus Vorlage: {template.get('name')}",
-                    "template_id": template.get("id"),
+                    "template_id": template_id,
                     "status": "offen"
                 })
                 await db.shifts.insert_one(shift)
