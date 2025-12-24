@@ -296,7 +296,7 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
     # Include events with future dates OR events without dates (to show them)
     query = {
         "archived": False,
-        "category": "VERANSTALTUNG",
+        "content_category": "VERANSTALTUNG",  # BUGFIX: war "category", korrigiert zu "content_category"
         "$or": [
             {"start_datetime": {"$gte": today, "$lte": future + "T23:59:59"}},
             {"start_datetime": {"$exists": False}},
