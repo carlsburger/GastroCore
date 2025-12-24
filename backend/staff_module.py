@@ -2424,3 +2424,309 @@ async def export_schedule_pdf(
             }
         )
 
+
+
+
+# ============== SHIFT TEMPLATES (Schichtmodelle) ==============
+
+class ShiftTemplateCreate(BaseModel):
+    """Schema für Schichtvorlage erstellen"""
+    name: str = Field(..., min_length=1, max_length=100)
+    work_area_id: str
+    season: str = "all"  # all, summer, winter
+    day_type: str = "all"  # all, weekday, weekend
+    role: str = "frueh"  # frueh, spaet, teildienst, event
+    start_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
+    end_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+    close_offset_minutes: Optional[int] = None
+    headcount: int = Field(default=1, ge=1, le=20)
+
+
+class ShiftTemplateUpdate(BaseModel):
+    """Schema für Schichtvorlage aktualisieren"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    work_area_id: Optional[str] = None
+    season: Optional[str] = None
+    day_type: Optional[str] = None
+    role: Optional[str] = None
+    start_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+    end_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+    close_offset_minutes: Optional[int] = None
+    headcount: Optional[int] = Field(None, ge=1, le=20)
+
+
+@staff_router.get("/shift-templates", tags=["Staff"])
+async def list_shift_templates(user: dict = Depends(require_manager)):
+    """Alle Schichtvorlagen abrufen"""
+    templates = await db.shift_templates.find(
+        {"archived": {"$ne": True}}
+    ).sort("name", 1).to_list(500)
+    
+    for t in templates:
+        t.pop("_id", None)
+    
+    return templates
+
+
+@staff_router.get("/shift-templates/{template_id}", tags=["Staff"])
+async def get_shift_template(template_id: str, user: dict = Depends(require_manager)):
+    """Einzelne Schichtvorlage abrufen"""
+    template = await db.shift_templates.find_one(
+        {"id": template_id, "archived": {"$ne": True}}
+    )
+    if not template:
+        raise NotFoundException("Schichtvorlage nicht gefunden")
+    
+    template.pop("_id", None)
+    return template
+
+
+@staff_router.post("/shift-templates", tags=["Staff"])
+async def create_shift_template(
+    data: ShiftTemplateCreate,
+    user: dict = Depends(require_manager)
+):
+    """Neue Schichtvorlage erstellen"""
+    # Prüfe ob Work Area existiert
+    work_area = await db.work_areas.find_one({"id": data.work_area_id, "archived": {"$ne": True}})
+    if not work_area:
+        raise ValidationException("Work Area nicht gefunden")
+    
+    template = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "work_area_id": data.work_area_id,
+        "season": data.season,
+        "day_type": data.day_type,
+        "role": data.role,
+        "start_time": data.start_time,
+        "end_time": data.end_time,
+        "close_offset_minutes": data.close_offset_minutes,
+        "headcount": data.headcount,
+        "created_by": user.get("id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "archived": False,
+    }
+    
+    await db.shift_templates.insert_one(template)
+    
+    await create_audit_log(
+        action="shift_template_created",
+        entity_type="shift_template",
+        entity_id=template["id"],
+        actor=user,
+        details={"name": data.name}
+    )
+    
+    template.pop("_id", None)
+    return template
+
+
+@staff_router.put("/shift-templates/{template_id}", tags=["Staff"])
+async def update_shift_template(
+    template_id: str,
+    data: ShiftTemplateUpdate,
+    user: dict = Depends(require_manager)
+):
+    """Schichtvorlage aktualisieren"""
+    template = await db.shift_templates.find_one(
+        {"id": template_id, "archived": {"$ne": True}}
+    )
+    if not template:
+        raise NotFoundException("Schichtvorlage nicht gefunden")
+    
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.shift_templates.update_one(
+        {"id": template_id},
+        {"$set": update_data}
+    )
+    
+    await create_audit_log(
+        action="shift_template_updated",
+        entity_type="shift_template",
+        entity_id=template_id,
+        actor=user,
+        details=update_data
+    )
+    
+    updated = await db.shift_templates.find_one({"id": template_id})
+    updated.pop("_id", None)
+    return updated
+
+
+@staff_router.delete("/shift-templates/{template_id}", tags=["Staff"])
+async def delete_shift_template(template_id: str, user: dict = Depends(require_manager)):
+    """Schichtvorlage löschen (archivieren)"""
+    template = await db.shift_templates.find_one(
+        {"id": template_id, "archived": {"$ne": True}}
+    )
+    if not template:
+        raise NotFoundException("Schichtvorlage nicht gefunden")
+    
+    await db.shift_templates.update_one(
+        {"id": template_id},
+        {"$set": {"archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await create_audit_log(
+        action="shift_template_deleted",
+        entity_type="shift_template",
+        entity_id=template_id,
+        actor=user
+    )
+    
+    return {"success": True, "message": "Schichtvorlage gelöscht"}
+
+
+@staff_router.post("/shift-templates/apply", tags=["Staff"])
+async def apply_shift_templates(user: dict = Depends(require_manager)):
+    """
+    Schichtvorlagen auf aktuelle Woche anwenden.
+    Erstellt Schichten im Entwurf-Status, überspringt bereits existierende.
+    """
+    # Aktuelle ISO-Woche berechnen
+    today = date.today()
+    iso_year, iso_week, _ = today.isocalendar()
+    
+    # Wochenbeginn (Montag) berechnen
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    
+    # Schedule für diese Woche finden oder erstellen
+    schedule = await db.schedules.find_one({
+        "year": iso_year,
+        "week": iso_week,
+        "archived": {"$ne": True}
+    })
+    
+    if not schedule:
+        schedule = {
+            "id": str(uuid.uuid4()),
+            "year": iso_year,
+            "week": iso_week,
+            "week_start": week_start.isoformat(),
+            "week_end": week_end.isoformat(),
+            "status": "draft",
+            "notes": "Auto-generiert durch Vorlagen",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "archived": False
+        }
+        await db.schedules.insert_one(schedule)
+    
+    schedule_id = schedule["id"]
+    
+    # Alle aktiven Vorlagen laden
+    templates = await db.shift_templates.find(
+        {"archived": {"$ne": True}}
+    ).to_list(500)
+    
+    if not templates:
+        return {"shifts_created": 0, "shifts_skipped": 0, "message": "Keine Vorlagen vorhanden"}
+    
+    # Aktuelle Saison bestimmen (April-Oktober = Sommer)
+    current_month = today.month
+    is_summer = 4 <= current_month <= 10
+    current_season = "summer" if is_summer else "winter"
+    
+    shifts_created = 0
+    shifts_skipped = 0
+    
+    # Für jeden Tag der Woche
+    for day_offset in range(7):
+        current_date = week_start + timedelta(days=day_offset)
+        date_str = current_date.isoformat()
+        weekday = current_date.weekday()  # 0=Mo, 6=So
+        is_weekend = weekday >= 5
+        
+        for template in templates:
+            # Saison-Filter
+            template_season = template.get("season", "all")
+            if template_season != "all":
+                if template_season == "summer" and not is_summer:
+                    continue
+                if template_season == "winter" and is_summer:
+                    continue
+            
+            # Wochentag-Filter
+            template_day_type = template.get("day_type", "all")
+            if template_day_type != "all":
+                if template_day_type == "weekday" and is_weekend:
+                    continue
+                if template_day_type == "weekend" and not is_weekend:
+                    continue
+            
+            # Headcount: Anzahl Schichten erstellen
+            headcount = template.get("headcount", 1)
+            
+            for i in range(headcount):
+                # Prüfe ob bereits eine ähnliche Schicht existiert
+                existing = await db.shifts.find_one({
+                    "schedule_id": schedule_id,
+                    "shift_date": date_str,
+                    "work_area_id": template.get("work_area_id"),
+                    "start_time": template.get("start_time"),
+                    "role": template.get("role"),
+                    "archived": {"$ne": True}
+                })
+                
+                if existing:
+                    shifts_skipped += 1
+                    continue
+                
+                # Endzeit berechnen
+                end_time = template.get("end_time")
+                if not end_time and template.get("close_offset_minutes"):
+                    # TODO: Schließzeit + Offset berechnen
+                    end_time = "22:00"  # Fallback
+                
+                # Stunden berechnen
+                try:
+                    start_h, start_m = map(int, template["start_time"].split(":"))
+                    end_h, end_m = map(int, end_time.split(":"))
+                    hours = (end_h * 60 + end_m - start_h * 60 - start_m) / 60
+                    if hours < 0:
+                        hours += 24  # Nachtschicht
+                except:
+                    hours = 8
+                
+                shift = {
+                    "id": str(uuid.uuid4()),
+                    "schedule_id": schedule_id,
+                    "staff_member_id": None,  # Nicht zugewiesen
+                    "work_area_id": template.get("work_area_id"),
+                    "shift_date": date_str,
+                    "start_time": template.get("start_time"),
+                    "end_time": end_time,
+                    "role": template.get("role"),
+                    "hours": round(hours, 2),
+                    "notes": f"Aus Vorlage: {template.get('name')}",
+                    "template_id": template.get("id"),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "archived": False
+                }
+                
+                await db.shifts.insert_one(shift)
+                shifts_created += 1
+    
+    await create_audit_log(
+        action="shift_templates_applied",
+        entity_type="schedule",
+        entity_id=schedule_id,
+        actor=user,
+        details={"shifts_created": shifts_created, "shifts_skipped": shifts_skipped}
+    )
+    
+    return {
+        "shifts_created": shifts_created,
+        "shifts_skipped": shifts_skipped,
+        "schedule_id": schedule_id,
+        "week": iso_week,
+        "year": iso_year,
+        "message": f"{shifts_created} Schichten erstellt, {shifts_skipped} übersprungen"
+    }
+
