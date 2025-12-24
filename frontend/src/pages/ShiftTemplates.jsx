@@ -366,9 +366,17 @@ export default function ShiftTemplates() {
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-gray-400" />
                         {template.start_time} – {template.end_time_type === "fixed" 
-                          ? template.end_time_fixed 
-                          : `Close+${template.close_plus_minutes}min`}
+                          ? (template.end_time_fixed || template.end_time || "–") 
+                          : (template.close_plus_minutes > 0 
+                              ? `Close + ${template.close_plus_minutes} min` 
+                              : "Close")}
                       </div>
+                      {/* Kultur-Badge wenn event_mode === "kultur" */}
+                      {template.event_mode === "kultur" && (
+                        <Badge variant="outline" className="ml-2 border-purple-400 text-purple-600 text-xs">
+                          Kulturabend
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-gray-600">
