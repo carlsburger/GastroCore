@@ -6085,7 +6085,9 @@ class GastroCoreAPITester:
                             f"Expected 'angekommen', got: {updated_reservation.get('status')}")
                 return False
         else:
-            self.log_test("PATCH reservation status to 'angekommen'", False, f"Status: {result['status_code']}")
+            error_details = result.get("data", {})
+            self.log_test("PATCH reservation status to 'angekommen'", False, 
+                        f"Status: {result['status_code']}, Error: {error_details}")
             return False
         
         # 4. Bestätige dass die Status-Werte korrekt zurückgegeben werden
