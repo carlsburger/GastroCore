@@ -133,10 +133,28 @@ export default function MyShifts() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-green-600">{totalHours.toFixed(1)}h</div>
-            <div className="text-sm text-gray-500">Stunden</div>
+            <div className="text-sm text-gray-500">Stunden (netto)</div>
           </CardContent>
         </Card>
       </div>
+      
+      {/* Platzhalter: Urlaub / Wunschfrei / Nicht verfügbar (UI vorbereitet, Logik später) */}
+      <Card className="mb-6 border-dashed border-2 border-gray-200">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              🏖️ Urlaub beantragen
+            </Button>
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              ❌ Wunschfrei eintragen
+            </Button>
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              🚫 Nicht verfügbar
+            </Button>
+          </div>
+          <p className="text-xs text-gray-400 text-center mt-2">(Funktionen in Planung)</p>
+        </CardContent>
+      </Card>
 
       {/* Schichten-Liste */}
       {loading ? (
