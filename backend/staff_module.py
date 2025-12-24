@@ -2321,15 +2321,18 @@ async def apply_templates_to_schedule(
             for i in range(headcount):
                 shift = create_entity({
                     "schedule_id": schedule_id,
-                    "staff_member_id": "",  # Unassigned
+                    "staff_member_id": None,  # Unassigned
                     "work_area_id": get_area_id(template.get("department", "service")),
-                    "shift_date": date_str,
+                    "date": date_str,  # Konsistent mit bestehenden Shifts
+                    "shift_date": date_str,  # Legacy-Feld für Kompatibilität
                     "start_time": template.get("start_time"),
-                    "end_time": end_time,
-                    "role": "service" if template.get("department") == "service" else "kueche",
+                    "end_time": end_time or template.get("end_time"),
+                    "shift_name": template.get("name"),
+                    "role": template.get("role", "service"),
+                    "department": template.get("department"),
                     "notes": f"Aus Vorlage: {template.get('name')}",
                     "template_id": template.get("id"),
-                    "department": template.get("department")
+                    "status": "offen"
                 })
                 await db.shifts.insert_one(shift)
                 created_shifts.append(shift["id"])
