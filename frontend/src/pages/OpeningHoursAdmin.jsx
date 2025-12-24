@@ -379,7 +379,7 @@ export default function OpeningHoursAdmin() {
     if (!window.confirm("Sperrtag wirklich löschen?")) return;
     
     try {
-      await axios.delete(`${BACKEND_URL}/api/closures/${closureId}`, { headers });
+      await axios.delete(`${BACKEND_URL}/api/opening-hours/closures/${closureId}`, { headers });
       toast.success("Sperrtag gelöscht");
       fetchData();
     } catch (err) {
@@ -388,12 +388,30 @@ export default function OpeningHoursAdmin() {
   };
 
   const formatClosureDate = (closure) => {
+    // Neues Format: start_date / end_date
+    if (closure.start_date) {
+      if (closure.end_date && closure.end_date !== closure.start_date) {
+        return `${closure.start_date} bis ${closure.end_date}`;
+      }
+      return closure.start_date;
+    }
+    // Legacy: recurring
     if (closure.type === "recurring") {
       const month = MONTHS.find(m => m.value === closure.recurring_rule?.month)?.label || "";
       return `${closure.recurring_rule?.day}. ${month} (jährlich)`;
-    } else {
-      return closure.one_off_rule?.date || "";
     }
+    // Legacy: one_off
+    return closure.one_off_rule?.date || "";
+  };
+  
+  const formatClosureType = (closure) => {
+    if (closure.type === "closed_all_day" || closure.scope === "full_day") {
+      return "Ganztags geschlossen";
+    }
+    if (closure.type === "closed_partial" || closure.scope === "time_range") {
+      return `Geschlossen ${closure.start_time || "?"} - ${closure.end_time || "?"}`;
+    }
+    return closure.type;
   };
 
   // ============== RENDER ==============
