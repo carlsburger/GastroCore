@@ -1266,9 +1266,15 @@ async def get_reservable_slots_for_date(target_date: date) -> List[dict]:
 async def get_override_for_date(target_date: date) -> Optional[dict]:
     """
     Suche Override für ein Datum.
+    Unterstützt:
+    1. Datumsbereich (date_from/date_to)
+    2. Recurring (jährlich wiederkehrend über recurring_rule)
+    
     Bei mehreren Overlaps gewinnt höchste Priority.
     """
     date_str = target_date.strftime("%Y-%m-%d")
+    month = target_date.month
+    day = target_date.day
     
     overrides = await db.opening_overrides.find(
         {"active": {"$ne": False}, "archived": {"$ne": True}}
@@ -1276,10 +1282,20 @@ async def get_override_for_date(target_date: date) -> Optional[dict]:
     
     matching = []
     for override in overrides:
+        override_type = override.get("type", "")
+        
+        # 1. Recurring (jährlich wiederkehrend)
+        if override_type == "recurring":
+            rule = override.get("recurring_rule", {})
+            if rule.get("month") == month and rule.get("day") == day:
+                matching.append(override)
+                continue
+        
+        # 2. Datumsbereich (date_from/date_to)
         date_from = override.get("date_from", "")
         date_to = override.get("date_to", date_from)
         
-        if date_from <= date_str <= date_to:
+        if date_from and date_from <= date_str <= (date_to or date_from):
             matching.append(override)
     
     if not matching:
