@@ -67,15 +67,31 @@ const SHIFT_ROLES = {
   service: { label: "Service", color: "#10b981" },
   schichtleiter: { label: "Schichtleiter", color: "#f59e0b" },
   kueche: { label: "Küche", color: "#f97316" },
+  kuechenhilfe: { label: "Küchenhilfe", color: "#fb923c" },
+  reinigung: { label: "Reinigung", color: "#94a3b8" },
   bar: { label: "Bar", color: "#8b5cf6" },
   aushilfe: { label: "Aushilfe", color: "#6b7280" },
 };
 
-// Department Filter Options
+// Department Filter Options - erweitert mit Reinigung
 const DEPARTMENT_FILTER = {
-  all: { label: "Alle", color: "bg-gray-100 text-gray-700" },
-  service: { label: "Service", color: "bg-green-100 text-green-700" },
-  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700" },
+  all: { label: "Alle", color: "bg-gray-100 text-gray-700", roles: [] },
+  service: { label: "Service", color: "bg-green-100 text-green-700", roles: ["service", "schichtleiter", "bar", "aushilfe"] },
+  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700", roles: ["kueche", "kuechenhilfe"] },
+  reinigung: { label: "Reinigung", color: "bg-slate-100 text-slate-700", roles: ["reinigung"] },
+};
+
+// Eismacher NIE im Dienstplan anzeigen
+const EXCLUDED_ROLES = ["eismacher"];
+
+// Helper: Namen kürzen auf "V. Nachname"
+const formatShortName = (fullName) => {
+  if (!fullName) return "N.N.";
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) return parts[0];
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(" ");
+  return `${firstName.charAt(0)}. ${lastName}`;
 };
 
 // Helper to get current calendar week
