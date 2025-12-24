@@ -454,7 +454,8 @@ export const Schedule = () => {
 
   const getShiftsForDate = (date) => {
     if (!schedule?.shifts) return [];
-    return schedule.shifts.filter((s) => s.shift_date === date);
+    const allShifts = schedule.shifts.filter((s) => s.shift_date === date);
+    return getFilteredShifts(allShifts);
   };
 
   const weekDates = getWeekDates();
@@ -467,14 +468,40 @@ export const Schedule = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="font-serif text-3xl font-medium text-primary">Dienstplan</h1>
-            <p className="text-muted-foreground">Wochenübersicht und Schichtplanung</p>
+            <p className="text-muted-foreground">KW {week} / {year} • Wochenübersicht</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {/* Department Filter Toggle */}
+            <div className="flex bg-gray-100 rounded-full p-1">
+              {Object.entries(DEPARTMENT_FILTER).map(([key, config]) => (
+                <Button
+                  key={key}
+                  variant={departmentFilter === key ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setDepartmentFilter(key)}
+                  className={`rounded-full px-3 ${departmentFilter === key ? "bg-primary text-white" : ""}`}
+                >
+                  {config.label}
+                </Button>
+              ))}
+            </div>
+            
             <Button variant="outline" onClick={fetchData} className="rounded-full">
               <RefreshCw className="h-4 w-4" />
             </Button>
             {schedule && (
               <>
+                {/* Apply Templates Button */}
+                {schedule.status === "entwurf" && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowTemplatesDialog(true)} 
+                    className="rounded-full border-purple-400 text-purple-600 hover:bg-purple-50"
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Vorlagen
+                  </Button>
+                )}
                 <Button variant="outline" onClick={handleExportCSV} className="rounded-full">
                   <FileText className="h-4 w-4 mr-2" />
                   CSV
