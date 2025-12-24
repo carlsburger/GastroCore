@@ -507,24 +507,13 @@ async def calculate_effective_hours(target_date: date) -> dict:
         rules = period.get("rules_by_weekday", {})
         day_rules = rules.get(weekday_key, {})
         
-        # Prüfe ob Ruhetag
+        # Prüfe ob Ruhetag (Feiertage wurden bereits oben behandelt)
         if day_rules.get("is_closed", False):
-            # FEIERTAG-OVERRIDE: Wenn Feiertag auf Ruhetag fällt → offen 12:00-20:00
-            if is_holiday:
-                result["is_open"] = True
-                result["is_closed_full_day"] = False
-                result["closure_reason"] = None
-                result["blocks"] = [
-                    {"start": "12:00", "end": "20:00", "reservable": True, "label": f"Feiertag: {holiday_name}"}
-                ]
-                logger.info(f"Feiertag-Override: {holiday_name} am {date_str} (normalerweise Ruhetag)")
-                return result
-            else:
-                # Normaler Ruhetag
-                result["is_open"] = False
-                result["is_closed_full_day"] = True
-                result["closure_reason"] = "Ruhetag"
-                return result
+            # Normaler Ruhetag
+            result["is_open"] = False
+            result["is_closed_full_day"] = True
+            result["closure_reason"] = "Ruhetag"
+            return result
         
         # Zeitblöcke übernehmen
         blocks = day_rules.get("blocks", [])
