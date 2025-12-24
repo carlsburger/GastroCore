@@ -1108,6 +1108,7 @@ def has_real_changes(existing: dict, mapped: dict) -> bool:
 def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
     """
     Mappt ein WordPress/Tribe Event auf das GastroCore Event-Schema.
+    Dekodiert HTML-Entities für saubere Texte.
     """
     # Kategorie ermitteln
     event_type = "kultur"  # Default
@@ -1142,17 +1143,24 @@ def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
     if cost and not isinstance(cost, str):
         cost = str(cost)
     
+    # Titel dekodieren (HTML-Entities wie &#8211; → –)
+    title = decode_html_entities(wp_event.get("title", "Unbekannt"))
+    
+    # Description dekodieren
+    description = decode_html_entities(wp_event.get("description", ""))
+    
     # Excerpt / Kurzbeschreibung
     excerpt = wp_event.get("excerpt", "") or ""
     # HTML-Tags entfernen für Kurztext
     import re
     excerpt_clean = re.sub(r'<[^>]+>', '', excerpt).strip()
+    excerpt_clean = decode_html_entities(excerpt_clean)
     
     return {
         "external_source": SYNC_SOURCE,
         "external_id": str(wp_event.get("id", "")),
-        "title": wp_event.get("title", "Unbekannt"),
-        "description": wp_event.get("description", ""),  # HTML bleibt erhalten
+        "title": title,
+        "description": description,
         "short_description": excerpt_clean[:500] if excerpt_clean else None,
         "image_url": image_url,
         "start_datetime": start_dt.isoformat() if start_dt else None,
