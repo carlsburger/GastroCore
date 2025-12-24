@@ -1444,6 +1444,7 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
 async def get_wordpress_sync_status(user: dict = Depends(require_manager)):
     """
     Liefert den Status des letzten WordPress-Syncs.
+    Persistiert in import_logs - überlebt Neustarts.
     """
     last_sync = await db.import_logs.find_one(
         {"type": "wordpress_events_sync"},
@@ -1454,7 +1455,11 @@ async def get_wordpress_sync_status(user: dict = Depends(require_manager)):
     if not last_sync:
         return {
             "last_run_at": None,
-            "message": "Noch kein Sync durchgeführt"
+            "last_duration_ms": None,
+            "last_result": None,
+            "last_error": None,
+            "message": "Noch kein Sync durchgeführt",
+            "current_wordpress_events": 0,
         }
     
     # Zähle aktuelle WordPress-Events
@@ -1463,19 +1468,23 @@ async def get_wordpress_sync_status(user: dict = Depends(require_manager)):
         "archived": {"$ne": True}
     })
     
+    # Bestimme Result-Status
+    result = last_sync.get("result", "success" if last_sync.get("success") else "error")
+    
     return {
         "last_run_at": last_sync.get("timestamp"),
-        "last_result": "success" if last_sync.get("success") else "error",
+        "last_duration_ms": last_sync.get("duration_ms"),
+        "last_result": result,
+        "last_error": last_sync.get("error") if result == "error" else None,
         "counts": {
             "fetched": last_sync.get("fetched", 0),
             "created": last_sync.get("created", 0),
             "updated": last_sync.get("updated", 0),
+            "unchanged": last_sync.get("unchanged", 0),
             "archived": last_sync.get("archived", 0),
             "skipped": last_sync.get("skipped", 0),
         },
-        "duration_ms": last_sync.get("duration_ms"),
         "current_wordpress_events": wp_events_count,
-        "last_error": last_sync.get("error") if not last_sync.get("success") else None,
     }
 
 
