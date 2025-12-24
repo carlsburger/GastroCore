@@ -6106,6 +6106,34 @@ class GastroCoreAPITester:
         
         return True
 
+    def print_summary(self, test_results):
+        """Print test summary"""
+        print("\n" + "=" * 80)
+        print("📊 TEST SUMMARY")
+        print("=" * 80)
+        
+        passed = 0
+        failed = 0
+        
+        for test_name, result in test_results:
+            status = "✅ PASS" if result else "❌ FAIL"
+            print(f"{status} - {test_name}")
+            if result:
+                passed += 1
+            else:
+                failed += 1
+        
+        print("=" * 80)
+        print(f"📈 RESULTS: {passed} passed, {failed} failed, {passed + failed} total")
+        print(f"📊 SUCCESS RATE: {(passed / (passed + failed) * 100):.1f}%" if (passed + failed) > 0 else "📊 SUCCESS RATE: 0%")
+        
+        if self.failed_tests:
+            print("\n❌ FAILED TESTS:")
+            for failed_test in self.failed_tests:
+                print(f"  - {failed_test['name']}: {failed_test['details']}")
+        
+        print("=" * 80)
+
     def run_smoke_test(self):
         """Run only the smoke test for Service Terminal Label Verification"""
         print("🚀 Starting Service Terminal Label Verification SMOKE TEST...")
