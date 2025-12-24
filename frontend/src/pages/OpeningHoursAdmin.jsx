@@ -555,15 +555,16 @@ export default function OpeningHoursAdmin() {
             )}
           </TabsContent>
 
-          {/* CLOSURES TAB */}
+          {/* CLOSURES/OVERRIDES TAB */}
           <TabsContent value="closures" className="space-y-4">
             <div className="flex justify-between items-center">
               <p className="text-sm text-[#002f02]/70">
-                Definieren Sie Sperrtage (einmalig oder jährlich wiederkehrend).
+                Overrides haben <strong>höchste Priorität</strong> und überschreiben Perioden & Feiertage.
+                Sie können Tage als GESCHLOSSEN oder mit SONDERÖFFNUNG definieren.
               </p>
               <Button onClick={() => openClosureDialog()} className="bg-[#002f02] hover:bg-[#003d03]">
                 <Plus className="h-4 w-4 mr-2" />
-                Neuer Sperrtag
+                Neuer Override
               </Button>
             </div>
 
@@ -571,9 +572,9 @@ export default function OpeningHoursAdmin() {
               <Card className="border-[#002f02]/20">
                 <CardContent className="py-12 text-center">
                   <CalendarX className="h-12 w-12 mx-auto text-[#002f02]/30 mb-4" />
-                  <p className="text-[#002f02]/70">Keine Sperrtage definiert.</p>
+                  <p className="text-[#002f02]/70">Keine Overrides definiert.</p>
                   <p className="text-sm text-[#002f02]/50 mt-1">
-                    Fügen Sie Feiertage, Betriebsferien oder temporäre Schließungen hinzu.
+                    Fügen Sie Sperrtage (Heiligabend, Silvester) oder Sonderöffnungen hinzu.
                   </p>
                 </CardContent>
               </Card>
@@ -583,40 +584,41 @@ export default function OpeningHoursAdmin() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Datum / Zeitraum</TableHead>
-                      <TableHead>Art</TableHead>
-                      <TableHead>Grund</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Notiz</TableHead>
+                      <TableHead>Priorität</TableHead>
                       <TableHead className="text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {closures.map((closure) => (
-                      <TableRow key={closure.id}>
+                    {closures.map((override) => (
+                      <TableRow key={override.id}>
                         <TableCell className="font-medium">
-                          {formatClosureDate(closure)}
+                          {formatClosureDate(override)}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={
-                            closure.type === "closed_all_day" || closure.scope === "full_day" 
-                              ? "border-red-500 text-red-700" 
-                              : "border-amber-500 text-amber-700"
+                            override.status === "open" 
+                              ? "border-green-500 text-green-700 bg-green-50" 
+                              : "border-red-500 text-red-700 bg-red-50"
                           }>
-                            {formatClosureType(closure)}
+                            {formatClosureStatus(override)}
                           </Badge>
-                        </TableCell>
-                        <TableCell>{closure.reason}</TableCell>
-                        <TableCell>
-                          {closure.active !== false ? (
-                            <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inaktiv</Badge>
+                          {override.last_reservation_time && (
+                            <span className="text-xs text-gray-500 ml-2">
+                              Letzte Res.: {override.last_reservation_time}
+                            </span>
                           )}
                         </TableCell>
+                        <TableCell>{override.note || override.reason}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{override.priority || 100}</Badge>
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => openClosureDialog(closure)}>
+                          <Button variant="ghost" size="sm" onClick={() => openClosureDialog(override)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => deleteClosure(closure.id)} className="text-red-600 hover:text-red-700">
+                          <Button variant="ghost" size="sm" onClick={() => deleteClosure(override.id)} className="text-red-600 hover:text-red-700">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
