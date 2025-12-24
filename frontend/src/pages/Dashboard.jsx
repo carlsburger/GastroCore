@@ -278,6 +278,34 @@ export const Dashboard = () => {
       setKulturLoading(false);
     }
   }, []);
+  
+  // Fetch 7-Tage Übersicht
+  const fetchWeekSummary = useCallback(async () => {
+    setWeekSummaryLoading(true);
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/reservations/summary?days=7`, { headers });
+      setWeekSummary(res.data);
+    } catch (err) {
+      console.error("Fehler beim Laden der Wochenübersicht:", err);
+      setWeekSummary({ days: [] });
+    } finally {
+      setWeekSummaryLoading(false);
+    }
+  }, []);
+  
+  // Fetch WordPress Sync Status
+  const fetchWpSyncStatus = useCallback(async () => {
+    setWpSyncLoading(true);
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/events/sync/wordpress/status`, { headers });
+      setWpSyncStatus(res.data);
+    } catch (err) {
+      console.error("Fehler beim Laden des WordPress Sync Status:", err);
+      setWpSyncStatus(null);
+    } finally {
+      setWpSyncLoading(false);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
