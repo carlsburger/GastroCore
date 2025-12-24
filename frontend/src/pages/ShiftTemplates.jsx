@@ -346,24 +346,23 @@ export default function ShiftTemplates() {
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">
                       {template.name}
-                      <Badge variant="outline" className="ml-2">
-                        {ROLES.find((r) => r.value === template.role)?.label || template.role}
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
                         style={{
-                          backgroundColor: getWorkAreaColor(template.work_area_id),
+                          backgroundColor: getDepartmentColor(template.department),
                           color: "white",
                         }}
                       >
-                        {getWorkAreaName(template.work_area_id)}
+                        {getDepartmentLabel(template.department)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-gray-400" />
-                        {template.start_time} – {template.end_time || `Close+${template.close_offset_minutes}min`}
+                        {template.start_time} – {template.end_time_type === "fixed" 
+                          ? template.end_time_fixed 
+                          : `Close+${template.close_plus_minutes}min`}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -376,7 +375,7 @@ export default function ShiftTemplates() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <UsersIcon className="h-4 w-4 text-gray-400" />
-                        {template.headcount}
+                        {template.headcount_default || 1}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
