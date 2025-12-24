@@ -102,18 +102,17 @@ export default function OpeningHoursAdmin() {
   });
   const [savingPeriod, setSavingPeriod] = useState(false);
   
-  // Closure Dialog
+  // Closure Dialog - erweitert für Datumsbereich
   const [showClosureDialog, setShowClosureDialog] = useState(false);
   const [editingClosure, setEditingClosure] = useState(null);
   const [closureForm, setClosureForm] = useState({
-    type: "one_off",
-    recurring_rule: { month: 12, day: 24 },
-    one_off_rule: { date: "" },
-    scope: "full_day",
+    // Neues einfaches Format mit Datumsbereich
+    start_date: "",
+    end_date: "",
+    type: "closed_all_day", // closed_all_day oder closed_partial
     start_time: "",
     end_time: "",
     reason: "",
-    active: true,
   });
   const [savingClosure, setSavingClosure] = useState(false);
 
@@ -125,7 +124,7 @@ export default function OpeningHoursAdmin() {
     try {
       const [periodsRes, closuresRes] = await Promise.all([
         axios.get(`${BACKEND_URL}/api/opening-hours/periods`, { headers }),
-        axios.get(`${BACKEND_URL}/api/closures`, { headers }),
+        axios.get(`${BACKEND_URL}/api/opening-hours/closures`, { headers }),
       ]);
       setPeriods(periodsRes.data);
       setClosures(closuresRes.data);
