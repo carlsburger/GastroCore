@@ -1989,7 +1989,8 @@ async def list_shift_templates(
     if season:
         query["season"] = {"$in": [season.value, "all"]}
     if active_only:
-        query["active"] = True
+        # Support both "active" and "is_active" fields
+        query["$or"] = [{"active": True}, {"is_active": True}]
     
     templates = await db.shift_templates.find(query, {"_id": 0}).sort("sort_order", 1).to_list(100)
     return templates
