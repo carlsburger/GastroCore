@@ -83,6 +83,7 @@ export default function ShiftTemplates() {
     close_plus_minutes: 30,
     headcount_default: 1,
     active: true,
+    event_mode: "normal", // "normal" oder "kultur"
   });
 
   const getHeaders = useCallback(() => ({
