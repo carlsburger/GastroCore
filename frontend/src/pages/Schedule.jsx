@@ -755,6 +755,117 @@ export const Schedule = () => {
                 );
               })}
             </div>
+            )}
+
+            {/* Month View - A4 Landscape optimiert */}
+            {viewMode === "month" && (
+              <Card className="print:shadow-none">
+                <CardHeader className="pb-2 print:pb-0">
+                  <CardTitle className="text-lg print:text-base">
+                    Monatsplan {year} - KW {week} (A4 Druck)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <div className="min-w-[800px]">
+                    <table className="w-full border-collapse text-xs">
+                      <thead>
+                        <tr>
+                          <th className="border border-gray-300 p-1 bg-gray-100 text-left w-32 print:w-24">Mitarbeiter</th>
+                          {weekDates.map((date, idx) => {
+                            const isWknd = isWeekend(date);
+                            const dayDate = new Date(date);
+                            return (
+                              <th 
+                                key={date} 
+                                className={`border border-gray-300 p-1 text-center ${isWknd ? "bg-amber-100 text-amber-800" : "bg-gray-100"}`}
+                              >
+                                <div className="font-bold">{DAYS[idx]}</div>
+                                <div className="text-[10px] font-normal">{dayDate.getDate()}.{dayDate.getMonth() + 1}.</div>
+                              </th>
+                            );
+                          })}
+                          <th className="border border-gray-300 p-1 bg-gray-200 text-center w-16">Σ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          // Gruppiere Schichten nach Mitarbeiter
+                          const staffShifts = {};
+                          filteredShifts.forEach(shift => {
+                            const staffId = shift.staff_member_id;
+                            if (!staffShifts[staffId]) {
+                              staffShifts[staffId] = {
+                                name: shift.staff_member?.full_name || "?",
+                                shifts: {}
+                              };
+                            }
+                            if (!staffShifts[staffId].shifts[shift.shift_date]) {
+                              staffShifts[staffId].shifts[shift.shift_date] = [];
+                            }
+                            staffShifts[staffId].shifts[shift.shift_date].push(shift);
+                          });
+                          
+                          return Object.entries(staffShifts).map(([staffId, data]) => {
+                            let totalHours = 0;
+                            return (
+                              <tr key={staffId} className="hover:bg-gray-50">
+                                <td className="border border-gray-300 p-1 font-medium text-xs">
+                                  {formatShortName(data.name)}
+                                </td>
+                                {weekDates.map((date) => {
+                                  const dayShifts = data.shifts[date] || [];
+                                  const isWknd = isWeekend(date);
+                                  const isClosed = !!closedDays[date];
+                                  
+                                  // Summiere Stunden für diesen Tag
+                                  dayShifts.forEach(s => {
+                                    if (s.start_time && s.end_time) {
+                                      const [sh, sm] = s.start_time.split(':').map(Number);
+                                      const [eh, em] = s.end_time.split(':').map(Number);
+                                      totalHours += (eh + em/60) - (sh + sm/60);
+                                    }
+                                  });
+                                  
+                                  return (
+                                    <td 
+                                      key={date} 
+                                      className={`border border-gray-300 p-1 text-center text-[11px] ${
+                                        isClosed ? "bg-red-50 text-red-400" : 
+                                        isWknd ? "bg-amber-50" : ""
+                                      }`}
+                                    >
+                                      {isClosed ? (
+                                        <span className="text-[9px]">-</span>
+                                      ) : dayShifts.length === 0 ? (
+                                        <span className="text-gray-300">-</span>
+                                      ) : (
+                                        dayShifts.map((s, i) => (
+                                          <div key={i}>
+                                            {s.start_time?.slice(0,5)}-{s.end_time?.slice(0,5)}
+                                          </div>
+                                        ))
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                                <td className="border border-gray-300 p-1 text-center font-bold bg-gray-50">
+                                  {totalHours.toFixed(1)}h
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Print Styles Info */}
+                  <div className="mt-4 text-xs text-gray-500 print:hidden">
+                    💡 Tipp: Für A4 Landscape-Druck nutzen Sie Strg+P und wählen Sie Querformat.
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Hours Overview */}
             {hoursOverview && (
