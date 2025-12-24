@@ -189,7 +189,7 @@ export const Schedule = () => {
       });
       
       const existingSchedule = schedulesRes.data.find(
-        (s) => s.year === year && s.week === week && !s.archived
+        (s) => s.year === year && s.week_number === week && !s.archived
       );
 
       if (existingSchedule) {
