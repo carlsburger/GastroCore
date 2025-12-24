@@ -1081,21 +1081,87 @@ logger = logging.getLogger(__name__)
 WORDPRESS_EVENTS_API = "https://www.carlsburg.de/wp-json/tribe/events/v1/events"
 SYNC_SOURCE = "wordpress"
 
-# Kategorie-Mapping: WordPress Kategorie → GastroCore event_type
+# ============== KATEGORIE-MAPPING (Sprint: Aktionen-Infrastruktur) ==============
+# WordPress Kategorie-Slug → GastroCore event_type
+# Erweitert um zukünftige Aktionen-Kategorien
 CATEGORY_MAPPING = {
+    # Kultur-Events (bestehend)
     "comedy": "kultur",
     "musik": "kultur",
     "kabarett": "kultur",
     "lesung": "kultur",
     "theater": "kultur",
     "konzert": "kultur",
+    "travestie": "kultur",
+    
+    # Kulinarik-Events (bestehend)
     "kulinarik": "kulinarik",
     "kulinarisch": "kulinarik",
     "menü": "kulinarik",
     "menu": "kulinarik",
+    
+    # Aktionen (vorbereitet für zukünftige WordPress-Kategorien)
     "aktion": "aktion",
+    "aktionen": "aktion",
     "special": "aktion",
+    "angebot": "aktion",
+    
+    # Menü-Aktionen (vorbereitet)
+    "menue-aktion": "aktion_menue",
+    "menueaktion": "aktion_menue",
+    "menu-aktion": "aktion_menue",
+    "ente-satt": "aktion_menue",
+    "rippchen-satt": "aktion_menue",
 }
+
+# ============== CONTENT-CATEGORY-MAPPING (Sprint: Aktionen-Infrastruktur) ==============
+# event_type → content_category
+# Bestimmt welche content_category ein Event bekommt
+CONTENT_CATEGORY_MAPPING = {
+    "kultur": "VERANSTALTUNG",
+    "kulinarik": "VERANSTALTUNG",
+    "aktion": "AKTION",
+    "aktion_menue": "AKTION_MENUE",
+}
+
+# ============== ACTION-TYPE-DETECTION (Sprint: Aktionen-Infrastruktur) ==============
+# Keywords im Titel → action_type
+# Wird verwendet um Aktionen automatisch zu kategorisieren
+ACTION_TYPE_KEYWORDS = {
+    "RIPPCHEN": ["rippchen", "ribs", "spare ribs"],
+    "ENTE": ["ente", "duck", "entenbrust"],
+    "GANS": ["gans", "gänse", "gänsebraten", "martinsgans"],
+    "SPARGEL": ["spargel", "asparagus"],
+    "GRILLBUFFET": ["grill", "bbq", "grillbuffet"],
+}
+
+def detect_action_type(title: str) -> Optional[str]:
+    """
+    Erkennt den Aktionstyp basierend auf Keywords im Titel.
+    Wird nur für Aktionen verwendet, nicht für Kultur-Events.
+    
+    Returns: ActionType-String oder None
+    """
+    if not title:
+        return None
+    
+    title_lower = title.lower()
+    
+    for action_type, keywords in ACTION_TYPE_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in title_lower:
+                return action_type
+    
+    return "SONSTIGES"
+
+
+def determine_content_category(event_type: str, categories: List[str] = None) -> str:
+    """
+    Bestimmt die content_category basierend auf event_type.
+    
+    Returns: VERANSTALTUNG, AKTION oder AKTION_MENUE
+    """
+    return CONTENT_CATEGORY_MAPPING.get(event_type, "VERANSTALTUNG")
 
 
 def now_iso() -> str:
