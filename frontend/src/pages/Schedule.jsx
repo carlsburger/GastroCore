@@ -84,29 +84,38 @@ const DEPARTMENT_FILTER = {
 // Eismacher NIE im Dienstplan anzeigen
 const EXCLUDED_ROLES = ["eismacher"];
 
-// Helper: Namen kürzen auf "V. Nachname"
+// Helper: Namen kürzen auf "V. Nachname" - mit Fallbacks
 const formatShortName = (fullName) => {
-  if (!fullName) return "N.N.";
-  const parts = fullName.trim().split(" ");
-  if (parts.length === 1) return parts[0];
+  if (!fullName || fullName.trim() === "") return "N.N.";
+  const parts = fullName.trim().split(" ").filter(p => p.length > 0);
+  if (parts.length === 0) return "N.N.";
+  if (parts.length === 1) return parts[0]; // Nur Vorname oder Nachname
   const firstName = parts[0];
   const lastName = parts.slice(1).join(" ");
+  if (!firstName) return lastName;
+  if (!lastName) return firstName;
   return `${firstName.charAt(0)}. ${lastName}`;
 };
 
-// Helper to get current calendar week (ISO 8601: Woche beginnt Montag)
-const getCurrentWeek = () => {
-  const now = new Date();
-  // ISO week number calculation
-  const date = new Date(now.getTime());
-  date.setHours(0, 0, 0, 0);
-  // Thursday in current week decides the year
-  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-  // January 4 is always in week 1
-  const week1 = new Date(date.getFullYear(), 0, 4);
-  // Adjust to Thursday in week 1 and count number of weeks from date to week1
-  return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+// ISO 8601 Week Number (Mo-So, korrekt für Jahreswechsel)
+const getISOWeekData = (date = new Date()) => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7; // Sonntag = 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Donnerstag dieser Woche
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return {
+    week: weekNum,
+    year: d.getUTCFullYear() // Jahr der Kalenderwoche (kann bei Jahreswechsel abweichen!)
+  };
 };
+
+// Mini-Test für Console (Ziel 1)
+if (typeof window !== 'undefined' && window.console) {
+  const today = new Date();
+  const isoData = getISOWeekData(today);
+  console.log(`[Dienstplan] Heute: ${today.toLocaleDateString('de-DE')} → KW ${isoData.week} / ${isoData.year}`);
+}
 
 export const Schedule = () => {
   const [year, setYear] = useState(new Date().getFullYear());
