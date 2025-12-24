@@ -44,12 +44,6 @@ import { useAuth } from "../context/AuthContext";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 // Konstanten
-const WORK_AREAS = [
-  { value: "service", label: "Service", color: "#3B82F6" },
-  { value: "kitchen", label: "Küche", color: "#EF4444" },
-  { value: "reinigung", label: "Reinigung", color: "#6B7280" },
-];
-
 const SEASONS = [
   { value: "all", label: "Ganzjährig" },
   { value: "summer", label: "Sommer (Apr-Okt)" },
@@ -60,13 +54,6 @@ const DAY_TYPES = [
   { value: "all", label: "Alle Tage" },
   { value: "weekday", label: "Wochentage (Mo-Fr)" },
   { value: "weekend", label: "Wochenende (Sa-So)" },
-];
-
-const ROLES = [
-  { value: "frueh", label: "Früh" },
-  { value: "spaet", label: "Spät" },
-  { value: "teildienst", label: "Teildienst" },
-  { value: "event", label: "Event" },
 ];
 
 export default function ShiftTemplates() {
