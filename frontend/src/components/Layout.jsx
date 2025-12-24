@@ -84,7 +84,7 @@ const navigationGroups = [
     label: "Dashboard",
     icon: LayoutDashboard,
     roles: ["admin", "schichtleiter"],
-    path: "/", // Direktlink
+    path: "/dashboard", // Explizite Route
   },
   {
     id: "service",
@@ -102,12 +102,11 @@ const navigationGroups = [
       { path: "/reservations", label: "Übersicht", icon: ClipboardList },
       { path: "/reservation-calendar", label: "Kalender", icon: CalendarRange },
       { path: "/table-plan", label: "Tischplan", icon: MapPin },
-      { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties, roles: ["admin"] },
     ],
   },
   {
     id: "events",
-    label: "V&A",
+    label: "V & A",
     fullLabel: "Veranstaltungen & Aktionen",
     icon: PartyPopper,
     roles: ["admin", "schichtleiter"],
@@ -123,17 +122,17 @@ const navigationGroups = [
     icon: UsersRound,
     roles: ["admin", "schichtleiter"],
     children: [
-      { path: "/staff", label: "Mitarbeiter", icon: UserCog },
+      { path: "/staff", label: "Übersicht", icon: UserCog },
       { path: "/schedule", label: "Dienstplan", icon: CalendarClock },
       { path: "/my-shifts", label: "Meine Schichten", icon: CalendarCheck },
-      { path: "/taxoffice", label: "Exporte Steuerbüro", icon: FileSpreadsheet, roles: ["admin"] },
+      { path: "/taxoffice", label: "Steuerbüro-Export", icon: FileSpreadsheet, roles: ["admin"] },
     ],
   },
   {
     id: "marketing",
     label: "Marketing",
     icon: Megaphone,
-    roles: ["admin", "schichtleiter"],
+    roles: ["admin"],
     path: "/marketing", // Direktlink
   },
   {
@@ -148,6 +147,7 @@ const navigationGroups = [
       { path: "/settings", label: "E-Mail / SMTP", icon: Mail },
       { path: "/areas", label: "Bereiche", icon: MapPin },
       { path: "/users", label: "Benutzer", icon: Users },
+      { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties },
       { path: "/admin/settings/backup", label: "Backup / Export", icon: HardDrive },
       { path: "/admin/reservations/import", label: "Tisch-Import", icon: Upload, hidden: true },
     ],
