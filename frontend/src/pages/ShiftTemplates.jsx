@@ -558,5 +558,6 @@ export default function ShiftTemplates() {
         </DialogContent>
       </Dialog>
     </div>
+    </Layout>
   );
 }
