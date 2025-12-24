@@ -864,6 +864,95 @@ export const Schedule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Apply Templates Dialog */}
+      <Dialog open={showTemplatesDialog} onOpenChange={setShowTemplatesDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-purple-600" />
+              Schicht-Vorlagen anwenden
+            </DialogTitle>
+            <DialogDescription>
+              Erstellt Schichten basierend auf konfigurierten Vorlagen für diese Woche.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Bereiche</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={templateSettings.departments.includes("service") ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    const deps = templateSettings.departments.includes("service")
+                      ? templateSettings.departments.filter(d => d !== "service")
+                      : [...templateSettings.departments, "service"];
+                    setTemplateSettings({ ...templateSettings, departments: deps });
+                  }}
+                  className="flex-1"
+                >
+                  Service
+                </Button>
+                <Button
+                  variant={templateSettings.departments.includes("kitchen") ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    const deps = templateSettings.departments.includes("kitchen")
+                      ? templateSettings.departments.filter(d => d !== "kitchen")
+                      : [...templateSettings.departments, "kitchen"];
+                    setTemplateSettings({ ...templateSettings, departments: deps });
+                  }}
+                  className="flex-1"
+                >
+                  Küche
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Saison</Label>
+              <Select
+                value={templateSettings.season || "auto"}
+                onValueChange={(v) => setTemplateSettings({ ...templateSettings, season: v === "auto" ? null : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Saison wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto (aus Öffnungszeiten)</SelectItem>
+                  <SelectItem value="summer">Sommer</SelectItem>
+                  <SelectItem value="winter">Winter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+              <p className="font-medium mb-1">Hinweis:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Schichten werden als Entwurf erstellt</li>
+                <li>Mitarbeiter müssen danach zugewiesen werden</li>
+                <li>Endzeiten "close+30" nutzen die Öffnungszeiten</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplatesDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleApplyTemplates} 
+              disabled={applyingTemplates || templateSettings.departments.length === 0}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {applyingTemplates && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Anwenden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
