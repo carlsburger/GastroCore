@@ -571,6 +571,27 @@ export const Schedule = () => {
           </Card>
         ) : (
           <>
+            {/* Event Warnings Banner */}
+            {eventWarnings.length > 0 && (
+              <Card className="border-amber-400 bg-amber-50">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-amber-800">Event-Hinweise für diese Woche</p>
+                      <ul className="mt-1 space-y-1">
+                        {eventWarnings.map((w, idx) => (
+                          <li key={idx} className="text-sm text-amber-700">
+                            {w.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Week Grid */}
             <div className="grid grid-cols-7 gap-2">
               {weekDates.map((date, idx) => {
@@ -579,9 +600,10 @@ export const Schedule = () => {
                 const isToday = new Date().toISOString().split("T")[0] === date;
                 const closedInfo = closedDays[date];
                 const isClosed = !!closedInfo;
+                const eventWarning = getEventWarningForDate(date);
 
                 return (
-                  <Card key={date} className={`${isToday ? "ring-2 ring-primary" : ""} ${isClosed ? "bg-red-50" : ""}`}>
+                  <Card key={date} className={`${isToday ? "ring-2 ring-primary" : ""} ${isClosed ? "bg-red-50" : ""} ${eventWarning ? "border-amber-400" : ""}`}>
                     <CardHeader className="pb-2 px-3 pt-3">
                       <div className="flex justify-between items-center">
                         <div>
