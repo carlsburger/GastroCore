@@ -6311,6 +6311,26 @@ class GastroCoreAPITester:
         
         return smoke_test_result
 
+    def run_aktionen_infrastruktur_smoke_test(self):
+        """Run only the Aktionen-Infrastruktur Verification SMOKE TEST"""
+        print("🚀 Starting Aktionen-Infrastruktur Verification SMOKE TEST...")
+        print(f"🎯 Target: {self.base_url}")
+        print("=" * 80)
+        
+        # Authenticate first
+        auth_success = self.test_authentication()
+        if not auth_success:
+            print("❌ Authentication failed - cannot proceed with smoke test")
+            return False
+        
+        # Run the Aktionen-Infrastruktur verification
+        aktionen_test_result = self.test_aktionen_infrastruktur_verification()
+        
+        # Print summary
+        self.print_summary([("Aktionen-Infrastruktur Verification SMOKE TEST", aktionen_test_result)])
+        
+        return aktionen_test_result
+
 def main():
     """Main test execution"""
     import sys
