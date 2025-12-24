@@ -5611,6 +5611,124 @@ class GastroCoreAPITester:
         
         return aktionen_success
 
+    def test_shift_templates_smoke_test(self):
+        """Test Shift Templates - Specific requirements from review request"""
+        print("\n🔄 Testing Shift Templates (Carlsburg Cockpit)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Shift Templates Smoke Test", False, "Admin token not available")
+            return False
+        
+        shift_templates_success = True
+        
+        # 1. GET /api/staff/shift-templates - Liste alle Templates, prüfe 9 Templates vorhanden
+        result = self.make_request("GET", "staff/shift-templates", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            templates = result["data"]
+            template_count = len(templates)
+            
+            # Check for 9 templates
+            if template_count == 9:
+                self.log_test("GET /api/staff/shift-templates - 9 Templates vorhanden", True, f"Found {template_count} templates")
+            else:
+                self.log_test("GET /api/staff/shift-templates - 9 Templates vorhanden", False, f"Expected 9, found {template_count}")
+                shift_templates_success = False
+            
+            # Check event_mode field exists (normal/kultur)
+            event_mode_check = True
+            for template in templates:
+                if "event_mode" not in template:
+                    event_mode_check = False
+                    break
+                if template["event_mode"] not in ["normal", "kultur"]:
+                    event_mode_check = False
+                    break
+            
+            if event_mode_check:
+                self.log_test("event_mode Feld existiert (normal/kultur)", True, "All templates have valid event_mode")
+            else:
+                self.log_test("event_mode Feld existiert (normal/kultur)", False, "Missing or invalid event_mode field")
+                shift_templates_success = False
+            
+            # Check close_plus_minutes nie undefined (0 wenn nicht gesetzt)
+            close_plus_minutes_check = True
+            for template in templates:
+                close_plus_minutes = template.get("close_plus_minutes")
+                if close_plus_minutes is None:
+                    # Should be 0 if not set, not None/undefined
+                    close_plus_minutes_check = False
+                    break
+            
+            if close_plus_minutes_check:
+                self.log_test("close_plus_minutes nie undefined (0 wenn nicht gesetzt)", True, "All templates have close_plus_minutes defined")
+            else:
+                self.log_test("close_plus_minutes nie undefined (0 wenn nicht gesetzt)", False, "Some templates have undefined close_plus_minutes")
+                shift_templates_success = False
+                
+        else:
+            self.log_test("GET /api/staff/shift-templates", False, f"Status: {result['status_code']}")
+            shift_templates_success = False
+            return shift_templates_success
+        
+        # 2. POST /api/staff/schedules/{schedule_id}/apply-templates - Idempotenz-Test
+        schedule_id = "30fd1a35-8fd8-4968-a8b6-7baa74f972ee"  # KW2/2026
+        apply_data = {
+            "departments": ["service", "kitchen"]
+        }
+        
+        result = self.make_request("POST", f"staff/schedules/{schedule_id}/apply-templates", 
+                                 apply_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            apply_response = result["data"]
+            shifts_created = apply_response.get("shifts_created", 0)
+            skipped_existing = apply_response.get("skipped_existing", 0)
+            
+            # Erwartung: shifts_created = 0, skipped_existing > 0 (da bereits applied)
+            if shifts_created == 0 and skipped_existing > 0:
+                self.log_test("POST apply-templates - Idempotenz funktioniert", True, 
+                            f"shifts_created={shifts_created}, skipped_existing={skipped_existing}")
+            else:
+                self.log_test("POST apply-templates - Idempotenz funktioniert", False, 
+                            f"Expected shifts_created=0 and skipped_existing>0, got shifts_created={shifts_created}, skipped_existing={skipped_existing}")
+                shift_templates_success = False
+        else:
+            self.log_test("POST apply-templates", False, f"Status: {result['status_code']}")
+            shift_templates_success = False
+        
+        # 3. GET /api/staff/shifts?schedule_id=30fd1a35-8fd8-4968-a8b6-7baa74f972ee
+        result = self.make_request("GET", "staff/shifts", {"schedule_id": schedule_id}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            shifts = result["data"]
+            if len(shifts) > 0:
+                self.log_test("GET /api/staff/shifts - Schichten für KW2/2026 existieren", True, 
+                            f"Found {len(shifts)} shifts for schedule {schedule_id}")
+                
+                # Check times - keine 22:00 für Küche, außer bei Kultur
+                kitchen_22_check = True
+                for shift in shifts:
+                    if shift.get("department") == "kitchen" and shift.get("end_time") == "22:00":
+                        # Check if this is a Kultur event
+                        shift_name = shift.get("shift_name", "")
+                        if "kultur" not in shift_name.lower():
+                            kitchen_22_check = False
+                            break
+                
+                if kitchen_22_check:
+                    self.log_test("Zeiten korrekt (keine 22:00 für Küche, außer bei Kultur)", True, "Kitchen shift times are correct")
+                else:
+                    self.log_test("Zeiten korrekt (keine 22:00 für Küche, außer bei Kultur)", False, "Found kitchen shift ending at 22:00 without Kultur")
+                    shift_templates_success = False
+                    
+            else:
+                self.log_test("GET /api/staff/shifts - Schichten für KW2/2026 existieren", False, "No shifts found for the schedule")
+                shift_templates_success = False
+        else:
+            self.log_test("GET /api/staff/shifts", False, f"Status: {result['status_code']}")
+            shift_templates_success = False
+        
+        return shift_templates_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
