@@ -731,8 +731,12 @@ export const Schedule = () => {
                       ) : (
                         shifts.map((shift) => {
                           const area = workAreas.find((a) => a.id === shift.work_area_id);
-                          const staffName = shift.staff_member?.full_name 
-                            ? formatShortName(shift.staff_member.full_name) 
+                          // Konstruiere Namen aus first_name + last_name
+                          const staffFullName = shift.staff_member 
+                            ? `${shift.staff_member.first_name || ''} ${shift.staff_member.last_name || ''}`.trim()
+                            : null;
+                          const staffName = staffFullName 
+                            ? formatShortName(staffFullName) 
                             : "?";
                           // Format: "A. Nachname 11–20" (vereinfacht, A4-tauglich)
                           const timeRange = `${shift.start_time?.slice(0,5) || "?"}-${shift.end_time?.slice(0,5) || "?"}`;
