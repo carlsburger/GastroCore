@@ -2290,8 +2290,9 @@ async def apply_templates_to_schedule(
             return kitchen_area["id"]
         return service_area["id"] if service_area else ""
     
-    # Get week dates
-    week_start = datetime.fromisoformat(schedule["week_start"]).date()
+    # Get week dates - Support both start_date and week_start
+    week_start_str = schedule.get("start_date") or schedule.get("week_start")
+    week_start = datetime.fromisoformat(week_start_str).date()
     created_shifts = []
     
     for day_offset in range(7):
