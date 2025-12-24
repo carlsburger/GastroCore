@@ -1018,3 +1018,415 @@ Preis: 49,00€ pro Person (Fisch/Vegetarisch: 45,00€)""",
             {"id": gaense_id, "title": gaense["title"], "mode": "reservation_with_preorder", "price": 49.00}
         ]
     }
+
+
+# ============== WORDPRESS EVENT SYNC (Sprint: WordPress Integration) ==============
+"""
+WordPress Event Sync - READ-ONLY Import von The Events Calendar / Tribe
+Single Source of Truth: WordPress (carlsburg.de)
+GastroCore übernimmt Events, ändert sie aber nicht zurück.
+"""
+
+import httpx
+import logging
+from datetime import timedelta
+
+logger = logging.getLogger(__name__)
+
+WORDPRESS_EVENTS_API = "https://www.carlsburg.de/wp-json/tribe/events/v1/events"
+SYNC_SOURCE = "wordpress"
+
+# Kategorie-Mapping: WordPress Kategorie → GastroCore event_type
+CATEGORY_MAPPING = {
+    "comedy": "kultur",
+    "musik": "kultur",
+    "kabarett": "kultur",
+    "lesung": "kultur",
+    "theater": "kultur",
+    "konzert": "kultur",
+    "kulinarik": "kulinarik",
+    "kulinarisch": "kulinarik",
+    "menü": "kulinarik",
+    "menu": "kulinarik",
+    "aktion": "aktion",
+    "special": "aktion",
+}
+
+
+def now_iso() -> str:
+    """ISO timestamp"""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
+    """
+    Mappt ein WordPress/Tribe Event auf das GastroCore Event-Schema.
+    """
+    # Kategorie ermitteln
+    event_type = "kultur"  # Default
+    categories = wp_event.get("categories", [])
+    for cat in categories:
+        cat_slug = cat.get("slug", "").lower()
+        if cat_slug in CATEGORY_MAPPING:
+            event_type = CATEGORY_MAPPING[cat_slug]
+            break
+    
+    # Datum parsen (Format: "2026-02-25 20:00:00")
+    start_str = wp_event.get("start_date", "")
+    end_str = wp_event.get("end_date", "")
+    
+    try:
+        start_dt = datetime.strptime(start_str, "%Y-%m-%d %H:%M:%S") if start_str else None
+    except ValueError:
+        start_dt = None
+    
+    try:
+        end_dt = datetime.strptime(end_str, "%Y-%m-%d %H:%M:%S") if end_str else None
+    except ValueError:
+        end_dt = None
+    
+    # Bild-URL
+    image_url = None
+    if wp_event.get("image"):
+        image_url = wp_event["image"].get("url")
+    
+    # Preis extrahieren (z.B. "29.00 EUR" → "29.00 EUR")
+    cost = wp_event.get("cost", "")
+    if cost and not isinstance(cost, str):
+        cost = str(cost)
+    
+    # Excerpt / Kurzbeschreibung
+    excerpt = wp_event.get("excerpt", "") or ""
+    # HTML-Tags entfernen für Kurztext
+    import re
+    excerpt_clean = re.sub(r'<[^>]+>', '', excerpt).strip()
+    
+    return {
+        "external_source": SYNC_SOURCE,
+        "external_id": str(wp_event.get("id", "")),
+        "title": wp_event.get("title", "Unbekannt"),
+        "description": wp_event.get("description", ""),  # HTML bleibt erhalten
+        "short_description": excerpt_clean[:500] if excerpt_clean else None,
+        "image_url": image_url,
+        "start_datetime": start_dt.isoformat() if start_dt else None,
+        "end_datetime": end_dt.isoformat() if end_dt else None,
+        "entry_price": cost,
+        "website_url": wp_event.get("url", ""),
+        "slug": wp_event.get("slug", ""),
+        "event_type": event_type,
+        "content_category": "VERANSTALTUNG",
+        "wp_categories": [c.get("name") for c in categories],
+    }
+
+
+async def fetch_wordpress_events(min_date: date = None) -> List[dict]:
+    """
+    Holt alle Events von WordPress mit Pagination.
+    Filtert auf zukünftige Events (ab min_date).
+    """
+    all_events = []
+    page = 1
+    per_page = 50
+    
+    if min_date is None:
+        min_date = date.today() - timedelta(days=1)  # Ab gestern
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        while True:
+            try:
+                params = {
+                    "per_page": per_page,
+                    "page": page,
+                    "start_date": min_date.isoformat(),
+                }
+                
+                response = await client.get(WORDPRESS_EVENTS_API, params=params)
+                response.raise_for_status()
+                
+                data = response.json()
+                events = data.get("events", [])
+                
+                if not events:
+                    break
+                
+                # Nur veröffentlichte Events
+                published = [e for e in events if e.get("status") == "publish"]
+                all_events.extend(published)
+                
+                # Pagination prüfen
+                total_pages = data.get("total_pages", 1)
+                if page >= total_pages:
+                    break
+                
+                page += 1
+                
+            except httpx.HTTPError as e:
+                logger.error(f"WordPress API Fehler: {e}")
+                raise HTTPException(status_code=502, detail=f"WordPress API nicht erreichbar: {str(e)}")
+            except Exception as e:
+                logger.error(f"Unerwarteter Fehler beim WordPress-Sync: {e}")
+                raise HTTPException(status_code=500, detail=f"Sync-Fehler: {str(e)}")
+    
+    return all_events
+
+
+@events_router.post("/sync/wordpress", tags=["Events Sync"])
+async def sync_wordpress_events(user: dict = Depends(require_admin)):
+    """
+    Synchronisiert Events von WordPress (The Events Calendar / Tribe).
+    
+    - Idempotent: Mehrfach ausführbar ohne Duplikate
+    - READ-ONLY: WordPress ist Single Source of Truth
+    - Archiviert alte Events (löscht nicht)
+    
+    Returns: Report mit created, updated, archived, skipped
+    """
+    import time
+    start_time = time.time()
+    
+    report = {
+        "fetched": 0,
+        "created": 0,
+        "updated": 0,
+        "archived": 0,
+        "skipped": 0,
+        "errors": [],
+    }
+    
+    try:
+        # 1. Events von WordPress holen
+        wp_events = await fetch_wordpress_events()
+        report["fetched"] = len(wp_events)
+        
+        # Track welche external_ids wir gesehen haben
+        seen_external_ids = set()
+        
+        # 2. Für jedes Event: Create oder Update
+        for wp_event in wp_events:
+            try:
+                mapped = map_wordpress_event_to_gastrocore(wp_event)
+                external_id = mapped["external_id"]
+                seen_external_ids.add(external_id)
+                
+                # Prüfe ob Event bereits existiert
+                existing = await db.events.find_one({
+                    "external_source": SYNC_SOURCE,
+                    "external_id": external_id,
+                    "archived": {"$ne": True}
+                })
+                
+                if existing:
+                    # UPDATE - Nur gemappte Felder aktualisieren
+                    update_fields = {
+                        "title": mapped["title"],
+                        "description": mapped["description"],
+                        "short_description": mapped["short_description"],
+                        "image_url": mapped["image_url"],
+                        "start_datetime": mapped["start_datetime"],
+                        "end_datetime": mapped["end_datetime"],
+                        "entry_price": mapped["entry_price"],
+                        "website_url": mapped["website_url"],
+                        "slug": mapped["slug"],
+                        "event_type": mapped["event_type"],
+                        "wp_categories": mapped["wp_categories"],
+                        "updated_at": now_iso(),
+                        "last_sync_at": now_iso(),
+                    }
+                    
+                    await db.events.update_one(
+                        {"id": existing["id"]},
+                        {"$set": update_fields}
+                    )
+                    report["updated"] += 1
+                    
+                else:
+                    # CREATE - Neues Event
+                    new_event = {
+                        "id": str(uuid.uuid4()),
+                        "external_source": mapped["external_source"],
+                        "external_id": mapped["external_id"],
+                        "title": mapped["title"],
+                        "description": mapped["description"],
+                        "short_description": mapped["short_description"],
+                        "image_url": mapped["image_url"],
+                        "start_datetime": mapped["start_datetime"],
+                        "end_datetime": mapped["end_datetime"],
+                        "entry_price": mapped["entry_price"],
+                        "website_url": mapped["website_url"],
+                        "slug": mapped["slug"],
+                        "event_type": mapped["event_type"],
+                        "content_category": "VERANSTALTUNG",
+                        "wp_categories": mapped["wp_categories"],
+                        # GastroCore Standard-Felder
+                        "status": "published",
+                        "capacity_total": 100,  # Default, manuell anpassbar
+                        "booking_mode": "ticket_only",
+                        "pricing_mode": "free_config",
+                        "requires_payment": False,
+                        "is_public": True,
+                        "archived": False,
+                        "created_at": now_iso(),
+                        "updated_at": now_iso(),
+                        "last_sync_at": now_iso(),
+                    }
+                    
+                    await db.events.insert_one(new_event)
+                    report["created"] += 1
+                    
+            except Exception as e:
+                report["errors"].append(f"Event {wp_event.get('id')}: {str(e)}")
+                report["skipped"] += 1
+        
+        # 3. Archivieren: Events die nicht mehr in WordPress sind
+        # oder deren end_datetime > 2 Tage vergangen
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        
+        # Finde alle WordPress-Events in DB
+        all_wp_events_in_db = await db.events.find({
+            "external_source": SYNC_SOURCE,
+            "archived": {"$ne": True}
+        }).to_list(1000)
+        
+        for db_event in all_wp_events_in_db:
+            ext_id = db_event.get("external_id")
+            end_dt = db_event.get("end_datetime")
+            
+            should_archive = False
+            
+            # Nicht mehr in WordPress vorhanden
+            if ext_id not in seen_external_ids:
+                should_archive = True
+            
+            # Oder Event ist abgelaufen (> 2 Tage)
+            if end_dt and end_dt < cutoff_date:
+                should_archive = True
+            
+            if should_archive:
+                await db.events.update_one(
+                    {"id": db_event["id"]},
+                    {"$set": {"archived": True, "status": "archived", "updated_at": now_iso()}}
+                )
+                report["archived"] += 1
+        
+        # 4. Import-Log schreiben
+        duration_ms = int((time.time() - start_time) * 1000)
+        report["duration_ms"] = duration_ms
+        
+        import_log = {
+            "id": str(uuid.uuid4()),
+            "type": "wordpress_events_sync",
+            "timestamp": now_iso(),
+            "user": user.get("email", "unknown"),
+            "source": WORDPRESS_EVENTS_API,
+            "fetched": report["fetched"],
+            "created": report["created"],
+            "updated": report["updated"],
+            "archived": report["archived"],
+            "skipped": report["skipped"],
+            "errors": report["errors"][:10],  # Max 10 Fehler loggen
+            "duration_ms": duration_ms,
+            "success": len(report["errors"]) == 0,
+        }
+        
+        await db.import_logs.insert_one(import_log)
+        
+        # Audit Log
+        await create_audit_log(
+            actor=user,
+            action="sync",
+            entity="events",
+            entity_id="wordpress",
+            after={"report": report}
+        )
+        
+        logger.info(f"WordPress Sync abgeschlossen: {report}")
+        
+        return {
+            "success": True,
+            "message": f"Sync abgeschlossen: {report['created']} neu, {report['updated']} aktualisiert, {report['archived']} archiviert",
+            "report": report
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"WordPress Sync Fehler: {e}")
+        
+        # Fehler-Log schreiben
+        error_log = {
+            "id": str(uuid.uuid4()),
+            "type": "wordpress_events_sync",
+            "timestamp": now_iso(),
+            "user": user.get("email", "unknown"),
+            "source": WORDPRESS_EVENTS_API,
+            "success": False,
+            "error": str(e),
+        }
+        await db.import_logs.insert_one(error_log)
+        
+        raise HTTPException(status_code=500, detail=f"Sync fehlgeschlagen: {str(e)}")
+
+
+@events_router.get("/sync/wordpress/status", tags=["Events Sync"])
+async def get_wordpress_sync_status(user: dict = Depends(require_manager)):
+    """
+    Liefert den Status des letzten WordPress-Syncs.
+    """
+    last_sync = await db.import_logs.find_one(
+        {"type": "wordpress_events_sync"},
+        {"_id": 0},
+        sort=[("timestamp", -1)]
+    )
+    
+    if not last_sync:
+        return {
+            "last_run_at": None,
+            "message": "Noch kein Sync durchgeführt"
+        }
+    
+    # Zähle aktuelle WordPress-Events
+    wp_events_count = await db.events.count_documents({
+        "external_source": SYNC_SOURCE,
+        "archived": {"$ne": True}
+    })
+    
+    return {
+        "last_run_at": last_sync.get("timestamp"),
+        "last_result": "success" if last_sync.get("success") else "error",
+        "counts": {
+            "fetched": last_sync.get("fetched", 0),
+            "created": last_sync.get("created", 0),
+            "updated": last_sync.get("updated", 0),
+            "archived": last_sync.get("archived", 0),
+            "skipped": last_sync.get("skipped", 0),
+        },
+        "duration_ms": last_sync.get("duration_ms"),
+        "current_wordpress_events": wp_events_count,
+        "last_error": last_sync.get("error") if not last_sync.get("success") else None,
+    }
+
+
+@events_router.get("/sync/wordpress/preview", tags=["Events Sync"])
+async def preview_wordpress_events(
+    limit: int = Query(default=3, ge=1, le=10),
+    user: dict = Depends(require_manager)
+):
+    """
+    Zeigt eine Vorschau der WordPress-Events (gemappt).
+    Nur zum Debuggen / Testen.
+    """
+    wp_events = await fetch_wordpress_events()
+    
+    preview = []
+    for wp_event in wp_events[:limit]:
+        mapped = map_wordpress_event_to_gastrocore(wp_event)
+        preview.append({
+            "wordpress_id": wp_event.get("id"),
+            "mapped": mapped
+        })
+    
+    return {
+        "total_available": len(wp_events),
+        "showing": len(preview),
+        "preview": preview
+    }
