@@ -5627,6 +5627,10 @@ class GastroCoreAPITester:
         print("\n📋 MYSHIFTS API SMOKE TEST:")
         test_results.append(self.test_myshifts_api_smoke_test())
         
+        # SMOKE TEST: Aktionen-Infrastruktur Verification (as per review request)
+        print("\n🎯 AKTIONEN-INFRASTRUKTUR VERIFICATION SMOKE TEST:")
+        test_results.append(self.test_aktionen_infrastruktur_verification())
+        
         # PRIORITY: Service-Terminal Tests (Sprint 8) - CRITICAL
         print("\n🖥️ SERVICE-TERMINAL (SPRINT 8) TESTING - CRITICAL:")
         test_results.append(self.test_service_terminal_rbac())
