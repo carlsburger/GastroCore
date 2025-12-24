@@ -45,7 +45,8 @@ export const Login = () => {
         navigate("/", { replace: true });
       }
     } else if (role === "mitarbeiter") {
-      navigate("/no-access", { replace: true });
+      // Mitarbeiter direkt zu MyShifts (nicht no-access!)
+      navigate("/my-shifts", { replace: true });
     }
   };
 
