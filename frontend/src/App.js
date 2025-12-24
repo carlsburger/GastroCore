@@ -125,6 +125,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* Dashboard explicit route - für direkten Zugriff */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Service Terminal - Admin & Schichtleiter (Legacy Route) */}
           <Route
