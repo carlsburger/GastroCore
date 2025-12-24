@@ -858,6 +858,215 @@ async def delete_closure(
     return None
 
 
+# ============== API ENDPOINTS: SIMPLE CLOSURES (Datumsbereich) ==============
+
+@opening_hours_router.post(
+    "/opening-hours/closures",
+    status_code=201,
+    summary="Einfachen Sperrtag/Override erstellen",
+    description="Erstellt einen Sperrtag mit Datumsbereich. Höchste Priorität - überschreibt alle Perioden."
+)
+async def create_simple_closure(
+    data: SimpleClosure,
+    current_user: dict = Depends(require_admin)
+):
+    """POST /api/opening-hours/closures - Einfacher Sperrtag mit start_date/end_date"""
+    
+    # Validierung
+    if data.type == "closed_partial":
+        if not data.start_time or not data.end_time:
+            raise ValidationException("Bei teilweiser Sperrung müssen start_time und end_time angegeben werden")
+    
+    # End-Datum default auf Start-Datum
+    end_date = data.end_date if data.end_date else data.start_date
+    
+    closure = {
+        "id": str(uuid.uuid4()),
+        "start_date": data.start_date,
+        "end_date": end_date,
+        "type": data.type,
+        "scope": "full_day" if data.type == "closed_all_day" else "time_range",
+        "start_time": data.start_time,
+        "end_time": data.end_time,
+        "reason": data.reason,
+        "active": True,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+        "archived": False
+    }
+    
+    await db.closures.insert_one(closure)
+    
+    # Audit Log
+    await create_audit_log(
+        actor=current_user,
+        action="create",
+        entity="closure",
+        entity_id=closure["id"],
+        after=safe_dict_for_audit(closure)
+    )
+    
+    date_range = f"{data.start_date}" if data.start_date == end_date else f"{data.start_date} bis {end_date}"
+    logger.info(f"Sperrtag '{data.reason}' ({date_range}) erstellt von {current_user.get('email')}")
+    
+    closure.pop("_id", None)
+    return closure
+
+
+@opening_hours_router.get(
+    "/opening-hours/closures",
+    summary="Sperrtage für Zeitraum abrufen",
+    description="Listet alle Sperrtage, optional gefiltert nach Zeitraum."
+)
+async def get_simple_closures(
+    from_date: Optional[str] = Query(None, alias="from", description="Startdatum (YYYY-MM-DD)"),
+    to_date: Optional[str] = Query(None, alias="to", description="Enddatum (YYYY-MM-DD)"),
+    current_user: dict = Depends(require_manager)
+):
+    """GET /api/opening-hours/closures?from=...&to=..."""
+    
+    query = {"archived": {"$ne": True}}
+    
+    # Alle Closures laden
+    closures = await db.closures.find(query, {"_id": 0}).sort("start_date", 1).to_list(500)
+    
+    # Wenn Zeitraum angegeben, filtern
+    if from_date and to_date:
+        filtered = []
+        for c in closures:
+            c_start = c.get("start_date") or c.get("one_off_rule", {}).get("date", "")
+            c_end = c.get("end_date", c_start)
+            
+            # Überlappung prüfen
+            if c_start and c_end:
+                if c_start <= to_date and c_end >= from_date:
+                    filtered.append(c)
+            elif c_start:
+                if from_date <= c_start <= to_date:
+                    filtered.append(c)
+        return filtered
+    
+    return closures
+
+
+@opening_hours_router.delete(
+    "/opening-hours/closures/{closure_id}",
+    status_code=204,
+    summary="Sperrtag löschen",
+    description="Soft Delete eines Sperrtags. Admin only."
+)
+async def delete_simple_closure(
+    closure_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """DELETE /api/opening-hours/closures/{id}"""
+    
+    closure = await db.closures.find_one(
+        {"id": closure_id, "archived": {"$ne": True}}
+    )
+    
+    if not closure:
+        raise NotFoundException("Sperrtag nicht gefunden")
+    
+    await db.closures.update_one(
+        {"id": closure_id},
+        {"$set": {"archived": True, "updated_at": now_iso()}}
+    )
+    
+    # Audit Log
+    await create_audit_log(
+        actor=current_user,
+        action="delete",
+        entity="closure",
+        entity_id=closure_id
+    )
+    
+    logger.info(f"Sperrtag '{closure_id}' gelöscht von {current_user.get('email')}")
+    return None
+
+
+# ============== API ENDPOINTS: getDayStatus HELPER ==============
+
+@opening_hours_router.get(
+    "/opening-hours/day-status/{date_str}",
+    summary="Tagesstatus für ein Datum",
+    description="Prüft ob ein Tag offen/geschlossen ist und warum. Für Quick-Checks."
+)
+async def get_day_status(
+    date_str: str,
+    current_user: dict = Depends(require_manager)
+):
+    """
+    GET /api/opening-hours/day-status/2026-01-02
+    
+    Returns:
+    - isClosed: bool
+    - isPartialClosed: bool
+    - openingWindow: { start, end } oder null
+    - reason: string oder null
+    """
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise ValidationException("Ungültiges Datumsformat (YYYY-MM-DD erwartet)")
+    
+    # 1. HÖCHSTE PRIORITÄT: Closures prüfen
+    closures = await get_closures_for_date(target_date)
+    
+    for closure in closures:
+        closure_type = closure.get("type", "")
+        scope = closure.get("scope", "full_day")
+        
+        # closed_all_day hat höchste Priorität
+        if closure_type == "closed_all_day" or scope == "full_day":
+            return {
+                "date": date_str,
+                "isClosed": True,
+                "isPartialClosed": False,
+                "openingWindow": None,
+                "reason": closure.get("reason", "Geschlossen")
+            }
+        
+        # closed_partial
+        if closure_type == "closed_partial" or scope == "time_range":
+            return {
+                "date": date_str,
+                "isClosed": False,
+                "isPartialClosed": True,
+                "closedFrom": closure.get("start_time"),
+                "closedUntil": closure.get("end_time"),
+                "reason": closure.get("reason", "Teilweise geschlossen")
+            }
+    
+    # 2. Wenn keine Closures: Normale Öffnungszeiten
+    effective = await calculate_effective_hours(target_date)
+    
+    if effective.get("is_closed_full_day"):
+        return {
+            "date": date_str,
+            "isClosed": True,
+            "isPartialClosed": False,
+            "openingWindow": None,
+            "reason": effective.get("closure_reason", "Geschlossen")
+        }
+    
+    blocks = effective.get("blocks", [])
+    opening_window = None
+    if blocks:
+        opening_window = {
+            "start": blocks[0].get("start"),
+            "end": blocks[-1].get("end")
+        }
+    
+    return {
+        "date": date_str,
+        "isClosed": not effective.get("is_open", True),
+        "isPartialClosed": False,
+        "openingWindow": opening_window,
+        "reason": None
+    }
+
+
 # ============== API ENDPOINTS: EFFECTIVE HOURS ==============
 
 @opening_hours_router.get(
