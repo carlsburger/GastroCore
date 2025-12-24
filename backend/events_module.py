@@ -290,7 +290,7 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
     from datetime import datetime, timedelta
     
     today = datetime.now().strftime("%Y-%m-%d")
-    future = (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
+    future = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")  # Erweitert auf 90 Tage
     
     # Query: VERANSTALTUNG events
     # Include events with future dates OR events without dates (to show them)
