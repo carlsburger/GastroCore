@@ -2408,14 +2408,15 @@ async def apply_templates_to_schedule(
     await create_audit_log(
         user, "schedule", schedule_id, "apply_templates",
         None,
-        {"templates_applied": len(templates), "shifts_created": len(created_shifts), "season": season}
+        {"templates_used": len(templates), "shifts_created": len(created_shifts), "skipped_existing": skipped_existing, "season": season}
     )
     
     return {
-        "message": f"{len(created_shifts)} Schichten aus Vorlagen erstellt",
-        "created": len(created_shifts),
-        "season": season,
-        "templates_used": len(templates)
+        "message": f"{len(created_shifts)} Schichten aus Vorlagen erzeugt" + (f", {skipped_existing} bereits vorhanden" if skipped_existing > 0 else ""),
+        "templates_used": len(templates), 
+        "shifts_created": len(created_shifts), 
+        "skipped_existing": skipped_existing,
+        "season": season
     }
 
 
