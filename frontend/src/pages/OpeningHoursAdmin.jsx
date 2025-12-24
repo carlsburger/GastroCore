@@ -124,12 +124,12 @@ export default function OpeningHoursAdmin() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [periodsRes, closuresRes] = await Promise.all([
+      const [periodsRes, overridesRes] = await Promise.all([
         axios.get(`${BACKEND_URL}/api/opening-hours/periods`, { headers }),
-        axios.get(`${BACKEND_URL}/api/opening-hours/closures`, { headers }),
+        axios.get(`${BACKEND_URL}/api/opening-hours/overrides`, { headers }),
       ]);
       setPeriods(periodsRes.data);
-      setClosures(closuresRes.data);
+      setClosures(overridesRes.data);
     } catch (err) {
       toast.error("Fehler beim Laden der Daten");
     } finally {
