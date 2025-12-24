@@ -5526,6 +5526,91 @@ class GastroCoreAPITester:
                         f"Expected 404, got {result['status_code']}")
             return False
 
+    def test_aktionen_infrastruktur_verification(self):
+        """Test Aktionen-Infrastruktur Verification - SMOKE TEST from review request"""
+        print("\n🎯 Testing Aktionen-Infrastruktur Verification (SMOKE TEST)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Aktionen-Infrastruktur Verification", False, "Admin token not available")
+            return False
+        
+        aktionen_success = True
+        
+        # 1. Test GET /api/events - Check if Events have the new fields
+        result = self.make_request("GET", "events", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            events = result["data"]
+            self.log_test("GET /api/events", True, f"Retrieved {len(events)} events")
+            
+            if len(events) == 0:
+                self.log_test("No events found", True, "No events to verify - this is acceptable")
+                return aktionen_success
+            
+            # Check each event for the new Aktionen-Infrastruktur fields
+            for event in events:
+                event_id = event.get("id", "unknown")
+                event_title = event.get("title", "Unknown Event")
+                
+                # Check content_category field
+                content_category = event.get("content_category")
+                if content_category is not None:
+                    if content_category == "VERANSTALTUNG":
+                        self.log_test(f"Event '{event_title}' has content_category='VERANSTALTUNG'", True)
+                    else:
+                        self.log_test(f"Event '{event_title}' content_category", False, 
+                                    f"Expected 'VERANSTALTUNG', got '{content_category}'")
+                        aktionen_success = False
+                else:
+                    self.log_test(f"Event '{event_title}' missing content_category", False, 
+                                "content_category field is missing")
+                    aktionen_success = False
+                
+                # Check that new Aktionen fields are null for existing Kultur-Events
+                aktionen_fields = {
+                    "action_type": event.get("action_type"),
+                    "menu_only": event.get("menu_only"),
+                    "restriction_notice": event.get("restriction_notice"),
+                    "guest_notice": event.get("guest_notice")
+                }
+                
+                for field_name, field_value in aktionen_fields.items():
+                    if field_value is None:
+                        self.log_test(f"Event '{event_title}' {field_name} is null", True, 
+                                    "Correct for Kultur-Events")
+                    else:
+                        self.log_test(f"Event '{event_title}' {field_name} should be null", False, 
+                                    f"Expected null, got '{field_value}'")
+                        aktionen_success = False
+                
+                # Check that existing Events are UNCHANGED (have required fields)
+                required_fields = ["title", "start_datetime"]
+                for field in required_fields:
+                    if field in event and event[field]:
+                        self.log_test(f"Event '{event_title}' has {field}", True, "Existing data preserved")
+                    else:
+                        self.log_test(f"Event '{event_title}' missing {field}", False, 
+                                    "Breaking change detected!")
+                        aktionen_success = False
+        else:
+            self.log_test("GET /api/events", False, f"Status: {result['status_code']}")
+            aktionen_success = False
+        
+        # 2. Test GET /api/health - Backend must be healthy
+        result = self.make_request("GET", "health", expected_status=200)
+        if result["success"]:
+            health_data = result["data"]
+            if health_data.get("status") == "healthy":
+                self.log_test("GET /api/health returns 'healthy'", True, "Backend is healthy")
+            else:
+                self.log_test("GET /api/health returns 'healthy'", False, 
+                            f"Status: {health_data.get('status', 'unknown')}")
+                aktionen_success = False
+        else:
+            self.log_test("GET /api/health", False, f"Status: {result['status_code']}")
+            aktionen_success = False
+        
+        return aktionen_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
