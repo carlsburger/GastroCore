@@ -1869,3 +1869,551 @@ async def seed_sample_staff():
         await db.staff_members.insert_one(staff)
     
     return {"message": "Beispiel-Mitarbeiter erstellt", "seeded": True, "count": len(defaults)}
+
+
+
+# ============== SHIFT TEMPLATES MODULE (Sprint: Dienstplan Service live-tauglich) ==============
+
+class EndTimeType(str, Enum):
+    FIXED = "fixed"
+    CLOSE_PLUS_MINUTES = "close_plus_minutes"
+
+class SeasonType(str, Enum):
+    SUMMER = "summer"
+    WINTER = "winter"
+    ALL = "all"
+
+class DayType(str, Enum):
+    WEEKDAY = "weekday"
+    WEEKEND = "weekend"
+    ALL = "all"
+
+class DepartmentType(str, Enum):
+    SERVICE = "service"
+    KITCHEN = "kitchen"
+
+
+class ShiftTemplateCreate(BaseModel):
+    department: DepartmentType
+    name: str = Field(..., min_length=2, max_length=50)
+    start_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")  # HH:MM
+    end_time_type: EndTimeType
+    end_time_fixed: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # HH:MM if fixed
+    close_plus_minutes: Optional[int] = Field(None, ge=0, le=120)  # if close_plus_minutes
+    season: SeasonType = SeasonType.ALL
+    day_type: DayType = DayType.ALL
+    headcount_default: int = Field(default=1, ge=1, le=10)
+    active: bool = True
+    sort_order: int = Field(default=0)
+
+
+class ShiftTemplateUpdate(BaseModel):
+    department: Optional[DepartmentType] = None
+    name: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time_type: Optional[EndTimeType] = None
+    end_time_fixed: Optional[str] = None
+    close_plus_minutes: Optional[int] = None
+    season: Optional[SeasonType] = None
+    day_type: Optional[DayType] = None
+    headcount_default: Optional[int] = None
+    active: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+
+class ApplyTemplatesRequest(BaseModel):
+    schedule_id: str
+    departments: List[DepartmentType] = [DepartmentType.SERVICE]
+    season: Optional[SeasonType] = None  # None = auto-detect from opening hours
+    
+
+# ----- SHIFT TEMPLATES ENDPOINTS -----
+
+@staff_router.get("/shift-templates")
+async def list_shift_templates(
+    department: Optional[DepartmentType] = None,
+    season: Optional[SeasonType] = None,
+    active_only: bool = True,
+    user: dict = Depends(require_manager)
+):
+    """List all shift templates"""
+    query = {"archived": False}
+    if department:
+        query["department"] = department.value
+    if season:
+        query["season"] = {"$in": [season.value, "all"]}
+    if active_only:
+        query["active"] = True
+    
+    templates = await db.shift_templates.find(query, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    return templates
+
+
+@staff_router.get("/shift-templates/{template_id}")
+async def get_shift_template(template_id: str, user: dict = Depends(require_manager)):
+    """Get a single shift template"""
+    template = await db.shift_templates.find_one({"id": template_id, "archived": False}, {"_id": 0})
+    if not template:
+        raise NotFoundException("Schicht-Vorlage")
+    return template
+
+
+@staff_router.post("/shift-templates")
+async def create_shift_template(data: ShiftTemplateCreate, user: dict = Depends(require_admin)):
+    """Create a new shift template"""
+    # Validate end_time config
+    if data.end_time_type == EndTimeType.FIXED and not data.end_time_fixed:
+        raise ValidationException("end_time_fixed ist erforderlich wenn end_time_type = fixed")
+    if data.end_time_type == EndTimeType.CLOSE_PLUS_MINUTES and data.close_plus_minutes is None:
+        raise ValidationException("close_plus_minutes ist erforderlich wenn end_time_type = close_plus_minutes")
+    
+    template = create_entity(data.model_dump())
+    await db.shift_templates.insert_one(template)
+    await create_audit_log(user, "shift_template", template["id"], "create", None, safe_dict_for_audit(template))
+    return {k: v for k, v in template.items() if k != "_id"}
+
+
+@staff_router.put("/shift-templates/{template_id}")
+async def update_shift_template(template_id: str, data: ShiftTemplateUpdate, user: dict = Depends(require_admin)):
+    """Update a shift template"""
+    existing = await db.shift_templates.find_one({"id": template_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Schicht-Vorlage")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        return existing
+    
+    update_data["updated_at"] = now_iso()
+    
+    # Validate if changing end_time_type
+    merged = {**existing, **update_data}
+    if merged.get("end_time_type") == "fixed" and not merged.get("end_time_fixed"):
+        raise ValidationException("end_time_fixed ist erforderlich wenn end_time_type = fixed")
+    if merged.get("end_time_type") == "close_plus_minutes" and merged.get("close_plus_minutes") is None:
+        raise ValidationException("close_plus_minutes ist erforderlich wenn end_time_type = close_plus_minutes")
+    
+    before = safe_dict_for_audit(existing)
+    await db.shift_templates.update_one({"id": template_id}, {"$set": update_data})
+    updated = await db.shift_templates.find_one({"id": template_id}, {"_id": 0})
+    await create_audit_log(user, "shift_template", template_id, "update", before, safe_dict_for_audit(updated))
+    return updated
+
+
+@staff_router.delete("/shift-templates/{template_id}")
+async def delete_shift_template(template_id: str, user: dict = Depends(require_admin)):
+    """Archive a shift template"""
+    existing = await db.shift_templates.find_one({"id": template_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Schicht-Vorlage")
+    
+    await db.shift_templates.update_one({"id": template_id}, {"$set": {"archived": True, "updated_at": now_iso()}})
+    await create_audit_log(user, "shift_template", template_id, "archive", safe_dict_for_audit(existing), {"archived": True})
+    return {"message": "Vorlage gelöscht", "success": True}
+
+
+@staff_router.post("/shift-templates/seed-defaults")
+async def seed_default_templates(user: dict = Depends(require_admin)):
+    """Seed default Carlsburg shift templates"""
+    # Check if templates already exist
+    existing = await db.shift_templates.count_documents({"archived": False})
+    if existing > 0:
+        return {"message": "Vorlagen existieren bereits", "seeded": False, "count": existing}
+    
+    default_templates = [
+        # Sommer - Wochentag
+        {"department": "service", "name": "S10 Vorbereitung", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekday", "headcount_default": 1, "sort_order": 10},
+        {"department": "service", "name": "S11 Früh", "start_time": "11:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekday", "headcount_default": 1, "sort_order": 11},
+        {"department": "service", "name": "S12 Schluss", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "summer", "day_type": "weekday", "headcount_default": 2, "sort_order": 12},
+        
+        # Sommer - Wochenende
+        {"department": "service", "name": "S10 Vorbereitung WE", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekend", "headcount_default": 1, "sort_order": 20},
+        {"department": "service", "name": "S11 Früh WE", "start_time": "11:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "summer", "day_type": "weekend", "headcount_default": 2, "sort_order": 21},
+        {"department": "service", "name": "S12 Schluss WE", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "summer", "day_type": "weekend", "headcount_default": 2, "sort_order": 22},
+        {"department": "service", "name": "S13 Patisserie WE", "start_time": "13:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "summer", "day_type": "weekend", "headcount_default": 1, "sort_order": 23},
+        
+        # Winter - Standard
+        {"department": "service", "name": "W11 Service", "start_time": "11:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "winter", "day_type": "all", "headcount_default": 1, "sort_order": 30},
+        {"department": "service", "name": "W12 Service", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "winter", "day_type": "all", "headcount_default": 1, "sort_order": 31},
+        
+        # Küche (generisch)
+        {"department": "kitchen", "name": "K10 Küche Früh", "start_time": "10:00", "end_time_type": "fixed", "end_time_fixed": "18:00", "season": "all", "day_type": "all", "headcount_default": 1, "sort_order": 50},
+        {"department": "kitchen", "name": "K12 Küche Schluss", "start_time": "12:00", "end_time_type": "close_plus_minutes", "close_plus_minutes": 30, "season": "all", "day_type": "all", "headcount_default": 1, "sort_order": 51},
+    ]
+    
+    for tpl_data in default_templates:
+        tpl = create_entity({**tpl_data, "active": True})
+        await db.shift_templates.insert_one(tpl)
+    
+    await create_audit_log(user, "shift_template", "seed", "seed_defaults", None, {"count": len(default_templates)})
+    return {"message": "Standard-Vorlagen erstellt", "seeded": True, "count": len(default_templates)}
+
+
+# ----- APPLY TEMPLATES TO SCHEDULE -----
+
+async def get_closing_time_for_date(date_str: str) -> Optional[str]:
+    """Get closing time for a specific date from opening hours"""
+    try:
+        # Try to get from opening-hours effective
+        from datetime import datetime
+        day = await db.opening_hours_periods.find_one({"archived": False}, {"_id": 0})
+        if not day:
+            return "20:00"  # Default fallback
+        
+        # Get effective hours for the date
+        # This is a simplified version - in production, use the full opening-hours logic
+        dt = datetime.fromisoformat(date_str)
+        weekday = dt.weekday()
+        
+        # Check closures first
+        closure = await db.closures.find_one({
+            "date": date_str,
+            "archived": False
+        }, {"_id": 0})
+        if closure and closure.get("full_day"):
+            return None  # Closed
+        
+        # Get opening hours for this weekday
+        hours = await db.opening_hours_periods.find_one({
+            "archived": False,
+            "is_active": True
+        }, {"_id": 0})
+        
+        if hours and hours.get("days"):
+            day_config = hours["days"].get(str(weekday))
+            if day_config and day_config.get("blocks"):
+                last_block = day_config["blocks"][-1]
+                return last_block.get("end", "20:00")
+        
+        return "20:00"  # Default
+    except Exception as e:
+        logger.warning(f"Could not get closing time for {date_str}: {e}")
+        return "20:00"
+
+
+def calculate_end_time(template: dict, closing_time: str) -> str:
+    """Calculate actual end time based on template config"""
+    if template.get("end_time_type") == "fixed":
+        return template.get("end_time_fixed", "18:00")
+    else:
+        # close_plus_minutes
+        from datetime import datetime, timedelta
+        close_dt = datetime.strptime(closing_time, "%H:%M")
+        plus_mins = template.get("close_plus_minutes", 30)
+        end_dt = close_dt + timedelta(minutes=plus_mins)
+        return end_dt.strftime("%H:%M")
+
+
+def is_weekend(date_str: str) -> bool:
+    """Check if date is weekend (Sat/Sun)"""
+    from datetime import datetime
+    dt = datetime.fromisoformat(date_str)
+    return dt.weekday() >= 5  # 5=Saturday, 6=Sunday
+
+
+async def get_current_season() -> str:
+    """Determine current season from opening hours periods"""
+    try:
+        period = await db.opening_hours_periods.find_one({
+            "archived": False,
+            "is_active": True
+        }, {"_id": 0})
+        if period:
+            name = period.get("name", "").lower()
+            if "winter" in name:
+                return "winter"
+            elif "sommer" in name or "summer" in name:
+                return "summer"
+        return "summer"  # Default
+    except:
+        return "summer"
+
+
+@staff_router.post("/schedules/{schedule_id}/apply-templates")
+async def apply_templates_to_schedule(
+    schedule_id: str,
+    data: ApplyTemplatesRequest,
+    user: dict = Depends(require_manager)
+):
+    """
+    Apply shift templates to a schedule.
+    Creates shifts based on templates for each day of the week.
+    """
+    # Get schedule
+    schedule = await db.schedules.find_one({"id": schedule_id, "archived": False}, {"_id": 0})
+    if not schedule:
+        raise NotFoundException("Dienstplan")
+    
+    if schedule.get("status") == ScheduleStatus.ARCHIVIERT.value:
+        raise ValidationException("Archivierte Dienstpläne können nicht bearbeitet werden")
+    
+    # Determine season
+    season = data.season.value if data.season else await get_current_season()
+    
+    # Get matching templates
+    dept_values = [d.value for d in data.departments]
+    templates = await db.shift_templates.find({
+        "department": {"$in": dept_values},
+        "season": {"$in": [season, "all"]},
+        "active": True,
+        "archived": False
+    }, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    
+    if not templates:
+        return {"message": "Keine passenden Vorlagen gefunden", "created": 0}
+    
+    # Get work areas for mapping department -> work_area_id
+    areas = await db.work_areas.find({"archived": False}, {"_id": 0}).to_list(50)
+    service_area = next((a for a in areas if "service" in a.get("name", "").lower()), None)
+    kitchen_area = next((a for a in areas if "küche" in a.get("name", "").lower() or "kitchen" in a.get("name", "").lower()), None)
+    
+    def get_area_id(department: str) -> str:
+        if department == "service" and service_area:
+            return service_area["id"]
+        elif department == "kitchen" and kitchen_area:
+            return kitchen_area["id"]
+        return service_area["id"] if service_area else ""
+    
+    # Get week dates
+    week_start = datetime.fromisoformat(schedule["week_start"]).date()
+    created_shifts = []
+    
+    for day_offset in range(7):
+        current_date = week_start + timedelta(days=day_offset)
+        date_str = current_date.isoformat()
+        is_wknd = current_date.weekday() >= 5
+        
+        # Get closing time for this day
+        closing_time = await get_closing_time_for_date(date_str)
+        if closing_time is None:
+            continue  # Day is closed, skip
+        
+        for template in templates:
+            # Check day_type filter
+            tpl_day_type = template.get("day_type", "all")
+            if tpl_day_type == "weekday" and is_wknd:
+                continue
+            if tpl_day_type == "weekend" and not is_wknd:
+                continue
+            
+            # Calculate end time
+            end_time = calculate_end_time(template, closing_time)
+            
+            # Create N shifts based on headcount_default
+            headcount = template.get("headcount_default", 1)
+            for i in range(headcount):
+                shift = create_entity({
+                    "schedule_id": schedule_id,
+                    "staff_member_id": "",  # Unassigned
+                    "work_area_id": get_area_id(template.get("department", "service")),
+                    "shift_date": date_str,
+                    "start_time": template.get("start_time"),
+                    "end_time": end_time,
+                    "role": "service" if template.get("department") == "service" else "kueche",
+                    "notes": f"Aus Vorlage: {template.get('name')}",
+                    "template_id": template.get("id"),
+                    "department": template.get("department")
+                })
+                await db.shifts.insert_one(shift)
+                created_shifts.append(shift["id"])
+    
+    await create_audit_log(
+        user, "schedule", schedule_id, "apply_templates",
+        None,
+        {"templates_applied": len(templates), "shifts_created": len(created_shifts), "season": season}
+    )
+    
+    return {
+        "message": f"{len(created_shifts)} Schichten aus Vorlagen erstellt",
+        "created": len(created_shifts),
+        "season": season,
+        "templates_used": len(templates)
+    }
+
+
+# ----- EVENT WARNING ENDPOINT -----
+
+@staff_router.get("/schedules/{schedule_id}/event-warnings")
+async def get_schedule_event_warnings(schedule_id: str, user: dict = Depends(require_manager)):
+    """
+    Check for events in the schedule week and return staffing warnings.
+    Rule: 
+    - Event with >=40 expected guests → min 3 service
+    - Event with >=70 expected guests → min 4 service
+    """
+    schedule = await db.schedules.find_one({"id": schedule_id, "archived": False}, {"_id": 0})
+    if not schedule:
+        raise NotFoundException("Dienstplan")
+    
+    warnings = []
+    
+    # Get events for this week
+    week_start = schedule.get("week_start")
+    week_end = schedule.get("week_end")
+    
+    events = await db.events.find({
+        "event_date": {"$gte": week_start, "$lte": week_end},
+        "status": {"$in": ["published", "sold_out"]},
+        "archived": False
+    }, {"_id": 0}).to_list(50)
+    
+    if not events:
+        return {"warnings": [], "has_events": False}
+    
+    # Get shifts for the schedule
+    shifts = await db.shifts.find({
+        "schedule_id": schedule_id,
+        "archived": False
+    }, {"_id": 0}).to_list(500)
+    
+    for event in events:
+        event_date = event.get("event_date")
+        expected_guests = event.get("max_capacity", 0)
+        
+        # Check bookings for this event
+        bookings = await db.event_bookings.find({
+            "event_id": event.get("id"),
+            "status": {"$in": ["confirmed", "pending"]}
+        }, {"_id": 0}).to_list(200)
+        
+        actual_guests = sum(b.get("total_quantity", 0) for b in bookings)
+        
+        # Determine required service staff
+        required_service = 2  # Default
+        if actual_guests >= 70 or expected_guests >= 70:
+            required_service = 4
+        elif actual_guests >= 40 or expected_guests >= 40:
+            required_service = 3
+        
+        # Count planned service staff for this day
+        day_shifts = [s for s in shifts if s.get("shift_date") == event_date]
+        service_shifts = [s for s in day_shifts if s.get("role") in ["service", "schichtleiter"]]
+        assigned_service = len([s for s in service_shifts if s.get("staff_member_id")])
+        
+        if assigned_service < required_service:
+            warnings.append({
+                "date": event_date,
+                "event_name": event.get("title"),
+                "event_id": event.get("id"),
+                "expected_guests": max(actual_guests, expected_guests),
+                "required_service": required_service,
+                "planned_service": assigned_service,
+                "shortage": required_service - assigned_service,
+                "message": f"Event '{event.get('title')}': benötigt {required_service} Service – aktuell geplant {assigned_service}"
+            })
+    
+    return {
+        "warnings": warnings,
+        "has_events": len(events) > 0,
+        "events_count": len(events)
+    }
+
+
+# ----- PDF EXPORT FOR SCHEDULE -----
+
+@staff_router.get("/schedules/{schedule_id}/export-pdf")
+async def export_schedule_pdf(
+    schedule_id: str,
+    view: str = "week",  # week or month
+    user: dict = Depends(require_manager)
+):
+    """
+    Export schedule as A4 PDF (landscape).
+    Minimal format: Name + Time per day.
+    """
+    schedule = await db.schedules.find_one({"id": schedule_id, "archived": False}, {"_id": 0})
+    if not schedule:
+        raise NotFoundException("Dienstplan")
+    
+    # Get shifts with staff names
+    shifts = await db.shifts.find({"schedule_id": schedule_id, "archived": False}, {"_id": 0}).to_list(500)
+    
+    # Get staff members
+    staff_ids = list(set(s.get("staff_member_id") for s in shifts if s.get("staff_member_id")))
+    staff_list = await db.staff_members.find({"id": {"$in": staff_ids}}, {"_id": 0, "id": 1, "full_name": 1}).to_list(100)
+    staff_map = {s["id"]: s.get("full_name", "N.N.") for s in staff_list}
+    
+    # Build HTML for PDF
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{ size: A4 landscape; margin: 1cm; }}
+            body {{ font-family: Arial, sans-serif; font-size: 10px; }}
+            h1 {{ font-size: 16px; margin-bottom: 10px; }}
+            table {{ width: 100%; border-collapse: collapse; }}
+            th, td {{ border: 1px solid #ccc; padding: 4px; text-align: left; vertical-align: top; }}
+            th {{ background: #f0f0f0; font-weight: bold; }}
+            .day-header {{ font-weight: bold; background: #e8e8e8; }}
+            .shift {{ font-size: 9px; margin: 2px 0; }}
+            .unassigned {{ color: #999; font-style: italic; }}
+        </style>
+    </head>
+    <body>
+        <h1>Dienstplan KW {schedule.get('week', '')} / {schedule.get('year', '')}</h1>
+        <p>{schedule.get('week_start', '')} bis {schedule.get('week_end', '')}</p>
+        <table>
+            <tr>
+                <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th>
+            </tr>
+            <tr>
+    """
+    
+    # Group shifts by date
+    from collections import defaultdict
+    shifts_by_date = defaultdict(list)
+    for shift in shifts:
+        shifts_by_date[shift.get("shift_date", "")].append(shift)
+    
+    # Generate week view
+    week_start = datetime.fromisoformat(schedule["week_start"]).date()
+    for day_offset in range(7):
+        current_date = (week_start + timedelta(days=day_offset)).isoformat()
+        day_shifts = sorted(shifts_by_date.get(current_date, []), key=lambda x: x.get("start_time", ""))
+        
+        html_content += "<td>"
+        html_content += f"<div class='day-header'>{current_date[8:10]}.{current_date[5:7]}.</div>"
+        
+        for shift in day_shifts:
+            staff_name = staff_map.get(shift.get("staff_member_id"), "")
+            if not staff_name:
+                staff_name = "<span class='unassigned'>N.N.</span>"
+            html_content += f"<div class='shift'>{shift.get('start_time', '')}-{shift.get('end_time', '')} {staff_name}</div>"
+        
+        if not day_shifts:
+            html_content += "<div class='shift unassigned'>-</div>"
+        
+        html_content += "</td>"
+    
+    html_content += """
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+    
+    # Convert HTML to PDF using basic approach
+    # For production, use weasyprint or similar
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=dienstplan_kw{schedule.get('week')}_{schedule.get('year')}.pdf"
+            }
+        )
+    except ImportError:
+        # Fallback: return HTML
+        return StreamingResponse(
+            io.BytesIO(html_content.encode()),
+            media_type="text/html",
+            headers={
+                "Content-Disposition": f"attachment; filename=dienstplan_kw{schedule.get('week')}_{schedule.get('year')}.html"
+            }
+        )
+
