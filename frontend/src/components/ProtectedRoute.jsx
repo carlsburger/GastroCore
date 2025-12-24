@@ -17,9 +17,17 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
 
   // Determine if we're in service area
   const isServiceArea = location.pathname.startsWith("/service");
-  const isAdminArea = !isServiceArea && location.pathname !== "/login" && 
-                      location.pathname !== "/no-access" && 
-                      location.pathname !== "/change-password";
+  
+  // Seiten die für ALLE authentifizierten Benutzer erlaubt sind (inkl. Mitarbeiter)
+  const publicAuthPages = [
+    "/login",
+    "/no-access", 
+    "/change-password",
+    "/my-shifts",  // MyShifts ist für alle Mitarbeiter erlaubt
+  ];
+  const isPublicAuthPage = publicAuthPages.some(p => location.pathname === p || location.pathname.startsWith(p));
+  
+  const isAdminArea = !isServiceArea && !isPublicAuthPage;
 
   if (!isAuthenticated) {
     // Alle nicht-authentifizierten Benutzer zum Unified Login
@@ -33,10 +41,11 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
 
   // ============== ROLLEN-GUARDS ==============
   
-  // Mitarbeiter: Kein Zugriff auf Admin oder Service
+  // Mitarbeiter: Kein Zugriff auf Admin oder Service, ABER /my-shifts ist erlaubt
   if (user?.role === "mitarbeiter") {
     if (isAdminArea || isServiceArea) {
-      return <Navigate to="/no-access" replace />;
+      // Redirect zu MyShifts statt no-access (bessere UX)
+      return <Navigate to="/my-shifts" replace />;
     }
   }
   
