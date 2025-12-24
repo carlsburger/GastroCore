@@ -155,7 +155,7 @@ export default function ReservationCalendar() {
               // Speichere max 5 Reservierungen pro Tag für die Übersicht
               reservationsMap[date] = activeRes.slice(0, 5).map(r => ({
                 time: r.time?.substring(0, 5) || '–',
-                name: r.guest_name?.split(' ')[0] || 'Gast',
+                name: formatShortName(r.guest_name),
                 party_size: r.party_size || 0,
               }));
             }
