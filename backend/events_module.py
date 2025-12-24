@@ -59,6 +59,36 @@ class PaymentStatus(str, Enum):
     REFUNDED = "refunded"
 
 
+# ============== CONTENT CATEGORY ENUM (Sprint: Aktionen-Infrastruktur) ==============
+class ContentCategory(str, Enum):
+    """
+    Kategorisierung von Events nach Inhalt/Zweck.
+    
+    VERANSTALTUNG: Kultur-Events (Kabarett, Konzert, Comedy, etc.)
+    AKTION: Zeitlich begrenzte Aktionen (Rippchen satt, Spargelzeit, etc.)
+    AKTION_MENUE: Menü-Aktionen mit eingeschränkter Karte (Ente satt, etc.)
+    """
+    VERANSTALTUNG = "VERANSTALTUNG"  # Default für Kultur-Events
+    AKTION = "AKTION"                # Zeitlich begrenzte Aktion
+    AKTION_MENUE = "AKTION_MENUE"    # Menü-Aktion mit eingeschränkter Karte
+
+
+# ============== ACTION TYPE ENUM (Sprint: Aktionen-Infrastruktur) ==============
+class ActionType(str, Enum):
+    """
+    Spezifischer Typ einer Aktion (für zukünftige Logik).
+    
+    Diese Typen können später für spezielle Geschäftslogik verwendet werden,
+    z.B. unterschiedliche Hinweistexte oder Buchungsregeln.
+    """
+    RIPPCHEN = "RIPPCHEN"      # Rippchen satt
+    ENTE = "ENTE"              # Ente satt
+    GANS = "GANS"              # Gänsebraten
+    SPARGEL = "SPARGEL"        # Spargelzeit
+    GRILLBUFFET = "GRILLBUFFET"  # Grillbuffet
+    SONSTIGES = "SONSTIGES"    # Andere Aktionen
+
+
 # ============== PYDANTIC MODELS ==============
 
 # --- Event Models ---
