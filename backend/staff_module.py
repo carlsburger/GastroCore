@@ -2019,6 +2019,59 @@ async def delete_shift_template(template_id: str, user: dict = Depends(require_a
     return {"message": "Vorlage gelöscht", "success": True}
 
 
+@staff_router.post("/shift-templates/apply")
+async def apply_templates_to_current_week(user: dict = Depends(require_manager)):
+    """
+    Apply all active shift templates to the current week.
+    Creates a new schedule if none exists, then applies templates.
+    """
+    # Get current ISO week
+    today = date.today()
+    iso_year, iso_week, _ = today.isocalendar()
+    
+    # Find or create schedule for current week
+    schedule = await db.schedules.find_one({
+        "year": iso_year,
+        "week": iso_week,
+        "archived": {"$ne": True}
+    })
+    
+    if not schedule:
+        # Calculate week dates
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        
+        schedule = {
+            "id": str(uuid.uuid4()),
+            "year": iso_year,
+            "week": iso_week,
+            "week_start": week_start.isoformat(),
+            "week_end": week_end.isoformat(),
+            "status": "draft",
+            "notes": "Auto-generiert durch Vorlagen-Anwendung",
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+            "archived": False
+        }
+        await db.schedules.insert_one(schedule)
+    
+    schedule_id = schedule["id"]
+    
+    # Apply templates using existing function
+    from staff_module import ApplyTemplatesRequest, DepartmentType
+    request = ApplyTemplatesRequest(
+        schedule_id=schedule_id,
+        departments=[DepartmentType.SERVICE, DepartmentType.KITCHEN]
+    )
+    
+    result = await apply_templates_to_schedule(schedule_id, request, user)
+    result["schedule_id"] = schedule_id
+    result["week"] = iso_week
+    result["year"] = iso_year
+    
+    return result
+
+
 @staff_router.post("/shift-templates/seed-defaults")
 async def seed_default_templates(user: dict = Depends(require_admin)):
     """Seed default Carlsburg shift templates"""
