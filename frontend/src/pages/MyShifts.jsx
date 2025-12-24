@@ -171,6 +171,28 @@ export default function MyShifts() {
             Lade Schichten...
           </CardContent>
         </Card>
+      ) : error === "no_profile" ? (
+        <Card className="border-amber-300 bg-amber-50">
+          <CardContent className="p-8 text-center">
+            <div className="text-amber-600 mb-4">
+              <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-amber-800 font-medium">Kein Mitarbeiterprofil verknüpft</p>
+            <p className="text-amber-600 text-sm mt-2">
+              Dein Benutzerkonto ist noch nicht mit einem Mitarbeiterprofil verbunden.
+              Bitte wende dich an die Schichtleitung oder Administration.
+            </p>
+          </CardContent>
+        </Card>
+      ) : error === "generic" ? (
+        <Card className="border-red-300 bg-red-50">
+          <CardContent className="p-8 text-center text-red-600">
+            <p className="font-medium">Fehler beim Laden der Schichten</p>
+            <p className="text-sm mt-2">Bitte versuche es später erneut oder kontaktiere die Administration.</p>
+          </CardContent>
+        </Card>
       ) : shifts.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-gray-500">
