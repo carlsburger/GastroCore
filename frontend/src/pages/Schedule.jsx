@@ -628,6 +628,7 @@ export const Schedule = () => {
                 const dayDate = new Date(date);
                 const isToday = new Date().toISOString().split("T")[0] === date;
                 const closedInfo = closedDays[date];
+                const isWknd = isWeekend(date);  // Sa/So hervorheben
                 const isClosed = !!closedInfo;
                 const eventWarning = getEventWarningForDate(date);
 
