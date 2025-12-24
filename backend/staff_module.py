@@ -1977,6 +1977,11 @@ class ApplyTemplatesRequest(BaseModel):
     schedule_id: str
     departments: List[DepartmentType] = [DepartmentType.SERVICE]
     season: Optional[SeasonType] = None  # None = auto-detect from opening hours
+
+class ApplyTemplatesBody(BaseModel):
+    """Request body für /schedules/{schedule_id}/apply-templates (schedule_id kommt aus URL)"""
+    departments: List[DepartmentType] = [DepartmentType.SERVICE]
+    season: Optional[SeasonType] = None  # None = auto-detect from opening hours
     
 
 # ----- SHIFT TEMPLATES ENDPOINTS -----
