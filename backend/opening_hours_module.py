@@ -252,6 +252,58 @@ class SimpleClosure(BaseModel):
         return v
 
 
+# --- NEUES Override-Modell (kann OFFEN oder GESCHLOSSEN sein) ---
+class OpeningOverrideCreate(BaseModel):
+    """
+    Override für einzelne Tage oder Zeiträume.
+    HÖCHSTE PRIORITÄT - überschreibt Perioden UND Feiertage.
+    
+    status = "closed": Tag komplett geschlossen
+    status = "open": Tag offen mit angegebenen Zeiten
+    """
+    date_from: str  # YYYY-MM-DD
+    date_to: Optional[str] = None  # YYYY-MM-DD (default = date_from)
+    status: str = Field(default="closed", pattern="^(closed|open)$")
+    open_from: Optional[str] = None  # HH:MM wenn status=open
+    open_to: Optional[str] = None    # HH:MM wenn status=open
+    last_reservation_time: Optional[str] = None  # HH:MM optional
+    note: str = Field(..., min_length=2, max_length=300)
+    priority: int = Field(default=100, ge=0, le=1000)  # Höhere Priority gewinnt
+    
+    @field_validator('date_from', 'date_to')
+    @classmethod
+    def validate_date(cls, v):
+        if v:
+            try:
+                datetime.strptime(v, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError(f"Ungültiges Datumsformat: {v} (YYYY-MM-DD erwartet)")
+        return v
+    
+    @field_validator('open_from', 'open_to', 'last_reservation_time')
+    @classmethod
+    def validate_time(cls, v):
+        if v:
+            try:
+                datetime.strptime(v, "%H:%M")
+            except ValueError:
+                raise ValueError(f"Ungültiges Zeitformat: {v} (HH:MM erwartet)")
+        return v
+
+
+class OpeningOverrideUpdate(BaseModel):
+    """Update für Override"""
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    status: Optional[str] = Field(None, pattern="^(closed|open)$")
+    open_from: Optional[str] = None
+    open_to: Optional[str] = None
+    last_reservation_time: Optional[str] = None
+    note: Optional[str] = Field(None, min_length=2, max_length=300)
+    priority: Optional[int] = Field(None, ge=0, le=1000)
+    active: Optional[bool] = None
+
+
 # ============== HELPER FUNCTIONS ==============
 
 def now_iso() -> str:
