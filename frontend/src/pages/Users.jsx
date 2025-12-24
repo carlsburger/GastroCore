@@ -47,10 +47,14 @@ const ROLE_BADGES = {
 
 export const Users = () => {
   const [users, setUsers] = useState([]);
+  const [staffMembers, setStaffMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedStaffId, setSelectedStaffId] = useState("");
+  const [linkingUser, setLinkingUser] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -58,6 +62,9 @@ export const Users = () => {
     role: "mitarbeiter",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const token = localStorage.getItem("token");
+  const headers = { Authorization: `Bearer ${token}` };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -71,8 +78,18 @@ export const Users = () => {
     }
   };
 
+  const fetchStaffMembers = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/staff/members`, { headers });
+      setStaffMembers(res.data || []);
+    } catch (err) {
+      console.error("Fehler beim Laden der Mitarbeiter:", err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchStaffMembers();
   }, []);
 
   const handleSubmit = async (e) => {
