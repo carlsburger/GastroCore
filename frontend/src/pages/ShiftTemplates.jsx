@@ -230,6 +230,7 @@ export default function ShiftTemplates() {
       close_plus_minutes: 30,
       headcount_default: 1,
       active: true,
+      event_mode: "normal",
     });
     setEditingTemplate(null);
   };
