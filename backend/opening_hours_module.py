@@ -301,7 +301,12 @@ async def get_active_period_for_date(target_date: date) -> Optional[dict]:
 async def get_closures_for_date(target_date: date) -> List[dict]:
     """
     Finde alle aktiven Sperrtage für ein Datum.
-    Prüft sowohl recurring als auch one_off.
+    Prüft:
+    1. Einfache Datumsbereiche (start_date/end_date) - HÖCHSTE PRIORITÄT
+    2. Recurring (jährlich wiederkehrend)
+    3. One-off (einmalig mit one_off_rule)
+    
+    Bei Überlappung: closed_all_day > closed_partial
     """
     date_str = target_date.strftime("%Y-%m-%d")
     month = target_date.month
@@ -309,18 +314,38 @@ async def get_closures_for_date(target_date: date) -> List[dict]:
     
     closures = await db.closures.find(
         {"active": True, "archived": {"$ne": True}}
-    ).to_list(100)
+    ).to_list(200)
     
     matching = []
     for closure in closures:
-        if closure["type"] == "recurring":
+        closure_type = closure.get("type", "")
+        
+        # 1. Neues Format: Datumsbereich (start_date/end_date)
+        if closure.get("start_date") and closure.get("end_date"):
+            start = closure["start_date"]
+            end = closure["end_date"]
+            if start <= date_str <= end:
+                # Priorität basierend auf Typ
+                priority = 100 if closure_type == "closed_all_day" else 50
+                closure["_match_priority"] = priority
+                matching.append(closure)
+        
+        # 2. Legacy: Recurring (jährlich)
+        elif closure_type == "recurring":
             rule = closure.get("recurring_rule", {})
             if rule.get("month") == month and rule.get("day") == day:
+                closure["_match_priority"] = 90
                 matching.append(closure)
-        elif closure["type"] == "one_off":
+        
+        # 3. Legacy: One-off (einmalig)
+        elif closure_type == "one_off":
             rule = closure.get("one_off_rule", {})
             if rule.get("date") == date_str:
+                closure["_match_priority"] = 80
                 matching.append(closure)
+    
+    # Sortiere: closed_all_day vor closed_partial, dann nach Priority
+    matching.sort(key=lambda x: x.get("_match_priority", 0), reverse=True)
     
     return matching
 
