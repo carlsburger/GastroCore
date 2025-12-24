@@ -1935,6 +1935,8 @@ class DayType(str, Enum):
 class DepartmentType(str, Enum):
     SERVICE = "service"
     KITCHEN = "kitchen"
+    REINIGUNG = "reinigung"
+    KUECHE = "Küche"  # Alias für Kompatibilität
 
 
 class ShiftTemplateCreate(BaseModel):
