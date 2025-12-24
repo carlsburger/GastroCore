@@ -384,6 +384,104 @@ export const Users = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Staff-Link Dialog */}
+      <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl flex items-center gap-2">
+              <Link size={20} />
+              Mitarbeiterprofil verknüpfen
+            </DialogTitle>
+            <DialogDescription>
+              Verknüpfe das Benutzerkonto "{selectedUser?.name}" mit einem Mitarbeiterprofil, 
+              damit der Benutzer seine Schichten in "Meine Schichten" sehen kann.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            {/* Aktueller Status */}
+            <div className="p-3 bg-muted rounded-lg">
+              <Label className="text-xs text-muted-foreground">Aktueller Status</Label>
+              <div className="mt-1 flex items-center gap-2">
+                {selectedUser?.staff_member_id ? (
+                  <>
+                    <UserCheck size={16} className="text-green-600" />
+                    <span className="font-medium text-green-700">
+                      Verknüpft mit: {getStaffName(selectedUser.staff_member_id)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={16} className="text-amber-600" />
+                    <span className="font-medium text-amber-700">Nicht verknüpft</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Mitarbeiter-Auswahl */}
+            <div className="space-y-2">
+              <Label htmlFor="staff-select">Mitarbeiterprofil auswählen</Label>
+              <Select
+                value={selectedStaffId}
+                onValueChange={setSelectedStaffId}
+              >
+                <SelectTrigger id="staff-select">
+                  <SelectValue placeholder="Mitarbeiter auswählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- Keine Verknüpfung --</SelectItem>
+                  {staffMembers
+                    .filter(s => !s.archived)
+                    .sort((a, b) => `${a.last_name}`.localeCompare(`${b.last_name}`))
+                    .map((staff) => (
+                      <SelectItem key={staff.id} value={staff.id}>
+                        {staff.first_name} {staff.last_name} ({staff.position || staff.department || "Mitarbeiter"})
+                      </SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Wähle das Mitarbeiterprofil aus, das mit diesem Benutzerkonto verknüpft werden soll.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            {selectedUser?.staff_member_id && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleUnlinkStaff}
+                disabled={linkingUser}
+                className="rounded-full text-amber-600 border-amber-300 hover:bg-amber-50"
+              >
+                <LinkOff size={16} className="mr-2" />
+                Verknüpfung aufheben
+              </Button>
+            )}
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowLinkDialog(false)} 
+              className="rounded-full"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleLinkStaff}
+              disabled={linkingUser || !selectedStaffId}
+              className="rounded-full"
+            >
+              {linkingUser ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link size={16} className="mr-2" />}
+              Verknüpfen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
