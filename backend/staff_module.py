@@ -2365,8 +2365,8 @@ async def apply_templates_to_schedule(
             
             # Calculate end time based on end_time_type
             end_time_type = template.get("end_time_type", "fixed")
-            if end_time_type == "close" and closing_time:
-                close_offset = template.get("close_plus_minutes", 0)
+            if end_time_type == "close_plus_minutes" and closing_time:
+                close_offset = template.get("close_plus_minutes", 0) or 0
                 # Parse closing time and add offset
                 try:
                     close_dt = datetime.strptime(closing_time, "%H:%M")
@@ -2375,7 +2375,8 @@ async def apply_templates_to_schedule(
                 except:
                     end_time = template.get("end_time") or template.get("end_time_fixed", "23:00")
             else:
-                end_time = template.get("end_time") or template.get("end_time_fixed", "23:00")
+                # Fixed end time
+                end_time = template.get("end_time_fixed") or template.get("end_time", "23:00")
             
             start_time = template.get("start_time")
             department = template.get("department")
