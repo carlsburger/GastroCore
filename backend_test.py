@@ -6072,6 +6072,28 @@ class GastroCoreAPITester:
                 return False
         
         # 3. Ändere Status einer Reservierung mit PATCH /api/reservations/{id}/status?new_status=angekommen
+        # First, we need to transition from "neu" to "bestaetigt" if the reservation is in "neu" status
+        current_status = None
+        for reservation in reservations:
+            if reservation["id"] == test_reservation_id:
+                current_status = reservation.get("status")
+                break
+        
+        if current_status == "neu":
+            # First transition: neu -> bestaetigt
+            result = self.make_request("PATCH", f"reservations/{test_reservation_id}/status?new_status=bestaetigt", 
+                                     {}, admin_token, expected_status=200)
+            
+            if result["success"]:
+                self.log_test("PATCH reservation status to 'bestaetigt' (intermediate step)", True, 
+                            f"Status changed to: {result['data'].get('status')}")
+            else:
+                error_details = result.get("data", {})
+                self.log_test("PATCH reservation status to 'bestaetigt' (intermediate step)", False, 
+                            f"Status: {result['status_code']}, Error: {error_details}")
+                return False
+        
+        # Now transition to "angekommen"
         result = self.make_request("PATCH", f"reservations/{test_reservation_id}/status?new_status=angekommen", 
                                  {}, admin_token, expected_status=200)
         
