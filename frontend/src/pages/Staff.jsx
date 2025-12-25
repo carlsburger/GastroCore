@@ -45,9 +45,40 @@ import axios from "axios";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const EMPLOYMENT_TYPES = {
-  mini: { label: "Minijob", color: "bg-blue-100 text-blue-700" },
+  minijob: { label: "Minijob", color: "bg-blue-100 text-blue-700" },
+  mini: { label: "Minijob", color: "bg-blue-100 text-blue-700" }, // Alias für Kompatibilität
   teilzeit: { label: "Teilzeit", color: "bg-purple-100 text-purple-700" },
   vollzeit: { label: "Vollzeit", color: "bg-green-100 text-green-700" },
+  selbststaendig: { label: "Selbstständig", color: "bg-amber-100 text-amber-700" },
+  werkstudent: { label: "Werkstudent", color: "bg-cyan-100 text-cyan-700" },
+};
+
+// Normalisierung der employment_type Werte
+const normalizeEmploymentType = (type) => {
+  if (!type) return "teilzeit";
+  const normalized = type.toString().toLowerCase().trim();
+  
+  // Mapping von Varianten auf Standardwerte
+  const mapping = {
+    "vollzeit": "vollzeit",
+    "fulltime": "vollzeit",
+    "full-time": "vollzeit",
+    "teilzeit": "teilzeit",
+    "parttime": "teilzeit",
+    "part-time": "teilzeit",
+    "minijob": "minijob",
+    "mini": "minijob",
+    "mini job": "minijob",
+    "geringfügig": "minijob",
+    "selbststaendig": "selbststaendig",
+    "selbstständig": "selbststaendig",
+    "freelancer": "selbststaendig",
+    "freiberuflich": "selbststaendig",
+    "werkstudent": "werkstudent",
+    "working student": "werkstudent",
+  };
+  
+  return mapping[normalized] || normalized;
 };
 
 const ROLES = {
