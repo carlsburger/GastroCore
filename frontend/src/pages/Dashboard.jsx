@@ -1497,6 +1497,187 @@ export const Dashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Telefon-Schnellanlage Dialog (Go-Live Sprint) */}
+      <Dialog open={showPhoneDialog} onOpenChange={setShowPhoneDialog}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl flex items-center gap-2">
+              <Phone className="h-6 w-6 text-amber-600" />
+              📞 Telefon-Reservierung
+            </DialogTitle>
+            <DialogDescription>
+              Schnellanlage für telefonische Reservierungen
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePhoneReservation}>
+            <div className="grid gap-4 py-4">
+              {/* Datum & Uhrzeit - Prominent */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone_date" className="text-base font-semibold">📅 Datum *</Label>
+                  <Input
+                    id="phone_date"
+                    type="date"
+                    value={phoneData.date}
+                    onChange={(e) => setPhoneData({ ...phoneData, date: e.target.value })}
+                    required
+                    className="h-12 text-lg font-medium"
+                    min={format(new Date(), "yyyy-MM-dd")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_time" className="text-base font-semibold">⏰ Uhrzeit *</Label>
+                  <Input
+                    id="phone_time"
+                    type="time"
+                    value={phoneData.time}
+                    onChange={(e) => setPhoneData({ ...phoneData, time: e.target.value })}
+                    required
+                    className="h-12 text-lg font-medium"
+                  />
+                </div>
+              </div>
+              
+              {/* Personen & Name */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone_size" className="text-base font-semibold">👥 Personen *</Label>
+                  <Input
+                    id="phone_size"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={phoneData.party_size}
+                    onChange={(e) => setPhoneData({ ...phoneData, party_size: parseInt(e.target.value) || 1 })}
+                    required
+                    className="h-12 text-lg font-medium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_name" className="text-base font-semibold">Name *</Label>
+                  <Input
+                    id="phone_name"
+                    value={phoneData.guest_name}
+                    onChange={(e) => setPhoneData({ ...phoneData, guest_name: e.target.value })}
+                    required
+                    className="h-12"
+                    placeholder="Name des Gastes"
+                  />
+                </div>
+              </div>
+              
+              {/* Telefon & Bereich */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone_tel" className="text-base font-semibold">📞 Telefon *</Label>
+                  <Input
+                    id="phone_tel"
+                    value={phoneData.guest_phone}
+                    onChange={(e) => setPhoneData({ ...phoneData, guest_phone: e.target.value })}
+                    required
+                    className="h-12"
+                    placeholder="Rückrufnummer"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_area">Bereich</Label>
+                  <Select
+                    value={phoneData.area_id}
+                    onValueChange={(v) => setPhoneData({ ...phoneData, area_id: v })}
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Optional..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {areas.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Anlass */}
+              <div className="space-y-2">
+                <Label>Anlass</Label>
+                <Select
+                  value={phoneData.occasion || ""}
+                  onValueChange={(v) => setPhoneData({ ...phoneData, occasion: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Optional: Anlass wählen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Kein Anlass</SelectItem>
+                    {occasions.map((occ) => (
+                      <SelectItem key={occ.id} value={occ.key || occ.label}>
+                        {occ.icon} {occ.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Sonderwünsche - kompakt */}
+              {specialRequests.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Sonderwünsche (schnell)</Label>
+                  <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+                    {specialRequests.slice(0, 8).map((req) => (
+                      <label 
+                        key={req.id} 
+                        className={`flex items-center gap-1 text-sm cursor-pointer px-2 py-1 rounded-full border transition-colors ${
+                          phoneData.special_requests?.includes(req.key || req.label) 
+                            ? 'bg-primary text-primary-foreground border-primary' 
+                            : 'bg-background hover:bg-muted border-muted-foreground/20'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={phoneData.special_requests?.includes(req.key || req.label) || false}
+                          onChange={(e) => {
+                            const key = req.key || req.label;
+                            const current = phoneData.special_requests || [];
+                            if (e.target.checked) {
+                              setPhoneData({ ...phoneData, special_requests: [...current, key] });
+                            } else {
+                              setPhoneData({ ...phoneData, special_requests: current.filter(k => k !== key) });
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <span>{req.icon}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Notizen */}
+              <div className="space-y-2">
+                <Label htmlFor="phone_notes">Notizen</Label>
+                <Textarea
+                  id="phone_notes"
+                  value={phoneData.notes}
+                  onChange={(e) => setPhoneData({ ...phoneData, notes: e.target.value })}
+                  className="min-h-[60px]"
+                  placeholder="Weitere Hinweise..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowPhoneDialog(false)} className="rounded-full">
+                Abbrechen
+              </Button>
+              <Button type="submit" disabled={submitting} className="rounded-full bg-amber-600 hover:bg-amber-700">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Phone className="h-4 w-4 mr-2" />}
+                Reservierung anlegen
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
