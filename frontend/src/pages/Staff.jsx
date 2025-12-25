@@ -256,7 +256,7 @@ export const Staff = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -278,7 +278,7 @@ export const Staff = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {members.filter((m) => m.employment_type === "vollzeit").length}
+                    {members.filter((m) => normalizeEmploymentType(m.employment_type) === "vollzeit").length}
                   </p>
                   <p className="text-sm text-muted-foreground">Vollzeit</p>
                 </div>
@@ -293,7 +293,7 @@ export const Staff = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {members.filter((m) => m.employment_type === "teilzeit").length}
+                    {members.filter((m) => normalizeEmploymentType(m.employment_type) === "teilzeit").length}
                   </p>
                   <p className="text-sm text-muted-foreground">Teilzeit</p>
                 </div>
@@ -308,9 +308,24 @@ export const Staff = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {members.filter((m) => m.employment_type === "mini").length}
+                    {members.filter((m) => normalizeEmploymentType(m.employment_type) === "minijob").length}
                   </p>
                   <p className="text-sm text-muted-foreground">Minijob</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-full">
+                  <Briefcase className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {members.filter((m) => normalizeEmploymentType(m.employment_type) === "selbststaendig").length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Selbstständig</p>
                 </div>
               </div>
             </CardContent>
