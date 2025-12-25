@@ -106,8 +106,27 @@ export default function MyShifts() {
         clearTimeout(timeoutRef.current);
       }
       
-      setShifts(response.data || []);
-      setError(null);
+      // Neues API Response Format unterstützen
+      const responseData = response.data;
+      
+      // Prüfe ob neues Standard-Format (mit success/data/error)
+      if (responseData && typeof responseData === 'object' && 'success' in responseData) {
+        // Neues Format: { success, data, message, error }
+        if (responseData.error === 'STAFF_NOT_LINKED') {
+          setError("no_profile");
+          setShifts([]);
+        } else if (responseData.error === 'NO_SHIFTS_ASSIGNED') {
+          setShifts([]);
+          setError(null);
+        } else {
+          setShifts(responseData.data || []);
+          setError(null);
+        }
+      } else {
+        // Altes Format: Array direkt
+        setShifts(responseData || []);
+        setError(null);
+      }
     } catch (err) {
       // Timeout clearen
       if (timeoutRef.current) {
