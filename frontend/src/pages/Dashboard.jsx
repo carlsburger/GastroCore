@@ -477,7 +477,7 @@ export const Dashboard = () => {
         date: format(addDays(new Date(), 1), "yyyy-MM-dd"),
         time: "19:00",
         area_id: "",
-        occasion: "",
+        occasion: "none",
         special_requests: [],
         notes: "",
       });
