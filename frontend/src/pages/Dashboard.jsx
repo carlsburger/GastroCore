@@ -1278,7 +1278,7 @@ export const Dashboard = () => {
                     <SelectValue placeholder="Optional: Anlass wählen..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Kein Anlass</SelectItem>
+                    <SelectItem value="none">Kein Anlass</SelectItem>
                     {occasions.map((occ) => (
                       <SelectItem key={occ.id} value={occ.key || occ.label}>
                         {occ.icon} {occ.label}
@@ -1639,7 +1639,7 @@ export const Dashboard = () => {
                     <SelectValue placeholder="Optional: Anlass wählen..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Kein Anlass</SelectItem>
+                    <SelectItem value="none">Kein Anlass</SelectItem>
                     {occasions.map((occ) => (
                       <SelectItem key={occ.id} value={occ.key || occ.label}>
                         {occ.icon} {occ.label}
