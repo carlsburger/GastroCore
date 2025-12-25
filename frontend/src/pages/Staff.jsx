@@ -46,12 +46,26 @@ import axios from "axios";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
 const EMPLOYMENT_TYPES = {
-  minijob: { label: "Minijob", color: "bg-blue-100 text-blue-700" },
-  mini: { label: "Minijob", color: "bg-blue-100 text-blue-700" }, // Alias für Kompatibilität
-  teilzeit: { label: "Teilzeit", color: "bg-purple-100 text-purple-700" },
   vollzeit: { label: "Vollzeit", color: "bg-green-100 text-green-700" },
+  teilzeit: { label: "Teilzeit", color: "bg-purple-100 text-purple-700" },
+  minijob: { label: "Minijob", color: "bg-blue-100 text-blue-700" },
   selbststaendig: { label: "Selbstständig", color: "bg-amber-100 text-amber-700" },
   werkstudent: { label: "Werkstudent", color: "bg-cyan-100 text-cyan-700" },
+};
+
+// Alias-Mapping für legacy Werte
+const EMPLOYMENT_TYPE_ALIASES = {
+  mini: "minijob",
+  "mini job": "minijob",
+  geringfügig: "minijob",
+  fulltime: "vollzeit",
+  "full-time": "vollzeit",
+  parttime: "teilzeit",
+  "part-time": "teilzeit",
+  "selbstständig": "selbststaendig",
+  freelancer: "selbststaendig",
+  freiberuflich: "selbststaendig",
+  "working student": "werkstudent",
 };
 
 // Normalisierung der employment_type Werte
@@ -59,27 +73,18 @@ const normalizeEmploymentType = (type) => {
   if (!type) return "teilzeit";
   const normalized = type.toString().toLowerCase().trim();
   
-  // Mapping von Varianten auf Standardwerte
-  const mapping = {
-    "vollzeit": "vollzeit",
-    "fulltime": "vollzeit",
-    "full-time": "vollzeit",
-    "teilzeit": "teilzeit",
-    "parttime": "teilzeit",
-    "part-time": "teilzeit",
-    "minijob": "minijob",
-    "mini": "minijob",
-    "mini job": "minijob",
-    "geringfügig": "minijob",
-    "selbststaendig": "selbststaendig",
-    "selbstständig": "selbststaendig",
-    "freelancer": "selbststaendig",
-    "freiberuflich": "selbststaendig",
-    "werkstudent": "werkstudent",
-    "working student": "werkstudent",
-  };
+  // Prüfe zuerst ob es ein Alias ist
+  if (EMPLOYMENT_TYPE_ALIASES[normalized]) {
+    return EMPLOYMENT_TYPE_ALIASES[normalized];
+  }
   
-  return mapping[normalized] || normalized;
+  // Prüfe ob es ein bekannter Typ ist
+  if (EMPLOYMENT_TYPES[normalized]) {
+    return normalized;
+  }
+  
+  // Fallback
+  return "teilzeit";
 };
 
 const ROLES = {
