@@ -211,6 +211,11 @@ export const Dashboard = () => {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [exportLoading, setExportLoading] = useState(false);
+  
+  // Occasions & Special Requests (Go-Live Sprint)
+  const [occasions, setOccasions] = useState([]);
+  const [specialRequests, setSpecialRequests] = useState([]);
+  
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_phone: "",
@@ -220,6 +225,8 @@ export const Dashboard = () => {
     time: "19:00",
     area_id: "",
     notes: "",
+    occasion: "",
+    special_requests: [],
   });
   const [walkInData, setWalkInData] = useState({
     guest_name: "",
