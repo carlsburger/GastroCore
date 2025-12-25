@@ -208,6 +208,7 @@ export const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showWalkInDialog, setShowWalkInDialog] = useState(false);
+  const [showPhoneDialog, setShowPhoneDialog] = useState(false);  // Telefon-Schnellanlage
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [exportLoading, setExportLoading] = useState(false);
@@ -228,6 +229,20 @@ export const Dashboard = () => {
     occasion: "",
     special_requests: [],
   });
+  
+  // Telefon-Schnellanlage Data (Go-Live Sprint)
+  const [phoneData, setPhoneData] = useState({
+    guest_name: "",
+    guest_phone: "",
+    party_size: 2,
+    date: format(addDays(new Date(), 1), "yyyy-MM-dd"),  // Default: morgen
+    time: "19:00",
+    area_id: "",
+    occasion: "",
+    special_requests: [],
+    notes: "",
+  });
+  
   const [walkInData, setWalkInData] = useState({
     guest_name: "",
     guest_phone: "",
