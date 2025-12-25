@@ -39,6 +39,7 @@ import {
   ChevronRight,
   UserCheck,
   UserX,
+  Briefcase,
 } from "lucide-react";
 import axios from "axios";
 
