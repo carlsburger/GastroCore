@@ -174,6 +174,7 @@ class ReservationCreate(BaseModel):
     table_number: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=1000)
     occasion: Optional[str] = Field(None, max_length=100)  # Anlass: Geburtstag, Hochzeit, etc.
+    special_requests: Optional[List[str]] = Field(default_factory=list)  # ["🎂 Gesteck", "🐶 Hund dabei"]
     source: Optional[str] = "intern"  # widget, intern, walk-in
     language: Optional[str] = "de"  # de, en, pl
     # Sprint: Reservierung Live-Ready
@@ -210,6 +211,7 @@ class ReservationUpdate(BaseModel):
     table_number: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=1000)
     occasion: Optional[str] = None
+    special_requests: Optional[List[str]] = None  # ["🎂 Gesteck", "🐶 Hund dabei"]
     # Sprint: Reservierung Live-Ready
     duration_minutes: Optional[int] = None
     allergies: Optional[str] = Field(None, max_length=500)
