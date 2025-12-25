@@ -449,6 +449,46 @@ export const Dashboard = () => {
     }
   };
 
+  // Telefon-Schnellanlage (Go-Live Sprint)
+  const handlePhoneReservation = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const payload = {
+        guest_name: phoneData.guest_name,
+        guest_phone: phoneData.guest_phone,
+        party_size: phoneData.party_size,
+        date: phoneData.date,
+        time: phoneData.time,
+        area_id: phoneData.area_id || undefined,
+        occasion: phoneData.occasion || undefined,
+        special_requests: phoneData.special_requests?.length > 0 ? phoneData.special_requests : undefined,
+        notes: phoneData.notes || undefined,
+        source: "telefon",
+      };
+      
+      await reservationsApi.create(payload);
+      toast.success(`Reservierung für ${format(parseISO(phoneData.date), "dd.MM.yyyy")} um ${phoneData.time} erstellt`);
+      setShowPhoneDialog(false);
+      setPhoneData({
+        guest_name: "",
+        guest_phone: "",
+        party_size: 2,
+        date: format(addDays(new Date(), 1), "yyyy-MM-dd"),
+        time: "19:00",
+        area_id: "",
+        occasion: "",
+        special_requests: [],
+        notes: "",
+      });
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Erstellen der Reservierung");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // PDF Export
   const handleExportPDF = async () => {
     setExportLoading(true);
