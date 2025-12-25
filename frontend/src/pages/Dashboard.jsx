@@ -58,7 +58,7 @@ import {
   Theater,
   TrendingUp,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import axios from "axios";
 
