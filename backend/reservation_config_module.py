@@ -1123,6 +1123,243 @@ async def extend_reservation_duration(
     }
 
 
+# ============== SONDERWÜNSCHE & ANLÄSSE (Go-Live Sprint) ==============
+
+# Default Anlässe
+DEFAULT_OCCASIONS = [
+    {"id": "birthday", "label": "Geburtstag", "icon": "🎂", "sort_order": 1},
+    {"id": "wedding", "label": "Hochzeit", "icon": "💍", "sort_order": 2},
+    {"id": "jugendweihe", "label": "Jugendweihe", "icon": "🎓", "sort_order": 3},
+    {"id": "taufe", "label": "Taufe", "icon": "👶", "sort_order": 4},
+    {"id": "jubilaeum", "label": "Jubiläum", "icon": "🏆", "sort_order": 5},
+    {"id": "geschaeftsessen", "label": "Geschäftsessen", "icon": "💼", "sort_order": 6},
+    {"id": "sonstiges", "label": "Sonstiges", "icon": "✨", "sort_order": 99},
+]
+
+# Default Sonderwünsche
+DEFAULT_SPECIAL_REQUESTS = [
+    {"id": "gesteck", "label": "Gesteck gewünscht", "icon": "🌸", "category": "service", "sort_order": 1},
+    {"id": "sektempfang", "label": "Sektempfang", "icon": "🥂", "category": "service", "sort_order": 2},
+    {"id": "fensterplatz", "label": "Tisch am Fenster", "icon": "🪟", "category": "platz", "sort_order": 3},
+    {"id": "hund", "label": "Hund dabei", "icon": "🐶", "category": "sonstiges", "sort_order": 4},
+    {"id": "barrierefrei", "label": "Barrierefrei", "icon": "♿", "category": "platz", "sort_order": 5},
+    {"id": "kinderwagen", "label": "Kinderwagen", "icon": "👶", "category": "platz", "sort_order": 6},
+    {"id": "ueberraschung", "label": "Überraschung geplant", "icon": "🎁", "category": "service", "sort_order": 7},
+    {"id": "kinderstuhl", "label": "Kinderstuhl", "icon": "🪑", "category": "platz", "sort_order": 8},
+    {"id": "ruhige_ecke", "label": "Ruhige Ecke", "icon": "🤫", "category": "platz", "sort_order": 9},
+    {"id": "terrasse", "label": "Terrasse (wenn möglich)", "icon": "☀️", "category": "platz", "sort_order": 10},
+]
+
+
+class OccasionCreate(BaseModel):
+    label: str = Field(..., min_length=2, max_length=50)
+    icon: str = Field(default="✨", max_length=5)
+    sort_order: int = Field(default=50, ge=1, le=100)
+
+class OccasionUpdate(BaseModel):
+    label: Optional[str] = Field(None, min_length=2, max_length=50)
+    icon: Optional[str] = Field(None, max_length=5)
+    sort_order: Optional[int] = Field(None, ge=1, le=100)
+    active: Optional[bool] = None
+
+class SpecialRequestCreate(BaseModel):
+    label: str = Field(..., min_length=2, max_length=100)
+    icon: str = Field(default="📌", max_length=5)
+    category: str = Field(default="sonstiges")  # service, platz, sonstiges
+    sort_order: int = Field(default=50, ge=1, le=100)
+    visible_in_kitchen: bool = Field(default=False)  # Für Küche relevant?
+
+class SpecialRequestUpdate(BaseModel):
+    label: Optional[str] = Field(None, min_length=2, max_length=100)
+    icon: Optional[str] = Field(None, max_length=5)
+    category: Optional[str] = None
+    sort_order: Optional[int] = Field(None, ge=1, le=100)
+    visible_in_kitchen: Optional[bool] = None
+    active: Optional[bool] = None
+
+
+@reservation_config_router.get("/occasions")
+async def get_occasions(
+    active_only: bool = True,
+    user: dict = Depends(get_current_user)
+):
+    """Gibt alle verfügbaren Anlässe zurück"""
+    query = {"type": "occasion", "archived": False}
+    if active_only:
+        query["active"] = True
+    
+    occasions = await db.reservation_options.find(query, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    
+    # Wenn keine vorhanden, defaults seeden
+    if not occasions:
+        for occ in DEFAULT_OCCASIONS:
+            doc = {
+                "id": str(uuid.uuid4()),
+                "type": "occasion",
+                "key": occ["id"],
+                "label": occ["label"],
+                "icon": occ["icon"],
+                "sort_order": occ["sort_order"],
+                "active": True,
+                "archived": False,
+                "created_at": now_iso(),
+                "updated_at": now_iso(),
+            }
+            await db.reservation_options.insert_one(doc)
+            occasions.append(doc)
+    
+    return occasions
+
+
+@reservation_config_router.post("/occasions")
+async def create_occasion(
+    data: OccasionCreate,
+    user: dict = Depends(require_admin)
+):
+    """Erstellt einen neuen Anlass"""
+    doc = {
+        "id": str(uuid.uuid4()),
+        "type": "occasion",
+        "key": data.label.lower().replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue"),
+        "label": data.label,
+        "icon": data.icon,
+        "sort_order": data.sort_order,
+        "active": True,
+        "archived": False,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.reservation_options.insert_one(doc)
+    return doc
+
+
+@reservation_config_router.put("/occasions/{occasion_id}")
+async def update_occasion(
+    occasion_id: str,
+    data: OccasionUpdate,
+    user: dict = Depends(require_admin)
+):
+    """Aktualisiert einen Anlass"""
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Keine Änderungen")
+    
+    update_data["updated_at"] = now_iso()
+    
+    result = await db.reservation_options.update_one(
+        {"id": occasion_id, "type": "occasion"},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Anlass nicht gefunden")
+    
+    return {"message": "Anlass aktualisiert"}
+
+
+@reservation_config_router.get("/special-requests")
+async def get_special_requests(
+    active_only: bool = True,
+    category: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Gibt alle verfügbaren Sonderwünsche zurück"""
+    query = {"type": "special_request", "archived": False}
+    if active_only:
+        query["active"] = True
+    if category:
+        query["category"] = category
+    
+    requests = await db.reservation_options.find(query, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    
+    # Wenn keine vorhanden, defaults seeden
+    if not requests:
+        for req in DEFAULT_SPECIAL_REQUESTS:
+            doc = {
+                "id": str(uuid.uuid4()),
+                "type": "special_request",
+                "key": req["id"],
+                "label": req["label"],
+                "icon": req["icon"],
+                "category": req["category"],
+                "sort_order": req["sort_order"],
+                "visible_in_kitchen": req.get("visible_in_kitchen", False),
+                "active": True,
+                "archived": False,
+                "created_at": now_iso(),
+                "updated_at": now_iso(),
+            }
+            await db.reservation_options.insert_one(doc)
+            requests.append(doc)
+    
+    return requests
+
+
+@reservation_config_router.post("/special-requests")
+async def create_special_request(
+    data: SpecialRequestCreate,
+    user: dict = Depends(require_admin)
+):
+    """Erstellt einen neuen Sonderwunsch"""
+    doc = {
+        "id": str(uuid.uuid4()),
+        "type": "special_request",
+        "key": data.label.lower().replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue"),
+        "label": data.label,
+        "icon": data.icon,
+        "category": data.category,
+        "sort_order": data.sort_order,
+        "visible_in_kitchen": data.visible_in_kitchen,
+        "active": True,
+        "archived": False,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.reservation_options.insert_one(doc)
+    return doc
+
+
+@reservation_config_router.put("/special-requests/{request_id}")
+async def update_special_request(
+    request_id: str,
+    data: SpecialRequestUpdate,
+    user: dict = Depends(require_admin)
+):
+    """Aktualisiert einen Sonderwunsch"""
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Keine Änderungen")
+    
+    update_data["updated_at"] = now_iso()
+    
+    result = await db.reservation_options.update_one(
+        {"id": request_id, "type": "special_request"},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Sonderwunsch nicht gefunden")
+    
+    return {"message": "Sonderwunsch aktualisiert"}
+
+
+@reservation_config_router.delete("/special-requests/{request_id}")
+async def delete_special_request(
+    request_id: str,
+    user: dict = Depends(require_admin)
+):
+    """Archiviert einen Sonderwunsch (Soft Delete)"""
+    result = await db.reservation_options.update_one(
+        {"id": request_id, "type": "special_request"},
+        {"$set": {"archived": True, "updated_at": now_iso()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Sonderwunsch nicht gefunden")
+    
+    return {"message": "Sonderwunsch gelöscht"}
+
+
 # ============== EXPORT ==============
 __all__ = [
     "reservation_config_router",
