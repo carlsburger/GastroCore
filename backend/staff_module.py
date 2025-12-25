@@ -6,9 +6,9 @@ ADDITIV - Keine Breaking Changes
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field, EmailStr
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Generic, TypeVar
 from datetime import datetime, timezone, timedelta, date
 from decimal import Decimal
 from enum import Enum
@@ -36,6 +36,71 @@ UPLOAD_DIR = Path("/app/uploads/staff_documents")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"}
+
+
+# ============== API RESPONSE TYPES ==============
+class ApiErrorCode(str, Enum):
+    """Zentrale Error-Codes für konsistente API-Semantik"""
+    STAFF_NOT_LINKED = "STAFF_NOT_LINKED"
+    NO_SHIFTS_ASSIGNED = "NO_SHIFTS_ASSIGNED"
+    INVALID_ROLE = "INVALID_ROLE"
+    NOT_AUTHENTICATED = "NOT_AUTHENTICATED"
+    FORBIDDEN = "FORBIDDEN"
+    NOT_FOUND = "NOT_FOUND"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    CONFLICT = "CONFLICT"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+T = TypeVar('T')
+
+class ApiResponse(BaseModel, Generic[T]):
+    """
+    Einheitlicher API Response Type für alle Endpoints.
+    
+    Regeln:
+    - success=True: Anfrage erfolgreich verarbeitet (auch bei leeren Daten)
+    - success=False: Technischer Fehler oder Validierungsfehler
+    - HTTP 200: Auch für fachlich leere Zustände (z.B. keine Schichten)
+    - HTTP 4xx/5xx: Nur für echte Fehler
+    """
+    success: bool = True
+    data: Optional[Any] = None
+    message: Optional[str] = None
+    error: Optional[ApiErrorCode] = None
+    
+    class Config:
+        use_enum_values = True
+
+
+def api_success(data: Any = None, message: str = None) -> dict:
+    """Helper für erfolgreiche API-Responses"""
+    return {
+        "success": True,
+        "data": data,
+        "message": message,
+        "error": None
+    }
+
+
+def api_info(data: Any = None, message: str = None, error_code: ApiErrorCode = None) -> dict:
+    """Helper für fachliche Zustände (z.B. keine Daten, nicht verknüpft)"""
+    return {
+        "success": True,
+        "data": data,
+        "message": message,
+        "error": error_code.value if error_code else None
+    }
+
+
+def api_error(message: str, error_code: ApiErrorCode, data: Any = None) -> dict:
+    """Helper für Fehlerfälle"""
+    return {
+        "success": False,
+        "data": data,
+        "message": message,
+        "error": error_code.value
+    }
 
 
 # ============== ENUMS ==============
