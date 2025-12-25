@@ -605,6 +605,15 @@ export const Dashboard = () => {
                   Walk-In
                 </Button>
                 <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setShowPhoneDialog(true)}
+                  className="rounded-full h-12 px-6 font-bold border-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+                >
+                  <Phone size={20} className="mr-2" />
+                  📞 Telefon
+                </Button>
+                <Button
                   size="lg"
                   onClick={() => {
                     setFormData({ ...formData, date: selectedDate });
