@@ -1172,6 +1172,54 @@ export const Dashboard = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Anlass (Go-Live Sprint) */}
+              <div className="space-y-2">
+                <Label htmlFor="occasion">Anlass</Label>
+                <Select
+                  value={formData.occasion || ""}
+                  onValueChange={(v) => setFormData({ ...formData, occasion: v })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Optional: Anlass wählen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Kein Anlass</SelectItem>
+                    {occasions.map((occ) => (
+                      <SelectItem key={occ.id} value={occ.key || occ.label}>
+                        {occ.icon} {occ.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Sonderwünsche (Go-Live Sprint) */}
+              <div className="space-y-2">
+                <Label>Sonderwünsche</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 bg-muted/30 rounded-lg max-h-[140px] overflow-y-auto">
+                  {specialRequests.map((req) => (
+                    <label key={req.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.special_requests?.includes(req.key || req.label) || false}
+                        onChange={(e) => {
+                          const key = req.key || req.label;
+                          const current = formData.special_requests || [];
+                          if (e.target.checked) {
+                            setFormData({ ...formData, special_requests: [...current, key] });
+                          } else {
+                            setFormData({ ...formData, special_requests: current.filter(k => k !== key) });
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span>{req.icon} {req.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="notes">Notizen</Label>
                 <Textarea
@@ -1180,6 +1228,7 @@ export const Dashboard = () => {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className="min-h-[80px]"
                   data-testid="form-notes"
+                  placeholder="Weitere Hinweise..."
                 />
               </div>
             </div>
