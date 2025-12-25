@@ -377,7 +377,8 @@ export const Staff = () => {
             filteredMembers.map((member) => {
               const statusConfig = STATUS_CONFIG[member.status] || STATUS_CONFIG.aktiv;
               const roleConfig = ROLES[member.role] || ROLES.service;
-              const empConfig = EMPLOYMENT_TYPES[member.employment_type] || EMPLOYMENT_TYPES.teilzeit;
+              const normalizedEmpType = normalizeEmploymentType(member.employment_type);
+              const empConfig = EMPLOYMENT_TYPES[normalizedEmpType] || EMPLOYMENT_TYPES.teilzeit;
 
               return (
                 <Card
