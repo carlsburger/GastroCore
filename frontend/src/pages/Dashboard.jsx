@@ -1053,6 +1053,13 @@ export const Dashboard = () => {
                                 </Tooltip>
                               </TooltipProvider>
                             )}
+                            {/* Occasion Badge (Go-Live Sprint) */}
+                            {reservation.occasion && (
+                              <Badge variant="outline" className="text-xs border-purple-300 text-purple-700 bg-purple-50">
+                                {occasions.find(o => o.key === reservation.occasion)?.icon || '✨'} 
+                                {occasions.find(o => o.key === reservation.occasion)?.label || reservation.occasion}
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                             <span className="flex items-center gap-1">
@@ -1067,6 +1074,29 @@ export const Dashboard = () => {
                               <span className="flex items-center gap-1">
                                 <MapPin size={16} />
                                 {getAreaName(reservation.area_id)}
+                              </span>
+                            )}
+                            {/* Special Requests Icons (Go-Live Sprint) */}
+                            {reservation.special_requests?.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                {reservation.special_requests.slice(0, 4).map((reqKey, idx) => {
+                                  const req = specialRequests.find(r => r.key === reqKey);
+                                  return (
+                                    <TooltipProvider key={idx}>
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          <span className="text-base">{req?.icon || '📌'}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{req?.label || reqKey}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  );
+                                })}
+                                {reservation.special_requests.length > 4 && (
+                                  <span className="text-xs text-muted-foreground">+{reservation.special_requests.length - 4}</span>
+                                )}
                               </span>
                             )}
                           </div>
