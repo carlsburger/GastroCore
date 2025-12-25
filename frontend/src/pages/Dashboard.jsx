@@ -226,7 +226,7 @@ export const Dashboard = () => {
     time: "19:00",
     area_id: "",
     notes: "",
-    occasion: "",
+    occasion: "none",
     special_requests: [],
   });
   
@@ -238,7 +238,7 @@ export const Dashboard = () => {
     date: format(addDays(new Date(), 1), "yyyy-MM-dd"),  // Default: morgen
     time: "19:00",
     area_id: "",
-    occasion: "",
+    occasion: "none",
     special_requests: [],
     notes: "",
   });
