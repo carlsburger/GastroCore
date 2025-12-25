@@ -1482,7 +1482,15 @@ async def get_my_shifts(
         # shift_date für Frontend-Kompatibilität
         shift["shift_date"] = shift.get("date")
     
-    return shifts
+    # Return mit einheitlichem API Response Format
+    if not shifts:
+        return api_info(
+            data=[],
+            message="Keine Schichten für diesen Zeitraum vorhanden.",
+            error_code=ApiErrorCode.NO_SHIFTS_ASSIGNED
+        )
+    
+    return api_success(data=shifts)
 
 
 @staff_router.post("/shifts")
