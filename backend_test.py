@@ -5695,7 +5695,7 @@ class GastroCoreAPITester:
             self.log_test("POST apply-templates", False, f"Status: {result['status_code']}")
             shift_templates_success = False
         
-        # 3. GET /api/staff/shifts?schedule_id=30fd1a35-8fd8-4968-a8b6-7baa74f972ee
+        # 3. GET /api/staff/shifts?schedule_id=resto-manager-163
         result = self.make_request("GET", "staff/shifts", {"schedule_id": schedule_id}, 
                                  self.tokens["admin"], expected_status=200)
         if result["success"]:
