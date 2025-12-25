@@ -322,12 +322,16 @@ export const Dashboard = () => {
       if (areaFilter !== "all") params.area_id = areaFilter;
       if (search) params.search = search;
 
-      const [resRes, areasRes] = await Promise.all([
+      const [resRes, areasRes, occasionsRes, specialReqRes] = await Promise.all([
         reservationsApi.getAll(params),
         areasApi.getAll(),
+        axios.get(`${BACKEND_URL}/api/reservation-config/occasions`, { headers }).catch(() => ({ data: [] })),
+        axios.get(`${BACKEND_URL}/api/reservation-config/special-requests`, { headers }).catch(() => ({ data: [] })),
       ]);
       setReservations(resRes.data);
       setAreas(areasRes.data);
+      setOccasions(occasionsRes.data || []);
+      setSpecialRequests(specialReqRes.data || []);
       
       // Fetch guest flags for reservations with phone numbers
       const phonesToCheck = [...new Set(resRes.data.filter(r => r.guest_phone).map(r => r.guest_phone))];
