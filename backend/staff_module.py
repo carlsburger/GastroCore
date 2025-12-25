@@ -1416,8 +1416,10 @@ async def get_my_shifts(
     1. Zuerst über staff_member_id im User-Dokument (explizite Verknüpfung)
     2. Fallback: über Email-Matching (für Kompatibilität)
     
-    Returns 404 wenn kein Mitarbeiterprofil verknüpft.
-    Returns leere Liste wenn keine Schichten vorhanden.
+    API SEMANTIK (v2):
+    - Returns 200 OK auch wenn kein Mitarbeiterprofil verknüpft
+    - Returns 200 OK mit leerer Liste wenn keine Schichten vorhanden
+    - Fachliche Zustände sind KEINE HTTP-Fehler
     """
     staff_member = None
     
@@ -1437,10 +1439,11 @@ async def get_my_shifts(
         })
     
     if not staff_member:
-        # Kein Mitarbeiter-Profil gefunden - 404 mit klarer Meldung
-        raise HTTPException(
-            status_code=404,
-            detail="Kein Mitarbeiterprofil verknüpft. Bitte wende dich an die Schichtleitung."
+        # Kein Mitarbeiter-Profil gefunden - 200 OK mit Info-Response
+        return api_info(
+            data=[],
+            message="Kein Mitarbeiterprofil verknüpft. Bitte wende dich an die Schichtleitung.",
+            error_code=ApiErrorCode.STAFF_NOT_LINKED
         )
     
     query = {
