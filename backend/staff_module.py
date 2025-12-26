@@ -1654,6 +1654,31 @@ async def get_hours_overview(
             "shift_count": len(member_shifts)
         })
     
+    # Bereichs-Aggregation (Service / Küche / Sonstige)
+    area_summary = {}
+    for o in overview:
+        area = o.get("work_area", "Sonstige")
+        if area not in area_summary:
+            area_summary[area] = {
+                "area": area,
+                "target_hours": 0,
+                "planned_hours": 0,
+                "difference": 0,
+                "staff_count": 0,
+                "shift_count": 0
+            }
+        area_summary[area]["target_hours"] += o["weekly_hours_target"]
+        area_summary[area]["planned_hours"] += o["planned_hours"]
+        area_summary[area]["difference"] += o["difference"]
+        area_summary[area]["staff_count"] += 1
+        area_summary[area]["shift_count"] += o["shift_count"]
+    
+    # Runden der Bereichs-Summen
+    for area in area_summary:
+        area_summary[area]["target_hours"] = round(area_summary[area]["target_hours"], 2)
+        area_summary[area]["planned_hours"] = round(area_summary[area]["planned_hours"], 2)
+        area_summary[area]["difference"] = round(area_summary[area]["difference"], 2)
+    
     return {
         "year": year,
         "week": week,
@@ -1661,7 +1686,8 @@ async def get_hours_overview(
         "week_end": week_end.isoformat(),
         "overview": overview,
         "total_planned": round(sum(o["planned_hours"] for o in overview), 2),
-        "total_target": round(sum(o["weekly_hours_target"] for o in overview), 2)
+        "total_target": round(sum(o["weekly_hours_target"] for o in overview), 2),
+        "area_summary": list(area_summary.values())  # NEU: Bereichs-Summen
     }
 
 
