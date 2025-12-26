@@ -188,9 +188,21 @@ export const Schedule = () => {
         params: { year },
       });
       
+      // Debug logging
+      console.log("fetchData - Looking for schedule:", { year, week, yearType: typeof year, weekType: typeof week });
+      console.log("fetchData - Available schedules:", schedulesRes.data.map(s => ({ year: s.year, week: s.week, archived: s.archived })));
+      
       const existingSchedule = schedulesRes.data.find(
-        (s) => s.year === year && (s.week === week || s.week === parseInt(week) || s.week_number === week) && !s.archived
+        (s) => {
+          const yearMatch = s.year === year || s.year === parseInt(year);
+          const weekMatch = s.week === week || s.week === parseInt(week) || s.week_number === week;
+          const notArchived = !s.archived;
+          console.log(`  Checking schedule KW ${s.week}/${s.year}: yearMatch=${yearMatch}, weekMatch=${weekMatch}, notArchived=${notArchived}`);
+          return yearMatch && weekMatch && notArchived;
+        }
       );
+      
+      console.log("fetchData - Found schedule:", existingSchedule ? `KW ${existingSchedule.week}/${existingSchedule.year}` : "NONE");
 
       if (existingSchedule) {
         // Load full schedule with shifts
