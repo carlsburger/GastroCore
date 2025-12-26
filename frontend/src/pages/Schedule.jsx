@@ -549,7 +549,8 @@ export const Schedule = () => {
 
   const getShiftsForDate = (date) => {
     if (!schedule?.shifts) return [];
-    const allShifts = schedule.shifts.filter((s) => s.date === date);
+    // Support both 'date' and 'shift_date' field names for backwards compatibility
+    const allShifts = schedule.shifts.filter((s) => (s.date || s.shift_date) === date);
     return getFilteredShifts(allShifts);
   };
 
