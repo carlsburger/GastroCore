@@ -1278,8 +1278,8 @@ def map_wordpress_event_to_gastrocore(wp_event: dict) -> dict:
     excerpt_clean = decode_html_entities(excerpt_clean)
     
     # ============== AKTIONEN-LOGIK (Sprint: Aktionen-Infrastruktur) ==============
-    # Bestimme content_category basierend auf event_type
-    content_category = determine_content_category(event_type)
+    # Bestimme content_category basierend auf event_type UND Titel
+    content_category = determine_content_category(event_type, title=title)
     
     # Für Aktionen: Zusätzliche Felder ermitteln
     action_type = None
