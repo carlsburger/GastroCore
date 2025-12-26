@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { t } from "../lib/i18n";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
+import { BRANDING } from "../lib/constants"; // Zentrale Branding-Konstanten
 import {
   LayoutDashboard,
   CalendarDays,
