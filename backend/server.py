@@ -2267,6 +2267,220 @@ async def process_reminders(background_tasks: BackgroundTasks, user: dict = Depe
     return {"message": f"Reminders verarbeitet: {processed}", "processed": processed, "success": True}
 
 
+# ============== SLOT AVAILABILITY API (Sprint: Kapazität/Slots) ==============
+
+@api_router.get("/availability/slots", tags=["Availability"])
+async def get_available_slots(
+    date: str = Query(..., description="Datum YYYY-MM-DD"),
+    party_size: int = Query(2, ge=1, le=20),
+    user: dict = Depends(require_manager)
+):
+    """
+    Gibt verfügbare Zeitslots für ein Datum zurück.
+    Berücksichtigt:
+    - Wochentag/Wochenende/Feiertag
+    - Bereits gebuchte Reservierungen pro Slot
+    - Slot-Kapazität (32/32/31 bei 3 Slots)
+    """
+    from datetime import datetime
+    
+    # Lade Slot-Konfiguration
+    config = await db.slot_settings.find_one({"type": "slot_config"}, {"_id": 0})
+    if not config:
+        raise NotFoundException("Slot-Konfiguration nicht gefunden")
+    
+    # Bestimme Tagestyp
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+    weekday = date_obj.weekday()  # 0=Mo, 6=So
+    
+    holidays = config.get("holidays_2025", [])
+    is_holiday = date in holidays
+    is_weekend = weekday >= 5  # Sa=5, So=6
+    
+    if is_holiday:
+        day_config = config.get("holiday", {})
+        day_type = "holiday"
+    elif is_weekend:
+        day_config = config.get("weekend", {})
+        day_type = "weekend"
+    else:
+        day_config = config.get("weekday", {})
+        day_type = "weekday"
+    
+    # Sammle alle möglichen Slots
+    all_slots = []
+    
+    # Feste Durchgänge
+    waves = day_config.get("waves", [])
+    slot_capacity = config.get("slot_capacity_distribution", [32, 32, 31])
+    
+    for wave_idx, wave in enumerate(waves):
+        wave_name = wave.get("name", f"Durchgang {wave_idx + 1}")
+        for slot_idx, slot_time in enumerate(wave.get("start_slots", [])):
+            capacity = slot_capacity[slot_idx] if slot_idx < len(slot_capacity) else 31
+            all_slots.append({
+                "time": slot_time,
+                "wave": wave_name,
+                "capacity": capacity,
+                "wave_index": wave_idx,
+                "slot_index": slot_idx
+            })
+    
+    # Rolling Slots (ab bestimmter Uhrzeit)
+    rolling_from = day_config.get("rolling_from")
+    rolling_interval = day_config.get("rolling_interval_minutes", 30)
+    closing_time = day_config.get("closing_time", "20:00")
+    last_booking_cutoff = day_config.get("last_booking_cutoff_minutes", 90)
+    
+    if rolling_from:
+        from_dt = datetime.strptime(rolling_from, "%H:%M")
+        close_dt = datetime.strptime(closing_time, "%H:%M")
+        last_booking_dt = close_dt - timedelta(minutes=last_booking_cutoff)
+        
+        current = from_dt
+        wave_idx = len(waves)
+        while current <= last_booking_dt:
+            slot_time = current.strftime("%H:%M")
+            # Prüfe ob dieser Slot nicht schon in waves ist
+            if not any(s["time"] == slot_time for s in all_slots):
+                all_slots.append({
+                    "time": slot_time,
+                    "wave": "Abend",
+                    "capacity": config.get("default_capacity_per_wave", 95),  # Rolling hat volle Kapazität
+                    "wave_index": wave_idx,
+                    "slot_index": 0
+                })
+            current += timedelta(minutes=rolling_interval)
+    
+    # Sortiere nach Zeit
+    all_slots.sort(key=lambda x: x["time"])
+    
+    # Lade bestehende Reservierungen für dieses Datum
+    reservations = await db.reservations.find({
+        "date": date,
+        "status": {"$nin": ["storniert", "no_show", "expired"]},
+        "archived": False
+    }, {"_id": 0, "time": 1, "party_size": 1}).to_list(500)
+    
+    # Zähle Buchungen pro Slot
+    booked_per_slot = {}
+    for res in reservations:
+        time = res.get("time", "")[:5]  # HH:MM
+        booked_per_slot[time] = booked_per_slot.get(time, 0) + res.get("party_size", 1)
+    
+    # Berechne verfügbare Slots
+    available_slots = []
+    for slot in all_slots:
+        booked = booked_per_slot.get(slot["time"], 0)
+        remaining = slot["capacity"] - booked
+        
+        slot_info = {
+            "time": slot["time"],
+            "wave": slot["wave"],
+            "capacity": slot["capacity"],
+            "booked": booked,
+            "remaining": remaining,
+            "available": remaining >= party_size,
+            "status": "available" if remaining >= party_size else ("limited" if remaining > 0 else "full")
+        }
+        available_slots.append(slot_info)
+    
+    return {
+        "date": date,
+        "day_type": day_type,
+        "party_size": party_size,
+        "slots": available_slots,
+        "total_capacity": sum(s["capacity"] for s in all_slots),
+        "total_booked": sum(booked_per_slot.values()),
+        "available_slots": [s for s in available_slots if s["available"]]
+    }
+
+
+@public_router.get("/availability/check", tags=["Public Booking"])
+async def check_public_availability(
+    date: str = Query(..., description="Datum YYYY-MM-DD"),
+    time: str = Query(..., description="Uhrzeit HH:MM"),
+    party_size: int = Query(2, ge=1, le=12)
+):
+    """
+    Öffentlicher Endpoint für Widget: Prüft ob ein Slot verfügbar ist.
+    """
+    from datetime import datetime
+    
+    # Lade Slot-Konfiguration
+    config = await db.slot_settings.find_one({"type": "slot_config"}, {"_id": 0})
+    if not config:
+        return {"available": False, "reason": "Keine Slot-Konfiguration"}
+    
+    # Bestimme Slot-Kapazität für diese Zeit
+    slot_capacity = 95  # Default
+    
+    # Zähle bestehende Buchungen für diesen Slot
+    reservations = await db.reservations.find({
+        "date": date,
+        "time": {"$regex": f"^{time[:5]}"},  # Match HH:MM
+        "status": {"$nin": ["storniert", "no_show", "expired"]},
+        "archived": False
+    }, {"_id": 0, "party_size": 1}).to_list(100)
+    
+    booked = sum(r.get("party_size", 1) for r in reservations)
+    remaining = slot_capacity - booked
+    
+    if remaining < party_size:
+        # Finde alternative Slots
+        alt_slots = await get_alternative_slots(date, time, party_size, config)
+        return {
+            "available": False,
+            "reason": f"Nur noch {remaining} Plätze verfügbar",
+            "booked": booked,
+            "remaining": remaining,
+            "alternatives": alt_slots[:5]
+        }
+    
+    return {
+        "available": True,
+        "booked": booked,
+        "remaining": remaining,
+        "capacity": slot_capacity
+    }
+
+
+async def get_alternative_slots(date: str, preferred_time: str, party_size: int, config: dict) -> list:
+    """Findet alternative verfügbare Slots in zeitlicher Nähe."""
+    from datetime import datetime, timedelta
+    
+    pref_dt = datetime.strptime(preferred_time, "%H:%M")
+    alternatives = []
+    
+    # Prüfe Slots +/- 2 Stunden
+    for delta in [-30, 30, -60, 60, -90, 90, -120, 120]:
+        alt_dt = pref_dt + timedelta(minutes=delta)
+        alt_time = alt_dt.strftime("%H:%M")
+        
+        if alt_time < "11:00" or alt_time > "20:00":
+            continue
+        
+        # Zähle Buchungen
+        reservations = await db.reservations.find({
+            "date": date,
+            "time": {"$regex": f"^{alt_time}"},
+            "status": {"$nin": ["storniert", "no_show", "expired"]},
+            "archived": False
+        }, {"_id": 0, "party_size": 1}).to_list(100)
+        
+        booked = sum(r.get("party_size", 1) for r in reservations)
+        remaining = 95 - booked
+        
+        if remaining >= party_size:
+            alternatives.append({
+                "time": alt_time,
+                "remaining": remaining,
+                "delta_minutes": delta
+            })
+    
+    return sorted(alternatives, key=lambda x: abs(x["delta_minutes"]))
+
+
 # --- Guest Confirmation Endpoints ---
 @public_router.get("/reservations/{reservation_id}/confirm-info", tags=["Public"])
 async def get_confirmation_info(reservation_id: str, token: str):
