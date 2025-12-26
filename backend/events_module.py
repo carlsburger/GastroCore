@@ -1138,9 +1138,8 @@ ACTION_TYPE_KEYWORDS = {
 def detect_action_type(title: str) -> Optional[str]:
     """
     Erkennt den Aktionstyp basierend auf Keywords im Titel.
-    Wird nur für Aktionen verwendet, nicht für Kultur-Events.
     
-    Returns: ActionType-String oder None
+    Erweitert: Prüft auch ob ein Event eine AKTION ist (unabhängig von Kategorien)
     """
     if not title:
         return None
