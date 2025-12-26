@@ -1608,6 +1608,10 @@ async def get_hours_overview(
     # Get all active staff members
     staff_members = await db.staff_members.find({"archived": False, "status": "aktiv"}, {"_id": 0}).to_list(500)
     
+    # Get all work areas for name resolution
+    work_areas = await db.work_areas.find({"archived": {"$ne": True}}, {"_id": 0}).to_list(100)
+    work_area_map = {a["id"]: a["name"] for a in work_areas}
+    
     # Get all shifts for this week
     shifts = await db.shifts.find({
         "shift_date": {"$gte": week_start.isoformat(), "$lte": week_end.isoformat()},
@@ -1618,12 +1622,22 @@ async def get_hours_overview(
     overview = []
     for member in staff_members:
         member_shifts = [s for s in shifts if s.get("staff_member_id") == member.get("id")]
-        planned_hours = sum(s.get("hours", 0) for s in member_shifts)
-        weekly_hours = member.get("weekly_hours", 0)
+        planned_hours = sum(s.get("hours", 0) or 0 for s in member_shifts)
+        weekly_hours = member.get("weekly_hours", 0) or 0
         
+        # Resolve work area name from work_area_ids
+        work_area_ids = member.get("work_area_ids", [])
+        work_area_name = "—"
+        if work_area_ids and len(work_area_ids) > 0:
+            work_area_name = work_area_map.get(work_area_ids[0], "—")
+        
+        # KPI-Vorbereitung: work_area_id für spätere Bereichs-Auswertungen
+        # TODO: Hier können später Bereichs-KPIs aggregiert werden
         overview.append({
             "staff_member_id": member.get("id"),
             "name": member.get("full_name"),
+            "work_area": work_area_name,  # NEU: Bereich für Anzeige
+            "work_area_id": work_area_ids[0] if work_area_ids else None,  # NEU: ID für KPI
             "employment_type": member.get("employment_type"),
             "weekly_hours_target": weekly_hours,
             "planned_hours": round(planned_hours, 2),
