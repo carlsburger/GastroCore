@@ -967,13 +967,34 @@ export const Schedule = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {hoursOverview.overview.map((row) => (
+                        {hoursOverview.overview.map((row) => {
+                          // Mapping für Beschäftigungsart-Abkürzungen
+                          const getEmploymentAbbr = (type) => {
+                            if (!type) return "—";
+                            const normalized = type.toLowerCase().trim();
+                            if (normalized === "vollzeit" || normalized === "fulltime" || normalized === "full_time") return "VZ";
+                            if (normalized === "teilzeit" || normalized === "parttime" || normalized === "part_time") return "TZ";
+                            if (normalized === "minijob" || normalized === "aushilfe" || normalized === "mini_job") return "MJ";
+                            if (normalized === "selbstständig" || normalized === "selbstaendig" || normalized === "self_employed" || normalized === "freelance") return "SE";
+                            return "—";
+                          };
+                          
+                          const employmentAbbr = getEmploymentAbbr(row.employment_type);
+                          const employmentColors = {
+                            "VZ": "bg-green-100 text-green-800 border-green-300",
+                            "TZ": "bg-blue-100 text-blue-800 border-blue-300",
+                            "MJ": "bg-amber-100 text-amber-800 border-amber-300",
+                            "SE": "bg-purple-100 text-purple-800 border-purple-300",
+                            "—": "bg-gray-100 text-gray-500 border-gray-300"
+                          };
+                          
+                          return (
                           <tr key={row.staff_member_id} className="border-b hover:bg-muted/50">
                             <td className="py-2 px-3 font-medium">{formatShortName(row.name)}</td>
-                            <td className="py-2 px-3 text-center">
-                              <Badge variant="outline" className="text-xs">
-                                {row.employment_type}
-                              </Badge>
+                            <td className="py-1.5 px-2 text-center whitespace-nowrap">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${employmentColors[employmentAbbr]}`}>
+                                {employmentAbbr}
+                              </span>
                             </td>
                             <td className="py-2 px-3 text-center">{row.weekly_hours_target}h</td>
                             <td className="py-2 px-3 text-center font-medium">{row.planned_hours}h</td>
@@ -984,7 +1005,8 @@ export const Schedule = () => {
                             </td>
                             <td className="py-2 px-3 text-center">{row.shift_count}</td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                       <tfoot>
                         <tr className="bg-muted font-medium">
