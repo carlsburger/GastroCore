@@ -5729,6 +5729,180 @@ class GastroCoreAPITester:
         
         return shift_templates_success
 
+    def test_event_pricing_integration(self):
+        """Test Event-Pricing + Reservierung Integration as requested"""
+        print("\n🎯 Testing Event-Pricing + Reservierung Integration...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Event-Pricing Integration", False, "Admin token not available")
+            return False
+        
+        integration_success = True
+        
+        # Test A: POST /api/reservations mit event_id (Schnitzel satt, 4 Personen)
+        schnitzel_event_id = "9f5b382a-c9de-444c-9b0a-5a198af9e948"
+        reservation_data_a = {
+            "guest_name": "Test Familie Müller",
+            "guest_phone": "+49 170 1111111",
+            "guest_email": "mueller@example.de",
+            "party_size": 4,
+            "date": "2025-12-27",
+            "time": "18:00",
+            "event_id": schnitzel_event_id
+        }
+        
+        result = self.make_request("POST", "reservations", reservation_data_a, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            reservation_a = result["data"]
+            expected_total = 119.60  # 29.90 * 4
+            if (reservation_a.get("status") == "neu" and 
+                reservation_a.get("total_price") == expected_total and
+                reservation_a.get("payment_mode") == "none"):
+                self.log_test("Test A: Schnitzel satt (4 Personen, keine Anzahlung)", True, 
+                            f"Status: {reservation_a.get('status')}, Total: {reservation_a.get('total_price')}€, Payment: {reservation_a.get('payment_mode')}")
+                self.test_data["reservation_a_id"] = reservation_a["id"]
+            else:
+                self.log_test("Test A: Schnitzel satt", False, 
+                            f"Expected: status=neu, total=119.60, payment=none. Got: status={reservation_a.get('status')}, total={reservation_a.get('total_price')}, payment={reservation_a.get('payment_mode')}")
+                integration_success = False
+        else:
+            self.log_test("Test A: Schnitzel satt", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            integration_success = False
+        
+        # Test B: POST /api/reservations mit event_id + variant_code (Gänsemenü "main_only", 4 Personen)
+        gaense_event_id = "8048b07b-0bb1-4334-86e3-ba8c282eee8b"
+        reservation_data_b = {
+            "guest_name": "Test Familie Weber",
+            "guest_phone": "+49 170 2222222",
+            "guest_email": "weber@example.de",
+            "party_size": 4,
+            "date": "2025-12-27",
+            "time": "19:00",
+            "event_id": gaense_event_id,
+            "variant_code": "main_only"
+        }
+        
+        result = self.make_request("POST", "reservations", reservation_data_b, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            reservation_b = result["data"]
+            expected_total = 139.60  # 34.90 * 4
+            expected_due = 80.00     # 20.00 * 4
+            if (reservation_b.get("status") == "pending_payment" and 
+                reservation_b.get("total_price") == expected_total and
+                reservation_b.get("amount_due") == expected_due):
+                self.log_test("Test B: Gänsemenü main_only (4 Personen, 20€ Anzahlung)", True, 
+                            f"Status: {reservation_b.get('status')}, Total: {reservation_b.get('total_price')}€, Due: {reservation_b.get('amount_due')}€")
+                self.test_data["reservation_b_id"] = reservation_b["id"]
+            else:
+                self.log_test("Test B: Gänsemenü main_only", False, 
+                            f"Expected: status=pending_payment, total=139.60, due=80.00. Got: status={reservation_b.get('status')}, total={reservation_b.get('total_price')}, due={reservation_b.get('amount_due')}")
+                integration_success = False
+        else:
+            self.log_test("Test B: Gänsemenü main_only", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            integration_success = False
+        
+        # Test C: POST /api/reservations mit event_id + variant_code (Valentinstag "menu_classic", 2 Personen)
+        valentinstag_event_id = "d0f79627-f047-41fe-9ec8-64965ff81b60"
+        reservation_data_c = {
+            "guest_name": "Test Paar Schmidt",
+            "guest_phone": "+49 170 3333333",
+            "guest_email": "schmidt@example.de",
+            "party_size": 2,
+            "date": "2025-12-27",
+            "time": "20:00",
+            "event_id": valentinstag_event_id,
+            "variant_code": "menu_classic"
+        }
+        
+        result = self.make_request("POST", "reservations", reservation_data_c, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            reservation_c = result["data"]
+            expected_total = 119.80  # 59.90 * 2
+            expected_due = 60.00     # 30.00 * 2
+            if (reservation_c.get("status") == "pending_payment" and 
+                reservation_c.get("total_price") == expected_total and
+                reservation_c.get("amount_due") == expected_due):
+                self.log_test("Test C: Valentinstag menu_classic (2 Personen, 30€ Anzahlung)", True, 
+                            f"Status: {reservation_c.get('status')}, Total: {reservation_c.get('total_price')}€, Due: {reservation_c.get('amount_due')}€")
+                self.test_data["reservation_c_id"] = reservation_c["id"]
+            else:
+                self.log_test("Test C: Valentinstag menu_classic", False, 
+                            f"Expected: status=pending_payment, total=119.80, due=60.00. Got: status={reservation_c.get('status')}, total={reservation_c.get('total_price')}, due={reservation_c.get('amount_due')}")
+                integration_success = False
+        else:
+            self.log_test("Test C: Valentinstag menu_classic", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            integration_success = False
+        
+        # Test D: POST /api/events/reservations/{id}/confirm-payment
+        if "reservation_b_id" in self.test_data:
+            result = self.make_request("POST", f"events/reservations/{self.test_data['reservation_b_id']}/confirm-payment?amount_paid=80&payment_method=bar", 
+                                     {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                payment_response = result["data"]
+                if payment_response.get("success"):
+                    self.log_test("Test D: Confirm payment (80€, bar)", True, 
+                                f"Payment confirmed: {payment_response.get('message')}")
+                    
+                    # Verify reservation status changed
+                    verify_result = self.make_request("GET", f"reservations/{self.test_data['reservation_b_id']}", 
+                                                    token=self.tokens["admin"], expected_status=200)
+                    if verify_result["success"]:
+                        updated_res = verify_result["data"]
+                        if (updated_res.get("status") == "bestätigt" and 
+                            updated_res.get("payment_status") == "paid"):
+                            self.log_test("Test D: Verify status after payment", True, 
+                                        f"Status: {updated_res.get('status')}, Payment: {updated_res.get('payment_status')}")
+                        else:
+                            self.log_test("Test D: Verify status after payment", False, 
+                                        f"Expected: status=bestätigt, payment_status=paid. Got: status={updated_res.get('status')}, payment_status={updated_res.get('payment_status')}")
+                            integration_success = False
+                else:
+                    self.log_test("Test D: Confirm payment", False, f"Payment not successful: {payment_response}")
+                    integration_success = False
+            else:
+                self.log_test("Test D: Confirm payment", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+                integration_success = False
+        
+        # Test E: GET /api/events/reservations/pending-payments
+        result = self.make_request("GET", "events/reservations/pending-payments", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            pending_data = result["data"]
+            pending_reservations = pending_data.get("reservations", [])
+            total_pending = pending_data.get("total", 0)
+            self.log_test("Test E: Get pending payments", True, 
+                        f"Found {total_pending} pending payment reservations")
+            
+            # Check if our test reservation C is in the list
+            if "reservation_c_id" in self.test_data:
+                found_c = any(r["id"] == self.test_data["reservation_c_id"] for r in pending_reservations)
+                if found_c:
+                    self.log_test("Test E: Verify test reservation C in pending list", True)
+                else:
+                    self.log_test("Test E: Verify test reservation C in pending list", False, 
+                                "Test reservation C not found in pending payments")
+                    integration_success = False
+        else:
+            self.log_test("Test E: Get pending payments", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            integration_success = False
+        
+        # Test F: POST /api/events/reservations/expire-unpaid
+        result = self.make_request("POST", "events/reservations/expire-unpaid", 
+                                 {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            expire_response = result["data"]
+            expired_count = expire_response.get("expired_count", 0)
+            self.log_test("Test F: Expire unpaid reservations", True, 
+                        f"Expired {expired_count} reservations (should be 0 for fresh reservations)")
+        else:
+            self.log_test("Test F: Expire unpaid reservations", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            integration_success = False
+        
+        return integration_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
