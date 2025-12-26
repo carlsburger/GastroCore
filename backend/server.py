@@ -1130,10 +1130,70 @@ async def autocomplete_guests(
             "notes": guest.get("notes"),
             "newsletter_subscribed": guest.get("newsletter_subscribed", True),
             "visit_count": visit_count,
-            "last_visit": last_visit.get("date") if last_visit else None
+            "last_visit": last_visit.get("date") if last_visit else None,
+            "source": "guests"
         })
     
+    # NEU: Suche auch in guest_contacts (Legacy-Import, nur Reservierung)
+    if len(result) < limit:
+        existing_phones = {g["phone"] for g in result if g.get("phone")}
+        existing_emails = {g["email"] for g in result if g.get("email")}
+        
+        contacts = await db.guest_contacts.find(
+            {
+                "archived": False,
+                "contact_type": "reservation_guest",
+                "$or": [
+                    {"first_name": {"$regex": safe_search, "$options": "i"}},
+                    {"last_name": {"$regex": safe_search, "$options": "i"}},
+                    {"phone": {"$regex": safe_search, "$options": "i"}},
+                    {"email": {"$regex": safe_search, "$options": "i"}}
+                ]
+            },
+            {"_id": 0}
+        ).limit(limit * 2).to_list(limit * 2)
+        
+        for contact in contacts:
+            # Skip wenn bereits über phone oder email gefunden
+            if contact.get("phone") in existing_phones:
+                continue
+            if contact.get("email") and contact.get("email") in existing_emails:
+                continue
+            
+            # Namen formatieren: "V. Nachname"
+            fn = contact.get("first_name", "")
+            ln = contact.get("last_name", "")
+            if fn and ln:
+                display_name = f"{fn[0]}. {ln}"
+            elif ln:
+                display_name = ln
+            elif fn:
+                display_name = fn
+            else:
+                display_name = "Unbekannt"
+            
+            result.append({
+                "id": contact.get("id"),
+                "name": display_name,
+                "phone": contact.get("phone"),
+                "email": contact.get("email"),
+                "flag": None,
+                "notes": contact.get("notes"),
+                "newsletter_subscribed": False,  # WICHTIG: Legacy-Kontakte haben KEIN Marketing
+                "marketing_consent": contact.get("marketing_consent", False),
+                "visit_count": contact.get("reservation_count", 0),
+                "last_visit": contact.get("last_reservation_date"),
+                "source": "guest_contacts"
+            })
+            existing_phones.add(contact.get("phone"))
+            if contact.get("email"):
+                existing_emails.add(contact.get("email"))
+            
+            if len(result) >= limit:
+                break
+    
     # Auch in Reservierungen suchen (für Gäste die noch nicht in guests sind)
+    if len(result) < limit:
     if len(result) < limit:
         res_guests = await db.reservations.aggregate([
             {
