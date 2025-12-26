@@ -1,0 +1,116 @@
+[
+  {
+    "_id": "694eeb536f06d3b3d97798d1",
+    "id": "9206b137-36eb-4372-bf22-06868b23a496",
+    "actor_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "actor_email": "admin@carlsburg.de",
+    "actor": {
+      "id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+      "email": "admin@carlsburg.de"
+    },
+    "entity": "user",
+    "entity_type": "user",
+    "entity_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "action": "login",
+    "before": null,
+    "after": null,
+    "metadata": null,
+    "timestamp": "2025-12-26T20:08:51.220693+00:00",
+    "ip_address": null
+  },
+  {
+    "_id": "694eeb5b6f06d3b3d97798d2",
+    "id": "3a4b5d25-5011-413e-8721-37942ef7ff3a",
+    "actor_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "actor_email": "admin@carlsburg.de",
+    "actor": {
+      "id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+      "email": "admin@carlsburg.de"
+    },
+    "entity": "user",
+    "entity_type": "user",
+    "entity_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "action": "login",
+    "before": null,
+    "after": null,
+    "metadata": null,
+    "timestamp": "2025-12-26T20:08:59.662558+00:00",
+    "ip_address": null
+  },
+  {
+    "_id": "694eeb6e6f06d3b3d97798d3",
+    "id": "38bc1e12-7701-4310-90f0-637fa6d34f54",
+    "actor_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "actor_email": "admin@carlsburg.de",
+    "actor": {
+      "id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+      "email": "admin@carlsburg.de"
+    },
+    "entity": "user",
+    "entity_type": "user",
+    "entity_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "action": "login",
+    "before": null,
+    "after": null,
+    "metadata": null,
+    "timestamp": "2025-12-26T20:09:18.409377+00:00",
+    "ip_address": null
+  },
+  {
+    "_id": "694eeb8a6f06d3b3d97798d4",
+    "id": "687f6424-f19d-4716-a915-103de2810372",
+    "actor_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "actor_email": "admin@carlsburg.de",
+    "actor": {
+      "id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+      "email": "admin@carlsburg.de"
+    },
+    "entity": "user",
+    "entity_type": "user",
+    "entity_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "action": "login",
+    "before": null,
+    "after": null,
+    "metadata": null,
+    "timestamp": "2025-12-26T20:09:46.644573+00:00",
+    "ip_address": null
+  },
+  {
+    "_id": "694eeb8a6f06d3b3d97798d5",
+    "id": "583a757a-a01d-4bd6-9ae0-10ccc51c8250",
+    "actor_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "actor_email": "admin@carlsburg.de",
+    "actor": {
+      "id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+      "email": "admin@carlsburg.de"
+    },
+    "entity": "user",
+    "entity_type": "user",
+    "entity_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "action": "login",
+    "before": null,
+    "after": null,
+    "metadata": null,
+    "timestamp": "2025-12-26T20:09:46.878717+00:00",
+    "ip_address": null
+  },
+  {
+    "_id": "694eeb9d6f06d3b3d97798d6",
+    "id": "c28ad9c4-07e3-4d20-8644-551c0c9c5375",
+    "actor_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "actor_email": "admin@carlsburg.de",
+    "actor": {
+      "id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+      "email": "admin@carlsburg.de"
+    },
+    "entity": "user",
+    "entity_type": "user",
+    "entity_id": "9ffb6fe9-fb88-42c0-a37a-3481edec761a",
+    "action": "login",
+    "before": null,
+    "after": null,
+    "metadata": null,
+    "timestamp": "2025-12-26T20:10:05.082997+00:00",
+    "ip_address": null
+  }
+]

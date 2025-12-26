@@ -1,0 +1,24 @@
+[
+  {
+    "_id": "694eeb246f06d3b3d97798cf",
+    "id": "55e18928-9b92-484f-92d3-09839fd2f74b",
+    "name": "24h Erinnerung",
+    "hours_before": 24,
+    "channel": "email",
+    "is_active": true,
+    "created_at": "2025-12-26T20:08:04.941726+00:00",
+    "updated_at": "2025-12-26T20:08:04.941728+00:00",
+    "archived": false
+  },
+  {
+    "_id": "694eeb246f06d3b3d97798d0",
+    "id": "eb51df8b-59ba-472d-b025-d4909551ed20",
+    "name": "3h Erinnerung",
+    "hours_before": 3,
+    "channel": "whatsapp",
+    "is_active": true,
+    "created_at": "2025-12-26T20:08:04.951117+00:00",
+    "updated_at": "2025-12-26T20:08:04.951119+00:00",
+    "archived": false
+  }
+]

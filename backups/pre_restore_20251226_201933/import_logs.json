@@ -1,0 +1,20 @@
+[
+  {
+    "_id": "694eeba16f06d3b3d97798ea",
+    "id": "64f0d022-0730-4711-a64d-37bf18d631fa",
+    "type": "wordpress_events_sync",
+    "timestamp": "2025-12-26T20:10:09.208391+00:00",
+    "user": "scheduler",
+    "source": "https://www.carlsburg.de/wp-json/tribe/events/v1/events",
+    "fetched": 19,
+    "created": 19,
+    "updated": 0,
+    "unchanged": 0,
+    "archived": 0,
+    "skipped": 0,
+    "errors": [],
+    "duration_ms": 4124,
+    "success": true,
+    "result": "success"
+  }
+]

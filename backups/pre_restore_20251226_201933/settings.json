@@ -1,0 +1,56 @@
+[
+  {
+    "_id": "694eeb246f06d3b3d97798c9",
+    "id": "408662ba-05cf-4fc5-bff3-061abdb22f71",
+    "key": "no_show_greylist_threshold",
+    "value": "2",
+    "description": "No-Shows bis Greylist",
+    "created_at": "2025-12-26T20:08:04.924770+00:00",
+    "updated_at": "2025-12-26T20:08:04.924776+00:00"
+  },
+  {
+    "_id": "694eeb246f06d3b3d97798ca",
+    "id": "16159f1c-0a5e-458b-a688-9fc78575e40e",
+    "key": "no_show_blacklist_threshold",
+    "value": "4",
+    "description": "No-Shows bis Blacklist",
+    "created_at": "2025-12-26T20:08:04.939164+00:00",
+    "updated_at": "2025-12-26T20:08:04.939167+00:00"
+  },
+  {
+    "_id": "694eeb246f06d3b3d97798cb",
+    "id": "dd95ea49-fb1c-4db1-ad3a-ee44c6e3d95c",
+    "key": "cancellation_deadline_hours",
+    "value": "24",
+    "description": "Stornierungsfrist in Stunden",
+    "created_at": "2025-12-26T20:08:04.939809+00:00",
+    "updated_at": "2025-12-26T20:08:04.939811+00:00"
+  },
+  {
+    "_id": "694eeb246f06d3b3d97798cc",
+    "id": "93bca83b-7873-43b6-bbc9-991d30c0b4dd",
+    "key": "require_guest_confirmation",
+    "value": "false",
+    "description": "Gast-Bestätigung erforderlich",
+    "created_at": "2025-12-26T20:08:04.940298+00:00",
+    "updated_at": "2025-12-26T20:08:04.940301+00:00"
+  },
+  {
+    "_id": "694eeb246f06d3b3d97798cd",
+    "id": "d245737d-14e2-4400-9882-e7704bdcbbd8",
+    "key": "greylist_requires_confirmation",
+    "value": "true",
+    "description": "Greylist-Gäste müssen bestätigen",
+    "created_at": "2025-12-26T20:08:04.940767+00:00",
+    "updated_at": "2025-12-26T20:08:04.940769+00:00"
+  },
+  {
+    "_id": "694eeb246f06d3b3d97798ce",
+    "id": "ddd664bd-32ed-44c8-a472-baec614a96b8",
+    "key": "restaurant_name",
+    "value": "Carlsburg Restaurant",
+    "description": "Restaurant-Name",
+    "created_at": "2025-12-26T20:08:04.941218+00:00",
+    "updated_at": "2025-12-26T20:08:04.941220+00:00"
+  }
+]
