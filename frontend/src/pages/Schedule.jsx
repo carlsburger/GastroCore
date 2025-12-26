@@ -500,7 +500,10 @@ export const Schedule = () => {
 
   const getWeekDates = () => {
     if (!schedule) return [];
-    const start = new Date(schedule.start_date);
+    // Support both start_date and week_start field names
+    const startStr = schedule.start_date || schedule.week_start;
+    if (!startStr) return [];
+    const start = new Date(startStr);
     return Array.from({ length: 7 }, (_, i) => {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
