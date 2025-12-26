@@ -61,6 +61,9 @@ backend:
       - working: true
         agent: "main"
         comment: "✅ PATCH /events/{id}/pricing, PATCH /events/{id}/payment-policy, GET /events/{id}/pricing-info, POST /events/{id}/calculate-price"
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE API TESTING COMPLETE: All 6 Event-Pricing endpoints tested successfully. A) GET pricing-info (29.90€/119.60€/none) ✅ B) POST calculate-price Schnitzel mit Anzahlung (119.60€/40.00€) ✅ C) POST calculate-price Gänsemenü main_only (Hauptgang/69.80€/40.00€) ✅ D) POST calculate-price Valentinstag menu_classic (119.80€/50.00€) ✅ E) PATCH pricing update (35.00€) ✅ F) PATCH payment-policy update (deposit 15€) ✅ All price calculations, variant handling, and payment policies working correctly."
 
   - task: "WP-Sync Schutz"
     implemented: true
