@@ -578,32 +578,45 @@ def filter_member_for_role(member: dict, user_role: str, masked: bool = True) ->
     
     Security: Non-admins NEVER see sensitive HR fields
     """
-    # IMMER display_name generieren (für Anzeige in Listen)
+    # IMMER display_name und full_name generieren (für Anzeige in Listen)
     display_name = member.get("display_name")
-    if not display_name:
-        # Versuche verschiedene Quellen für den Namen
-        if member.get("name"):
-            display_name = member.get("name")
-        elif member.get("first_name") and member.get("last_name"):
-            display_name = f"{member.get('first_name')} {member.get('last_name')}"
-        elif member.get("first_name"):
-            display_name = member.get("first_name")
-        elif member.get("last_name"):
-            display_name = member.get("last_name")
-        elif member.get("email"):
-            # Fallback: Email-Prefix
-            display_name = member.get("email").split("@")[0].title()
+    full_name = member.get("full_name")
+    first_name = member.get("first_name")
+    last_name = member.get("last_name")
+    
+    # Wenn name vorhanden aber first/last fehlen, splitte
+    if member.get("name") and not (first_name and last_name):
+        name_parts = member.get("name", "").split()
+        if len(name_parts) >= 2:
+            first_name = first_name or name_parts[0]
+            last_name = last_name or " ".join(name_parts[1:])
+        elif len(name_parts) == 1:
+            first_name = first_name or name_parts[0]
+            last_name = last_name or ""
+    
+    # full_name zusammenbauen
+    if not full_name:
+        if first_name and last_name:
+            full_name = f"{first_name} {last_name}"
+        elif member.get("name"):
+            full_name = member.get("name")
+        elif first_name:
+            full_name = first_name
         else:
-            display_name = "Unbekannt"
+            full_name = member.get("email", "Unbekannt").split("@")[0].title()
+    
+    # display_name (gleich wie full_name, wenn nicht vorhanden)
+    if not display_name:
+        display_name = full_name
     
     # Kurzname für Initialen etc.
     short_name = member.get("short_name")
     if not short_name:
-        parts = display_name.split()
+        parts = full_name.split() if full_name else []
         if len(parts) >= 2:
             short_name = f"{parts[0][0]}. {parts[-1]}"
         else:
-            short_name = display_name[:15]
+            short_name = full_name[:15] if full_name else "?"
     
     if user_role != "admin":
         # Non-admin: Remove ALL sensitive HR fields completely
@@ -613,6 +626,9 @@ def filter_member_for_role(member: dict, user_role: str, masked: bool = True) ->
                 filtered[k] = v
         filtered["display_name"] = display_name
         filtered["short_name"] = short_name
+        filtered["full_name"] = full_name
+        filtered["first_name"] = first_name or ""
+        filtered["last_name"] = last_name or ""
         return filtered
     
     # Admin: Apply masking to high-security fields by default
@@ -627,6 +643,9 @@ def filter_member_for_role(member: dict, user_role: str, masked: bool = True) ->
     
     result["display_name"] = display_name
     result["short_name"] = short_name
+    result["full_name"] = full_name
+    result["first_name"] = first_name or ""
+    result["last_name"] = last_name or ""
     return result
 
 
