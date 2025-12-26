@@ -554,6 +554,26 @@ export const Schedule = () => {
     return getFilteredShifts(allShifts);
   };
 
+  // KPI-Counter für Service/Küche/Gesamt
+  const getShiftCounts = () => {
+    if (!schedule?.shifts) return { service: 0, kitchen: 0, total: 0 };
+    
+    const allShifts = schedule.shifts.filter(s => !EXCLUDED_ROLES.includes(s.role));
+    
+    const serviceRoles = DEPARTMENT_FILTER.service.roles;
+    const kitchenRoles = DEPARTMENT_FILTER.kitchen.roles;
+    
+    const serviceCount = allShifts.filter(s => serviceRoles.includes(s.role)).length;
+    const kitchenCount = allShifts.filter(s => kitchenRoles.includes(s.role)).length;
+    
+    return {
+      service: serviceCount,
+      kitchen: kitchenCount,
+      total: allShifts.length
+    };
+  };
+
+  const shiftCounts = getShiftCounts();
   const weekDates = getWeekDates();
   const statusConfig = STATUS_CONFIG[schedule?.status] || STATUS_CONFIG.entwurf;
 
