@@ -578,24 +578,56 @@ def filter_member_for_role(member: dict, user_role: str, masked: bool = True) ->
     
     Security: Non-admins NEVER see sensitive HR fields
     """
+    # IMMER display_name generieren (für Anzeige in Listen)
+    display_name = member.get("display_name")
+    if not display_name:
+        # Versuche verschiedene Quellen für den Namen
+        if member.get("name"):
+            display_name = member.get("name")
+        elif member.get("first_name") and member.get("last_name"):
+            display_name = f"{member.get('first_name')} {member.get('last_name')}"
+        elif member.get("first_name"):
+            display_name = member.get("first_name")
+        elif member.get("last_name"):
+            display_name = member.get("last_name")
+        elif member.get("email"):
+            # Fallback: Email-Prefix
+            display_name = member.get("email").split("@")[0].title()
+        else:
+            display_name = "Unbekannt"
+    
+    # Kurzname für Initialen etc.
+    short_name = member.get("short_name")
+    if not short_name:
+        parts = display_name.split()
+        if len(parts) >= 2:
+            short_name = f"{parts[0][0]}. {parts[-1]}"
+        else:
+            short_name = display_name[:15]
+    
     if user_role != "admin":
         # Non-admin: Remove ALL sensitive HR fields completely
         filtered = {}
         for k, v in member.items():
             if k not in SENSITIVE_HR_FIELDS and k not in HIGH_SECURITY_FIELDS:
                 filtered[k] = v
+        filtered["display_name"] = display_name
+        filtered["short_name"] = short_name
         return filtered
     
     # Admin: Apply masking to high-security fields by default
     if masked:
-        return mask_sensitive_fields(member)
+        result = mask_sensitive_fields(member)
     else:
         # Decrypt fields for admin when explicitly requested
         result = member.copy()
         for field in HIGH_SECURITY_FIELDS:
             if field in result and result[field]:
                 result[field] = decrypt_field(result[field])
-        return result
+    
+    result["display_name"] = display_name
+    result["short_name"] = short_name
+    return result
 
 
 # Schedules (Weekly)
