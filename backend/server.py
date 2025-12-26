@@ -786,9 +786,89 @@ async def create_reservation(
         if not table_check["available"]:
             raise ConflictException(table_check.get("message", f"Tisch {data.table_number} ist bereits belegt"))
     
+    # Sprint: Event-Pricing - Berechne Preise und setze Status
+    event_pricing_data = {}
+    initial_status = "neu"
+    
+    if data.event_id:
+        event = await db.events.find_one({"id": data.event_id, "archived": False})
+        if event:
+            pricing = event.get("event_pricing", {})
+            policy = event.get("payment_policy", {})
+            
+            # Preis pro Person ermitteln
+            price_per_person = 0
+            variant_name = None
+            
+            if pricing.get("pricing_mode") == "variants":
+                if not data.variant_code:
+                    raise ValidationException("Bei Varianten-Pricing muss eine Variante gewählt werden")
+                variants = pricing.get("variants", [])
+                selected = next((v for v in variants if v["code"] == data.variant_code), None)
+                if not selected:
+                    raise ValidationException(f"Variante '{data.variant_code}' nicht gefunden")
+                price_per_person = selected["price_per_person"]
+                variant_name = selected["name"]
+            else:
+                price_per_person = pricing.get("single_price_per_person", 0)
+            
+            # Gesamtpreis berechnen
+            total_price = round(price_per_person * data.party_size, 2)
+            
+            # Event-Pricing Daten für Reservierung
+            event_pricing_data = {
+                "event_id": data.event_id,
+                "event_title": event.get("title"),
+                "content_category": event.get("content_category"),
+                "variant_code": data.variant_code,
+                "variant_name": variant_name,
+                "price_per_person": price_per_person,
+                "total_price": total_price,
+                "currency": pricing.get("currency", "EUR"),
+            }
+            
+            # Payment Policy verarbeiten
+            if policy.get("required"):
+                payment_mode = policy.get("mode", "none")
+                
+                if payment_mode == "deposit":
+                    deposit_type = policy.get("deposit_type", "fixed_per_person")
+                    deposit_value = policy.get("deposit_value", 0)
+                    
+                    if deposit_type == "fixed_per_person":
+                        amount_due = round(deposit_value * data.party_size, 2)
+                    elif deposit_type == "percent_of_total":
+                        amount_due = round(total_price * (deposit_value / 100), 2)
+                    else:
+                        amount_due = 0
+                    
+                    event_pricing_data["payment_mode"] = "deposit"
+                    event_pricing_data["amount_due"] = amount_due
+                    event_pricing_data["deposit_per_person"] = deposit_value
+                    
+                elif payment_mode == "full":
+                    event_pricing_data["payment_mode"] = "full"
+                    event_pricing_data["amount_due"] = total_price
+                
+                # Status auf pending_payment setzen
+                initial_status = "pending_payment"
+                event_pricing_data["payment_status"] = "pending"
+                event_pricing_data["payment_window_minutes"] = policy.get("payment_window_minutes", 30)
+                event_pricing_data["payment_due_at"] = (
+                    datetime.now(timezone.utc) + timedelta(minutes=policy.get("payment_window_minutes", 30))
+                ).isoformat()
+            else:
+                event_pricing_data["payment_mode"] = "none"
+                event_pricing_data["payment_status"] = "not_required"
+    
     reservation = create_entity(
         data.model_dump(exclude_none=True),
-        {"status": "neu", "reminder_sent": False, "source": data.source or "intern"}
+        {
+            "status": initial_status,
+            "reminder_sent": False,
+            "source": data.source or "intern",
+            **event_pricing_data
+        }
     )
     
     await db.reservations.insert_one(reservation)
