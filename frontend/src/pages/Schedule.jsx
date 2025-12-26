@@ -971,7 +971,8 @@ export const Schedule = () => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-2 px-3">Mitarbeiter</th>
-                          <th className="text-center py-2 px-3">Beschäftigung</th>
+                          <th className="text-center py-2 px-2 w-20">Bereich</th>
+                          <th className="text-center py-2 px-2 w-16">Typ</th>
                           <th className="text-center py-2 px-3">Soll</th>
                           <th className="text-center py-2 px-3">Geplant</th>
                           <th className="text-center py-2 px-3">Differenz</th>
@@ -991,7 +992,21 @@ export const Schedule = () => {
                             return "—";
                           };
                           
+                          // Mapping für Bereich-Abkürzungen
+                          const getAreaAbbr = (area) => {
+                            if (!area || area === "—") return "—";
+                            const normalized = area.toLowerCase().trim();
+                            if (normalized === "service") return "SVC";
+                            if (normalized === "küche" || normalized === "kueche") return "KÜ";
+                            if (normalized === "reinigung") return "REI";
+                            if (normalized === "event") return "EVT";
+                            if (normalized === "bar") return "BAR";
+                            return area.slice(0, 3).toUpperCase();
+                          };
+                          
                           const employmentAbbr = getEmploymentAbbr(row.employment_type);
+                          const areaAbbr = getAreaAbbr(row.work_area);
+                          
                           const employmentColors = {
                             "VZ": "bg-green-100 text-green-800 border-green-300",
                             "TZ": "bg-blue-100 text-blue-800 border-blue-300",
@@ -1000,9 +1015,23 @@ export const Schedule = () => {
                             "—": "bg-gray-100 text-gray-500 border-gray-300"
                           };
                           
+                          const areaColors = {
+                            "SVC": "bg-emerald-100 text-emerald-800",
+                            "KÜ": "bg-orange-100 text-orange-800",
+                            "REI": "bg-cyan-100 text-cyan-800",
+                            "EVT": "bg-pink-100 text-pink-800",
+                            "BAR": "bg-violet-100 text-violet-800",
+                            "—": "bg-gray-100 text-gray-500"
+                          };
+                          
                           return (
                           <tr key={row.staff_member_id} className="border-b hover:bg-muted/50">
                             <td className="py-2 px-3 font-medium">{formatShortName(row.name)}</td>
+                            <td className="py-1.5 px-2 text-center whitespace-nowrap">
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${areaColors[areaAbbr] || areaColors["—"]}`}>
+                                {areaAbbr}
+                              </span>
+                            </td>
                             <td className="py-1.5 px-2 text-center whitespace-nowrap">
                               <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${employmentColors[employmentAbbr]}`}>
                                 {employmentAbbr}
