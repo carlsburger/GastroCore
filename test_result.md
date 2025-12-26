@@ -19,11 +19,14 @@ frontend:
     file: "components/EventPricing.jsx"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "✅ Neue Komponente: EventPricingDialog mit Tabs für Preise und Zahlung. Varianten-Editor, Deposit-Konfiguration."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE UI TESTING COMPLETE: EventPricing Dialog fully functional. A) Preise Tab: Preismodus dropdown (Einzelpreis/Varianten), Preis pro Person input field working ✅ B) Zahlung Tab: Zahlungsmodus dropdown (Anzahlung/Volle Zahlung), Deposit settings (Fester Betrag pro Person), Zahlungsfrist input working ✅ C) Dialog opens/closes correctly, all UI elements responsive ✅"
 
   - task: "Events.jsx Integration"
     implemented: true
@@ -31,11 +34,14 @@ frontend:
     file: "pages/Events.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "✅ Pricing-Button und EventPriceBadge in Event-Liste. Dialog-Integration."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE UI TESTING COMPLETE: Events.jsx integration fully functional. A) Aktionen page: 2 Schnitzel events displayed with price badges (35,00€, 29,90€) ✅ B) EventPriceBadge: Green price badges and Anzahlung badges correctly displayed ✅ C) Preise & Zahlung buttons functional, dialog integration working ✅ D) Menü-Aktionen page: 4 events including Gänsemenü 2025 with variant pricing (34,90-49,90€) ✅"
 
 backend:
   - task: "Event Pricing Enums + Models"
