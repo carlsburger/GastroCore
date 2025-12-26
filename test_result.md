@@ -281,3 +281,11 @@ testing_protocol: |
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
   - Backend: http://localhost:8001
+
+#====================================================================================================
+# AGENT COMMUNICATION
+#====================================================================================================
+
+agent_communication:
+  - agent: "testing"
+    message: "✅ EVENT-PRICING API TESTING COMPLETE: All 6 critical Event-Pricing endpoints tested successfully with real event data. Tested pricing calculations (single & variants), payment policies (none/deposit), and admin configuration endpoints. All price calculations are mathematically correct and API responses contain expected fields. Backend Event-Pricing infrastructure is fully functional and ready for production use."
