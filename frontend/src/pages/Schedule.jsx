@@ -1159,6 +1159,65 @@ export const Schedule = () => {
                       </tfoot>
                     </table>
                   </div>
+                  
+                  {/* BEREICHS-SUMMEN (NEU) */}
+                  {hoursOverview.area_summary && hoursOverview.area_summary.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Bereichs-Übersicht</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {hoursOverview.area_summary
+                          .filter(a => a.staff_count > 0)
+                          .sort((a, b) => {
+                            // Service zuerst, dann Küche, dann Rest
+                            const order = {"Service": 1, "Küche": 2};
+                            return (order[a.area] || 99) - (order[b.area] || 99);
+                          })
+                          .map((area) => {
+                            const areaColors = {
+                              "Service": "bg-emerald-50 border-emerald-200",
+                              "Küche": "bg-orange-50 border-orange-200",
+                              "Bar": "bg-violet-50 border-violet-200",
+                              "Aushilfe": "bg-amber-50 border-amber-200"
+                            };
+                            const areaTextColors = {
+                              "Service": "text-emerald-700",
+                              "Küche": "text-orange-700",
+                              "Bar": "text-violet-700",
+                              "Aushilfe": "text-amber-700"
+                            };
+                            return (
+                              <div 
+                                key={area.area} 
+                                className={`p-3 rounded-lg border ${areaColors[area.area] || "bg-gray-50 border-gray-200"}`}
+                              >
+                                <div className={`font-semibold text-sm ${areaTextColors[area.area] || "text-gray-700"}`}>
+                                  {area.area}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {area.staff_count} MA • {area.shift_count} Schichten
+                                </div>
+                                <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                                  <div>
+                                    <span className="text-muted-foreground">Soll:</span>
+                                    <span className="ml-1 font-medium">{area.target_hours}h</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Geplant:</span>
+                                    <span className="ml-1 font-medium">{area.planned_hours}h</span>
+                                  </div>
+                                </div>
+                                <div className="mt-1 text-xs">
+                                  <span className="text-muted-foreground">Differenz:</span>
+                                  <span className={`ml-1 font-medium ${area.difference >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                    {area.difference > 0 ? "+" : ""}{area.difference}h
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
