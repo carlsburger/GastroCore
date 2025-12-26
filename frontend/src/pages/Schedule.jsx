@@ -52,10 +52,22 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
+// Zentrale Konstanten importieren
+import { 
+  DAYS_SHORT, 
+  DAYS_FULL, 
+  getDayIndex,
+  formatStaffName,
+  getAreaAbbr,
+  getEmploymentAbbr,
+  BRANDING
+} from "../lib/constants";
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
-const DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-const FULL_DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+// Verwende zentrale Wochentage-Konstanten
+const DAYS = DAYS_SHORT;
+const FULL_DAYS = DAYS_FULL;
 
 const STATUS_CONFIG = {
   entwurf: { label: "Entwurf", color: "bg-yellow-100 text-yellow-700" },
