@@ -2501,6 +2501,28 @@ async def apply_templates_to_schedule(
     
     # Get week dates - Support both start_date and week_start
     week_start_str = schedule.get("start_date") or schedule.get("week_start")
+    
+    # FALLBACK: Wenn start_date fehlt, berechne es aus year/week
+    if not week_start_str:
+        year = schedule.get("year")
+        week = schedule.get("week")
+        if year and week:
+            week_start, _ = get_week_dates(year, week)
+            week_start_str = week_start.isoformat()
+            # Update schedule mit den berechneten Daten
+            _, week_end = get_week_dates(year, week)
+            await db.schedules.update_one(
+                {"id": schedule.get("id")},
+                {"$set": {
+                    "start_date": week_start_str,
+                    "end_date": week_end.isoformat(),
+                    "week_start": week_start_str,
+                    "week_end": week_end.isoformat()
+                }}
+            )
+        else:
+            raise ValidationException("Schedule hat weder start_date noch year/week")
+    
     week_start = datetime.fromisoformat(week_start_str).date()
     created_shifts = []
     skipped_existing = 0
