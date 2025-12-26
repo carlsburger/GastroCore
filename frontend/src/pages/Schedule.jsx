@@ -318,10 +318,19 @@ export const Schedule = () => {
         { year, week },
         { headers }
       );
-      toast.success("Dienstplan erstellt");
+      toast.success(`Dienstplan für KW ${week}/${year} erstellt`);
+      // Schedule wurde erstellt - jetzt Daten neu laden
+      // Da year/week bereits korrekt sind, wird fetchData den neuen Schedule finden
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Fehler beim Erstellen");
+      const errorDetail = err.response?.data?.detail || "Fehler beim Erstellen";
+      // Falls Schedule bereits existiert, trotzdem Daten laden (könnte durch Race Condition entstehen)
+      if (err.response?.data?.error_code === "VALIDATION_ERROR" && errorDetail.includes("existiert bereits")) {
+        toast.info("Dienstplan existiert bereits - wird geladen");
+        fetchData();
+      } else {
+        toast.error(errorDetail);
+      }
     }
   };
 
