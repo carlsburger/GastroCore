@@ -762,33 +762,54 @@ export const Schedule = () => {
                         </TooltipProvider>
                       )}
                     </CardHeader>
-                    <CardContent className="px-3 pb-3 space-y-1">
+                    <CardContent className="px-2 pb-2 space-y-0.5">
                       {isClosed ? (
-                        <p className="text-xs text-red-600 text-center py-4">Geschlossen</p>
+                        <p className="text-xs text-red-600 text-center py-2">Geschlossen</p>
                       ) : shifts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-4">-</p>
+                        <p className="text-xs text-muted-foreground text-center py-2">-</p>
                       ) : (
                         shifts.map((shift) => {
                           const area = workAreas.find((a) => a.id === shift.work_area_id);
-                          // Konstruiere Namen aus first_name + last_name
-                          const staffFullName = shift.staff_member 
-                            ? `${shift.staff_member.first_name || ''} ${shift.staff_member.last_name || ''}`.trim()
-                            : null;
-                          const staffName = staffFullName 
-                            ? formatShortName(staffFullName) 
-                            : "?";
-                          // Format: "A. Nachname 11–20" (vereinfacht, A4-tauglich)
-                          const timeRange = `${shift.start_time?.slice(0,5) || "?"}-${shift.end_time?.slice(0,5) || "?"}`;
+                          
+                          // Mitarbeiter-Name mit Fallback-Reihenfolge:
+                          // 1. full_name, 2. display_name, 3. first_name + last_name, 4. email, 5. shift_name
+                          let displayName = null;
+                          const sm = shift.staff_member;
+                          if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
+                            displayName = sm.full_name 
+                              || sm.display_name 
+                              || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
+                              || sm.email;
+                          }
+                          
+                          // Fallback: Schichtname oder "Offen"
+                          const staffName = displayName 
+                            ? formatShortName(displayName) 
+                            : (shift.shift_name || "Offen");
+                          
+                          // Ist die Schicht unbesetzt?
+                          const isUnassigned = !displayName;
+                          
+                          // Zeit kompakt: "10:00–15:00"
+                          const timeRange = `${shift.start_time?.slice(0,5) || "?"}–${shift.end_time?.slice(0,5) || "?"}`;
                           
                           return (
                             <div
                               key={shift.id}
-                              className="px-2 py-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                              style={{ backgroundColor: area?.color + "15", borderLeft: `2px solid ${area?.color}` }}
+                              className={`px-1.5 py-0.5 rounded text-[11px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between gap-1 ${isUnassigned ? 'border-dashed' : ''}`}
+                              style={{ 
+                                backgroundColor: area?.color + "12", 
+                                borderLeft: `2px solid ${area?.color}`,
+                                borderStyle: isUnassigned ? 'dashed' : 'solid'
+                              }}
                               onClick={() => schedule.status !== "archiviert" && openShiftDialog(date, shift)}
                             >
-                              <span className="font-medium">{staffName}</span>
-                              <span className="text-muted-foreground ml-1">{timeRange}</span>
+                              <span className={`font-medium truncate ${isUnassigned ? 'text-muted-foreground italic' : ''}`}>
+                                {staffName}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap">
+                                {timeRange}
+                              </span>
                             </div>
                           );
                         })
