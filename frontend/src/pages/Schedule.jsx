@@ -855,9 +855,21 @@ export const Schedule = () => {
                       </thead>
                       <tbody>
                         {(() => {
+                          // Defensiv: Prüfe ob Schedule und Shifts existieren
+                          const allShifts = schedule?.shifts || [];
+                          if (allShifts.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={weekDates.length + 2} className="text-center py-4 text-muted-foreground">
+                                  Keine Schichten vorhanden
+                                </td>
+                              </tr>
+                            );
+                          }
+                          
                           // Gruppiere Schichten nach Mitarbeiter
                           const staffShifts = {};
-                          filteredShifts.forEach(shift => {
+                          allShifts.forEach(shift => {
                             const staffId = shift.staff_member_id || `unassigned-${shift.id}`;
                             if (!staffShifts[staffId]) {
                               // Mitarbeiter-Name mit Fallback-Reihenfolge
