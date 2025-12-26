@@ -697,6 +697,9 @@ async def get_reservations_summary(
     """
     from datetime import datetime, timedelta
     
+    # Deutsche Wochentags-Abkürzungen (VERBINDLICH)
+    WEEKDAYS_DE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    
     # Startdatum bestimmen
     if start:
         try:
@@ -715,6 +718,7 @@ async def get_reservations_summary(
     for i in range(days):
         current_date = start_date + timedelta(days=i)
         date_str = current_date.isoformat()
+        weekday_de = WEEKDAYS_DE[current_date.weekday()]  # 0=Mo, 6=So
         
         # Aggregation: Zähle Reservierungen und summiere Gäste
         pipeline = [
@@ -731,14 +735,14 @@ async def get_reservations_summary(
         if agg_result:
             result["days"].append({
                 "date": date_str,
-                "weekday": current_date.strftime("%a"),
+                "weekday": weekday_de,
                 "reservations": agg_result[0]["reservations"],
                 "guests": agg_result[0]["guests"]
             })
         else:
             result["days"].append({
                 "date": date_str,
-                "weekday": current_date.strftime("%a"),
+                "weekday": weekday_de,
                 "reservations": 0,
                 "guests": 0
             })
