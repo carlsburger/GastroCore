@@ -1470,40 +1470,60 @@ async def check_availability(
     date: str,
     party_size: int = Query(..., ge=1, le=20)
 ):
-    """Public endpoint to check availability for widget"""
-    # Check opening hours
-    hours = await check_opening_hours(date, "12:00")
-    if not hours.get("open"):
-        return {"available": False, "message": hours.get("message", "Geschlossen"), "slots": []}
+    """
+    Public endpoint to check availability for widget.
+    Nutzt die neue Kapazitätslogik mit Durchgängen.
+    """
+    from reservation_capacity import calculate_slot_capacity
     
-    # Get available time slots
-    open_time = hours.get("open_time", "11:00")
-    close_time = hours.get("close_time", "22:00")
+    try:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        return {"available": False, "message": "Ungültiges Datumsformat", "slots": []}
     
-    # Generate time slots (every 30 minutes)
+    # Neue Kapazitätslogik
+    capacity_data = await calculate_slot_capacity(target_date)
+    
+    if not capacity_data.get("open", True):
+        return {
+            "available": False, 
+            "message": "Geschlossen",
+            "slots": [],
+            "notes": capacity_data.get("notes", [])
+        }
+    
+    # Transformiere Slots für Widget
     slots = []
-    current = datetime.strptime(open_time, "%H:%M")
-    end = datetime.strptime(close_time, "%H:%M") - timedelta(hours=1)  # Last booking 1h before close
-    
-    while current <= end:
-        time_str = current.strftime("%H:%M")
-        capacity = await check_capacity(date, time_str, party_size)
+    for slot in capacity_data.get("slots", []):
+        # Prüfe ob genug Kapazität für party_size
+        available = slot["capacity_available"] >= party_size
+        
         slots.append({
-            "time": time_str,
-            "available": capacity["available"],
-            "available_seats": capacity["available_seats"]
+            "time": slot["time"],
+            "available": available,
+            "available_seats": slot["capacity_available"],
+            "seating": slot.get("seating"),
+            "seating_name": slot.get("seating_name", ""),
+            "disabled": slot.get("disabled", False) or not available,
+            "reason": slot.get("reason") if slot.get("disabled") else (
+                f"Nur noch {slot['capacity_available']} Plätze" if not available else None
+            )
         })
-        current += timedelta(minutes=30)
     
     available_slots = [s for s in slots if s["available"]]
     
     return {
         "date": date,
+        "weekday_de": capacity_data.get("weekday_de", ""),
+        "day_type": capacity_data.get("day_type", "weekday"),
         "party_size": party_size,
         "available": len(available_slots) > 0,
         "slots": slots,
-        "open_time": open_time,
-        "close_time": close_time
+        "seatings": capacity_data.get("seatings", []),
+        "capacity_per_seating": capacity_data.get("capacity_per_seating", 95),
+        "block_duration_minutes": capacity_data.get("block_duration_minutes", 120),
+        "closing_time": capacity_data.get("closing_time"),
+        "notes": capacity_data.get("notes", [])
     }
 
 @public_router.post("/book", tags=["Public"])
