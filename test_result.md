@@ -295,3 +295,5 @@ testing_protocol: |
 agent_communication:
   - agent: "testing"
     message: "✅ EVENT-PRICING API TESTING COMPLETE: All 6 critical Event-Pricing endpoints tested successfully with real event data. Tested pricing calculations (single & variants), payment policies (none/deposit), and admin configuration endpoints. All price calculations are mathematically correct and API responses contain expected fields. Backend Event-Pricing infrastructure is fully functional and ready for production use."
+  - agent: "testing"
+    message: "✅ EVENT-PRICING UI TESTING COMPLETE: Comprehensive frontend testing completed successfully. All UI scenarios from test request verified: 1) Login & Navigation ✅ 2) EventPriceBadge display (29,90€, 35,00€, Anzahlung badges) ✅ 3) Pricing Dialog (Preismodus, Preis pro Person input) ✅ 4) Zahlung Tab (Zahlungsmodus, Deposit settings, Zahlungsfrist) ✅ 5) Menü-Aktionen with variants (Gänsemenü 2025, 34,90-49,90€ pricing) ✅ Frontend Event-Pricing functionality is production-ready."
