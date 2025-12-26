@@ -314,15 +314,11 @@ export const Events = ({ category: propCategory }) => {
                                   <Clock className="h-4 w-4" />{event.default_start_time} Uhr
                                 </span>
                               )}
-                              {price > 0 && (
-                                <span className="flex items-center gap-1">
-                                  <Euro className="h-4 w-4" />{price.toFixed(2)} €
-                                </span>
-                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge className={statusCfg.color}>{statusCfg.label}</Badge>
+                            <EventPriceBadge event={event} />
                             {event.requires_menu_choice && (
                               <Badge className="bg-emerald-100 text-emerald-800">
                                 <ChefHat className="h-3 w-3 mr-1" />Menüwahl
@@ -347,6 +343,9 @@ export const Events = ({ category: propCategory }) => {
                         <div className="flex items-center gap-2 mt-4 flex-wrap">
                           <Button size="sm" variant="outline" onClick={() => navigate(`/events/${event.id}/bookings`)} className="rounded-full">
                             <Eye className="h-4 w-4 mr-1" />Buchungen
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setPricingEvent(event)} className="rounded-full">
+                            <CreditCard className="h-4 w-4 mr-1" />Preise & Zahlung
                           </Button>
                           {event.requires_menu_choice && (
                             <Button size="sm" variant="outline" onClick={() => navigate(`/events/${event.id}/products`)} className="rounded-full">
@@ -376,6 +375,17 @@ export const Events = ({ category: propCategory }) => {
           </div>
         )}
       </div>
+
+      {/* Pricing Dialog */}
+      <EventPricingDialog 
+        event={pricingEvent}
+        open={!!pricingEvent}
+        onOpenChange={(open) => !open && setPricingEvent(null)}
+        onSaved={() => {
+          fetchEvents();
+          setPricingEvent(null);
+        }}
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
