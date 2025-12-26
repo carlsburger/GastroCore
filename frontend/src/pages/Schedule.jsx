@@ -883,7 +883,7 @@ export const Schedule = () => {
                             let totalHours = 0;
                             return (
                               <tr key={staffId} className="hover:bg-gray-50">
-                                <td className="border border-gray-300 p-1 font-medium text-xs">
+                                <td className={`border border-gray-300 p-1 font-medium text-xs ${data.isUnassigned ? 'italic text-muted-foreground' : ''}`}>
                                   {formatShortName(data.name)}
                                 </td>
                                 {weekDates.map((date) => {
@@ -903,7 +903,7 @@ export const Schedule = () => {
                                   return (
                                     <td 
                                       key={date} 
-                                      className={`border border-gray-300 p-1 text-center text-[11px] ${
+                                      className={`border border-gray-300 p-0.5 text-center text-[10px] ${
                                         isClosed ? "bg-red-50 text-red-400" : 
                                         isWknd ? "bg-amber-50" : ""
                                       }`}
@@ -914,8 +914,8 @@ export const Schedule = () => {
                                         <span className="text-gray-300">-</span>
                                       ) : (
                                         dayShifts.map((s, i) => (
-                                          <div key={i}>
-                                            {s.start_time?.slice(0,5)}-{s.end_time?.slice(0,5)}
+                                          <div key={i} className="text-muted-foreground">
+                                            {s.start_time?.slice(0,5)}–{s.end_time?.slice(0,5)}
                                           </div>
                                         ))
                                       )}
