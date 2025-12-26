@@ -1,0 +1,269 @@
+[
+  {
+    "_id": "694ea92047f71aedcea0fca0",
+    "combo_id": "S1",
+    "subarea": "saal",
+    "table_ids": [
+      "9a893d51-303d-4ce2-a000-8a70e0a829ca",
+      "94553a30-d332-42a7-a918-25a0be67774a"
+    ],
+    "table_numbers": [
+      "9",
+      "10"
+    ],
+    "target_capacity": 6,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.716595",
+    "notes": "Standard Sechser",
+    "id": "32eb1942-2ddf-4977-b713-a916d0e45664",
+    "created_at": "2025-12-26T15:22:22.717182",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca1",
+    "combo_id": "S2",
+    "subarea": "saal",
+    "table_ids": [
+      "0f924ed3-b81c-440d-ab46-fb7f26f545c5",
+      "9a893d51-303d-4ce2-a000-8a70e0a829ca",
+      "94553a30-d332-42a7-a918-25a0be67774a"
+    ],
+    "table_numbers": [
+      "8",
+      "9",
+      "10"
+    ],
+    "target_capacity": 8,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.727352",
+    "notes": "Achtertisch",
+    "id": "3c7f86df-250e-48f4-9884-a884f8c2edc8",
+    "created_at": "2025-12-26T15:22:22.727725",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca2",
+    "combo_id": "S3",
+    "subarea": "saal",
+    "table_ids": [
+      "db26abb3-6b8d-44a8-adc6-8658c09f7291",
+      "b2b0e916-a854-4af7-995e-25655248d950"
+    ],
+    "table_numbers": [
+      "13",
+      "114"
+    ],
+    "target_capacity": 9,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.728024",
+    "id": "0bdcf3d6-fcb3-4d83-8a95-dd94d3a69f26",
+    "created_at": "2025-12-26T15:22:22.728296",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca3",
+    "combo_id": "S4",
+    "subarea": "saal",
+    "table_ids": [
+      "db26abb3-6b8d-44a8-adc6-8658c09f7291",
+      "b2b0e916-a854-4af7-995e-25655248d950",
+      "8133ab22-ba4c-4460-a0f1-6b381b6d5b5e"
+    ],
+    "table_numbers": [
+      "13",
+      "114",
+      "1"
+    ],
+    "target_capacity": 11,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.728590",
+    "notes": "Tisch 2 wird blockiert",
+    "id": "5a2fe99d-50e9-487a-80b4-39455fcd6fba",
+    "created_at": "2025-12-26T15:22:22.728915",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca4",
+    "combo_id": "W1",
+    "subarea": "wintergarten",
+    "table_ids": [
+      "c5ff3d0d-f691-448a-8ff8-f34048edf945",
+      "71b86d29-8cbb-460f-bbf8-deb85fd6ff4e",
+      "4dc8a6e4-d02c-426e-a49e-e774ee341d3a"
+    ],
+    "table_numbers": [
+      "22",
+      "23",
+      "24"
+    ],
+    "target_capacity": 16,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.729182",
+    "notes": "Grosse Tafel",
+    "id": "ac0287f1-b0f0-44f9-a20f-dc0805c7f1d1",
+    "created_at": "2025-12-26T15:22:22.729409",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca5",
+    "combo_id": "W2",
+    "subarea": "wintergarten",
+    "table_ids": [
+      "71b86d29-8cbb-460f-bbf8-deb85fd6ff4e",
+      "4dc8a6e4-d02c-426e-a49e-e774ee341d3a"
+    ],
+    "table_numbers": [
+      "23",
+      "24"
+    ],
+    "target_capacity": 9,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.729645",
+    "id": "c4d10399-82bd-40ce-9c13-4113d46a6c22",
+    "created_at": "2025-12-26T15:22:22.729849",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca6",
+    "combo_id": "W4",
+    "subarea": "wintergarten",
+    "table_ids": [
+      "026403b9-d339-4b92-8432-77b06812ebb0",
+      "b838a86c-6031-47aa-84d3-d240a1fee7ea"
+    ],
+    "table_numbers": [
+      "16",
+      "18"
+    ],
+    "target_capacity": 7,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.730094",
+    "id": "c6102347-6e19-415a-86b5-8091675c9b7e",
+    "created_at": "2025-12-26T15:22:22.730308",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca7",
+    "combo_id": "W6",
+    "subarea": "wintergarten",
+    "table_ids": [
+      "b838a86c-6031-47aa-84d3-d240a1fee7ea",
+      "026403b9-d339-4b92-8432-77b06812ebb0",
+      "7a50e461-20bd-4f6b-8b02-5c898c77eb2c",
+      "ad956769-5f47-40e8-a4b2-f5acd2d7ea62"
+    ],
+    "table_numbers": [
+      "18",
+      "16",
+      "17",
+      "15"
+    ],
+    "target_capacity": 13,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.730555",
+    "notes": "Tisch 14 bleibt frei",
+    "id": "68816297-fd3d-403e-9a80-fa45ad4b56a8",
+    "created_at": "2025-12-26T15:22:22.730741",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca8",
+    "combo_id": "T1",
+    "subarea": "terrasse",
+    "table_ids": [
+      "9d329476-f642-46f4-b14c-f9e33a3909ad",
+      "23823150-9356-42a7-a920-47c0b2365834",
+      "a986f440-b8e2-4a17-bca1-aa8433a7e040",
+      "455c0958-0fd0-4025-b50b-f14d3c16088b"
+    ],
+    "table_numbers": [
+      "35",
+      "34",
+      "36",
+      "33"
+    ],
+    "target_capacity": 11,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.730950",
+    "notes": "Grosse Tafel",
+    "id": "ceb3544b-34c0-4f30-8828-26b22b5a74e7",
+    "created_at": "2025-12-26T15:22:22.731126",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fca9",
+    "combo_id": "T2",
+    "subarea": "terrasse",
+    "table_ids": [
+      "36a6201d-134d-4c05-b5b7-8b51448b04d9",
+      "a4c13458-dc02-40c0-aae6-9490df237fcf"
+    ],
+    "table_numbers": [
+      "37",
+      "38"
+    ],
+    "target_capacity": 8,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.731311",
+    "id": "f367bb9b-69dc-49df-b059-7880448416e9",
+    "created_at": "2025-12-26T15:22:22.731481",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fcaa",
+    "combo_id": "T3",
+    "subarea": "terrasse",
+    "table_ids": [
+      "6bfefae2-bf07-43d9-b853-522cb887a241",
+      "9c7e969a-a078-4d7f-b22b-f89e08ad5285"
+    ],
+    "table_numbers": [
+      "39",
+      "40"
+    ],
+    "target_capacity": 8,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.731672",
+    "id": "e86b3c80-2a4f-419b-b052-4b19372ebe29",
+    "created_at": "2025-12-26T15:22:22.731836",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fcab",
+    "combo_id": "T4",
+    "subarea": "terrasse",
+    "table_ids": [
+      "f9613a72-b585-4177-91f5-216cb8f2b759",
+      "6dab04fc-70b6-4c49-ae6f-370727ce53e3"
+    ],
+    "table_numbers": [
+      "41",
+      "42"
+    ],
+    "target_capacity": 8,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.732013",
+    "id": "e2c1e6f1-eba4-494f-ac59-14f1e1ca269f",
+    "created_at": "2025-12-26T15:22:22.732177",
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fcac",
+    "combo_id": "T5",
+    "subarea": "terrasse",
+    "table_ids": [
+      "9d329476-f642-46f4-b14c-f9e33a3909ad",
+      "a986f440-b8e2-4a17-bca1-aa8433a7e040"
+    ],
+    "table_numbers": [
+      "35",
+      "36"
+    ],
+    "target_capacity": 7,
+    "is_active": true,
+    "updated_at": "2025-12-26T15:22:22.732354",
+    "id": "679a6248-4936-4c7e-ad06-39d8e4b12ac6",
+    "created_at": "2025-12-26T15:22:22.732516",
+    "archived": false
+  }
+]

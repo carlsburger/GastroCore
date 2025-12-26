@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "694ea92047f71aedcea0fc6e",
+    "id": "572928f0-b26b-4739-8f88-3bea0d239de7",
+    "name": "Service",
+    "slug": "service",
+    "color": "#3B82F6",
+    "sort_order": 1,
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fc6f",
+    "id": "2289f435-4c56-4752-93ba-5479b429df04",
+    "name": "Küche",
+    "slug": "kitchen",
+    "color": "#EF4444",
+    "sort_order": 2,
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fc70",
+    "id": "f52def28-f767-4ef6-a46e-feef31a93213",
+    "name": "Reinigung",
+    "slug": "reinigung",
+    "color": "#10B981",
+    "sort_order": 3,
+    "archived": false
+  },
+  {
+    "_id": "694ea92047f71aedcea0fc71",
+    "id": "11f2c800-920b-46fb-8817-1bf058d1897b",
+    "name": "Schichtleiter",
+    "slug": "schichtleiter",
+    "color": "#8B5CF6",
+    "sort_order": 4,
+    "archived": false
+  }
+]

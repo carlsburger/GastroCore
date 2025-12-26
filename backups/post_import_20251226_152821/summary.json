@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-12-26T15:28:21.668580",
+  "database": "gastrocore",
+  "counts": {
+    "users": 1,
+    "staff_members": 18,
+    "work_areas": 4,
+    "shift_templates": 9,
+    "tables": 46,
+    "table_combinations": 13
+  }
+}
