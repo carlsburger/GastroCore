@@ -181,6 +181,9 @@ class ReservationCreate(BaseModel):
     duration_minutes: Optional[int] = None  # None = Standard-Aufenthaltsdauer
     allergies: Optional[str] = Field(None, max_length=500)  # Allergien/Unverträglichkeiten
     menu_choice: Optional[str] = None  # Bei Menüpflicht
+    # Sprint: Event-Pricing
+    event_id: Optional[str] = None  # Verknüpftes Event (Aktion/Menü-Aktion/Kultur)
+    variant_code: Optional[str] = None  # Bei Varianten-Pricing: gewählte Variante
     
     @field_validator('date')
     @classmethod
