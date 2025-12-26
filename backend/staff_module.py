@@ -1631,11 +1631,20 @@ async def get_hours_overview(
         if work_area_ids and len(work_area_ids) > 0:
             work_area_name = work_area_map.get(work_area_ids[0], "—")
         
+        # Resolve display name: full_name > first_name + last_name
+        display_name = member.get("full_name")
+        if not display_name:
+            fn = member.get("first_name", "")
+            ln = member.get("last_name", "")
+            display_name = f"{fn} {ln}".strip() if fn or ln else "N.N."
+        
         # KPI-Vorbereitung: work_area_id für spätere Bereichs-Auswertungen
         # TODO: Hier können später Bereichs-KPIs aggregiert werden
         overview.append({
             "staff_member_id": member.get("id"),
-            "name": member.get("full_name"),
+            "name": display_name,
+            "first_name": member.get("first_name", ""),
+            "last_name": member.get("last_name", ""),
             "work_area": work_area_name,  # NEU: Bereich für Anzeige
             "work_area_id": work_area_ids[0] if work_area_ids else None,  # NEU: ID für KPI
             "employment_type": member.get("employment_type"),
