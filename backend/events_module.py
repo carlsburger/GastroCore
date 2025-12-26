@@ -940,6 +940,148 @@ async def calculate_event_price(
     }
 
 
+# ============== RESERVATION PAYMENT ENDPOINTS ==============
+
+@events_router.post("/reservations/{reservation_id}/confirm-payment")
+async def confirm_reservation_payment(
+    reservation_id: str,
+    amount_paid: float = Query(..., ge=0),
+    payment_method: str = Query(default="manual", description="bar, karte, ueberweisung, manual"),
+    user: dict = Depends(require_manager)
+):
+    """
+    Bestätigt die Zahlung einer Reservierung und setzt Status auf 'bestätigt'.
+    
+    Nur für Reservierungen mit status='pending_payment'.
+    """
+    reservation = await db.reservations.find_one({"id": reservation_id, "archived": False})
+    if not reservation:
+        raise NotFoundException("Reservierung")
+    
+    if reservation.get("status") != "pending_payment":
+        raise ValidationException(f"Reservierung hat Status '{reservation.get('status')}', erwartet 'pending_payment'")
+    
+    amount_due = reservation.get("amount_due", 0)
+    if amount_paid < amount_due:
+        raise ValidationException(f"Gezahlter Betrag ({amount_paid}€) ist kleiner als fälliger Betrag ({amount_due}€)")
+    
+    before = safe_dict_for_audit(reservation)
+    
+    update_data = {
+        "status": "bestätigt",
+        "payment_status": "paid",
+        "amount_paid": amount_paid,
+        "payment_method": payment_method,
+        "payment_confirmed_at": now_iso(),
+        "payment_confirmed_by": user.get("email", "unknown"),
+        "updated_at": now_iso()
+    }
+    
+    await db.reservations.update_one({"id": reservation_id}, {"$set": update_data})
+    
+    updated = await db.reservations.find_one({"id": reservation_id}, {"_id": 0})
+    await create_audit_log(user, "reservation", reservation_id, "confirm_payment", before, safe_dict_for_audit(updated))
+    
+    return {
+        "message": "Zahlung bestätigt, Reservierung bestätigt",
+        "reservation_id": reservation_id,
+        "status": "bestätigt",
+        "amount_paid": amount_paid,
+        "success": True
+    }
+
+
+@events_router.post("/reservations/expire-unpaid")
+async def expire_unpaid_reservations(user: dict = Depends(require_admin)):
+    """
+    Setzt alle abgelaufenen pending_payment Reservierungen auf 'expired'.
+    
+    Sollte regelmäßig (z.B. alle 5 Minuten) per Cron/Scheduler aufgerufen werden.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Finde alle Reservierungen mit status=pending_payment und payment_due_at < jetzt
+    query = {
+        "status": "pending_payment",
+        "payment_due_at": {"$lt": now},
+        "archived": False
+    }
+    
+    reservations = await db.reservations.find(query).to_list(500)
+    
+    expired_count = 0
+    expired_ids = []
+    
+    for res in reservations:
+        await db.reservations.update_one(
+            {"id": res["id"]},
+            {"$set": {
+                "status": "expired",
+                "payment_status": "expired",
+                "expired_at": now_iso(),
+                "updated_at": now_iso()
+            }}
+        )
+        expired_count += 1
+        expired_ids.append(res["id"])
+    
+    if expired_count > 0:
+        await create_audit_log(
+            actor=SYSTEM_ACTOR,
+            action="expire_unpaid",
+            entity="reservations",
+            entity_id="batch",
+            after={"expired_count": expired_count, "expired_ids": expired_ids[:20]}
+        )
+    
+    return {
+        "message": f"{expired_count} Reservierungen auf 'expired' gesetzt",
+        "expired_count": expired_count,
+        "expired_ids": expired_ids[:20],  # Max 20 IDs in Response
+        "success": True
+    }
+
+
+@events_router.get("/reservations/pending-payments")
+async def list_pending_payment_reservations(user: dict = Depends(require_manager)):
+    """
+    Listet alle Reservierungen mit ausstehender Zahlung.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    
+    reservations = await db.reservations.find(
+        {"status": "pending_payment", "archived": False},
+        {"_id": 0}
+    ).sort("payment_due_at", 1).to_list(100)
+    
+    result = []
+    for res in reservations:
+        due_at = res.get("payment_due_at", "")
+        is_overdue = due_at < now if due_at else False
+        
+        result.append({
+            "id": res["id"],
+            "guest_name": res.get("guest_name"),
+            "guest_phone": res.get("guest_phone"),
+            "date": res.get("date"),
+            "time": res.get("time"),
+            "party_size": res.get("party_size"),
+            "event_title": res.get("event_title"),
+            "variant_name": res.get("variant_name"),
+            "total_price": res.get("total_price"),
+            "amount_due": res.get("amount_due"),
+            "payment_due_at": due_at,
+            "is_overdue": is_overdue,
+            "created_at": res.get("created_at")
+        })
+    
+    return {
+        "reservations": result,
+        "total": len(result),
+        "overdue_count": sum(1 for r in result if r["is_overdue"])
+    }
+
+
 @events_router.post("/seed-default-prices")
 async def seed_default_event_prices(user: dict = Depends(require_admin)):
     """
