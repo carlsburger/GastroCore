@@ -2844,6 +2844,18 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     """Initialize default settings, rules, and ensure admin exists on startup"""
+    
+    # AUTO-RESTORE: Prüfe ob kritische Collections leer sind und stelle ggf. wieder her
+    try:
+        from auto_restore import check_and_restore
+        restore_result = check_and_restore()
+        if restore_result.get("restored"):
+            logger.info(f"🔄 Auto-Restore durchgeführt: {restore_result.get('collections', {})}")
+        else:
+            logger.info("✓ Auto-Restore: Alle Daten vorhanden")
+    except Exception as e:
+        logger.warning(f"⚠ Auto-Restore Fehler: {e}")
+    
     # ADMIN-BOOTSTRAP: Sicherstellen, dass immer ein Admin existiert
     admin_ready = await bootstrap_admin_on_startup()
     if not admin_ready:
