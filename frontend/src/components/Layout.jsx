@@ -55,8 +55,8 @@ import {
   Upload,
 } from "lucide-react";
 
-// Offizielles Carlsburg Logo URL
-const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-planner-4/artifacts/87kb0tcl_grafik.png";
+// Offizielles Carlsburg Logo URL - aus zentraler Konstante
+const CARLSBURG_LOGO_URL = BRANDING.LOGO_URL;
 
 // Carlsburg Logo - Mit offiziellem Bild
 const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
@@ -64,7 +64,7 @@ const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
     {/* Offizielles Logo */}
     <img 
       src={CARLSBURG_LOGO_URL}
-      alt="Carlsburg"
+      alt={BRANDING.RESTAURANT_NAME}
       className={`object-contain flex-shrink-0 ${collapsed ? "h-9 w-9" : "h-11"}`}
     />
     {/* Schriftzug */}
