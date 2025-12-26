@@ -462,6 +462,9 @@ async def suggest_schedule(
         "status": "published"
     }, {"_id": 0, "date": 1, "title": 1, "event_type": 1}).to_list(50)
     
+    # Deutsche Wochentage (VERBINDLICH)
+    WEEKDAYS_DE_FULL = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+    
     # Determine occasion types for each day
     week_analysis = []
     for i in range(7):
@@ -470,7 +473,7 @@ async def suggest_schedule(
         occasion, season = determine_occasion_type(day_str, events, config)
         week_analysis.append({
             "date": day_str,
-            "weekday": day.strftime("%A"),
+            "weekday": WEEKDAYS_DE_FULL[day.weekday()],  # Deutsch statt day.strftime("%A")
             "occasion_type": occasion,
             "season": season
         })
