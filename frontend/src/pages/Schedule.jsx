@@ -726,11 +726,11 @@ export const Schedule = () => {
                     ${eventWarning ? "border-amber-400" : ""}
                     ${isWknd && !isClosed ? "bg-amber-50/50" : ""}
                   `}>
-                    <CardHeader className="pb-2 px-3 pt-3">
+                    <CardHeader className="pb-1 px-2 pt-2">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className={`font-bold text-lg ${isWknd ? "text-amber-700" : ""}`}>{DAYS[idx]}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className={`font-bold text-base ${isWknd ? "text-amber-700" : ""}`}>{DAYS[idx]}</p>
+                          <p className="text-xs text-muted-foreground">
                             {dayDate.getDate()}.{dayDate.getMonth() + 1}.
                           </p>
                         </div>
@@ -739,9 +739,9 @@ export const Schedule = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => openShiftDialog(date)}
-                            className="h-7 w-7 p-0"
+                            className="h-6 w-6 p-0"
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
@@ -750,7 +750,7 @@ export const Schedule = () => {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="mt-2 flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
+                              <div className="mt-1 flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 rounded text-[10px]">
                                 <CalendarX className="h-3 w-3" />
                                 <span className="font-medium truncate">{closedInfo.reason}</span>
                               </div>
