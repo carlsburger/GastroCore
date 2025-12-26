@@ -1766,27 +1766,72 @@ def detect_action_type(title: str) -> Optional[str]:
 
 def determine_content_category(event_type: str, categories: List[str] = None, title: str = None) -> str:
     """
-    Bestimmt die content_category basierend auf event_type UND Titel-Keywords.
+    Bestimmt die content_category basierend auf:
+    1. WP-Kategorien (höchste Priorität)
+    2. event_type 
+    3. Titel-Keywords (Fallback)
     
-    LOGIK (Priorität):
-    1. Wenn Titel "satt" oder "buffet" enthält → AKTION (Satt-Essen Aktionen)
-    2. Wenn event_type "aktion" oder "aktion_menue" → entsprechende Kategorie
-    3. Sonst → VERANSTALTUNG
+    ZIEL-MAPPING:
+    - AKTION: Sattessen (Schnitzel satt, Rippchen satt, Garnelen satt), Tapas, BBQ
+    - AKTION_MENUE: Martinsgans Menü, Valentinstag Menü, Gänsemenü (mit Varianten)
+    - VERANSTALTUNG: Kultur/Show/Eintritt
     
     Returns: VERANSTALTUNG, AKTION oder AKTION_MENUE
     """
-    # 1. Titel-basierte Erkennung (höchste Priorität für Aktionen)
-    if title:
-        title_lower = title.lower()
-        # "Satt Essen" Aktionen erkennen
-        if "satt" in title_lower or "buffet" in title_lower or "all you can" in title_lower:
-            # Prüfe auf spezifische Menü-Aktionen
-            if any(kw in title_lower for kw in ["rippchen", "ribs", "ente", "gans", "spargel"]):
-                return "AKTION_MENUE"
+    title_lower = (title or "").lower()
+    categories_lower = [c.lower() for c in (categories or [])]
+    
+    # 1. WP-Kategorien prüfen (höchste Priorität)
+    if categories_lower:
+        # Explizite Menü-Aktion Kategorien
+        if any(cat in ["menue-aktion", "menu-aktion", "menü-aktion", "menueaktion"] for cat in categories_lower):
+            return "AKTION_MENUE"
+        # Explizite Aktion Kategorien
+        if any(cat in ["aktion", "aktionen", "sattessen", "kulinarik-aktion"] for cat in categories_lower):
+            return "AKTION"
+        # Kultur/Veranstaltung
+        if any(cat in ["comedy", "musik", "travestie", "kultur", "veranstaltung", "show"] for cat in categories_lower):
+            return "VERANSTALTUNG"
+    
+    # 2. event_type basierte Zuordnung (von WP-Sync)
+    if event_type:
+        event_type_lower = event_type.lower()
+        if event_type_lower in ["aktion_menue", "menu_aktion", "menue_aktion"]:
+            return "AKTION_MENUE"
+        if event_type_lower == "aktion":
+            return "AKTION"
+        if event_type_lower in CONTENT_CATEGORY_MAPPING:
+            return CONTENT_CATEGORY_MAPPING[event_type_lower]
+    
+    # 3. Titel-basierte Erkennung (Fallback - konservativ)
+    if title_lower:
+        # MENÜ-AKTIONEN: Explizit "Menü" im Titel + typische Menü-Keywords
+        menu_keywords = ["menü", "menu", "valentinstag", "weihnachts", "oster"]
+        gans_keywords = ["gans", "gänse", "martinsgans", "gänsebraten"]
+        
+        is_menu_event = any(kw in title_lower for kw in menu_keywords)
+        is_gans_event = any(kw in title_lower for kw in gans_keywords)
+        
+        # Gänsemenü/Martinsgans → IMMER AKTION_MENUE (auch ohne "Menü" im Titel)
+        if is_gans_event:
+            return "AKTION_MENUE"
+        
+        # Explizit "Menü" im Titel → AKTION_MENUE
+        if is_menu_event:
+            return "AKTION_MENUE"
+        
+        # AKTIONEN: "satt", "buffet", "sattessen"
+        satt_keywords = ["satt", "sattessen", "buffet", "all you can"]
+        if any(kw in title_lower for kw in satt_keywords):
+            return "AKTION"
+        
+        # Typische Aktionen ohne "satt"
+        action_keywords = ["tapas", "bbq", "barbecue", "grillen", "brunch"]
+        if any(kw in title_lower for kw in action_keywords):
             return "AKTION"
     
-    # 2. event_type basierte Zuordnung
-    return CONTENT_CATEGORY_MAPPING.get(event_type, "VERANSTALTUNG")
+    # 4. Default: VERANSTALTUNG
+    return "VERANSTALTUNG"
 
 
 def decode_html_entities(text: str) -> str:
