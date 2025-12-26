@@ -889,10 +889,12 @@ export const Schedule = () => {
                                 shifts: {}
                               };
                             }
-                            if (!staffShifts[staffId].shifts[shift.date]) {
-                              staffShifts[staffId].shifts[shift.date] = [];
+                            // Support both 'date' and 'shift_date' field names
+                            const shiftDate = shift.date || shift.shift_date;
+                            if (!staffShifts[staffId].shifts[shiftDate]) {
+                              staffShifts[staffId].shifts[shiftDate] = [];
                             }
-                            staffShifts[staffId].shifts[shift.date].push(shift);
+                            staffShifts[staffId].shifts[shiftDate].push(shift);
                           });
                           
                           return Object.entries(staffShifts).map(([staffId, data]) => {
