@@ -175,6 +175,10 @@ class EventCreate(BaseModel):
     restriction_notice: Optional[str] = None  # Hinweis für Service: "Nur eingeschränkte Karte"
     guest_notice: Optional[str] = None  # Hinweis für Gäste bei Buchung
     last_alacarte_time: Optional[str] = None  # Letzte à-la-carte Bestellung (z.B. "18:30")
+    
+    # ============== EVENT-PREISE + ZAHLUNG (Sprint: Event-Preise) ==============
+    event_pricing: Optional[dict] = None  # EventPricing als dict
+    payment_policy: Optional[dict] = None  # PaymentPolicy als dict
 
 
 class EventUpdate(BaseModel):
