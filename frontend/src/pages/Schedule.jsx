@@ -867,10 +867,11 @@ export const Schedule = () => {
                                 displayName = sm.full_name 
                                   || sm.display_name 
                                   || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
+                                  || (sm.first_name || sm.last_name || null)
                                   || sm.email;
                               }
                               staffShifts[staffId] = {
-                                name: displayName || shift.shift_name || "Offen",
+                                name: displayName || "Nicht zugewiesen",
                                 isUnassigned: !displayName,
                                 shifts: {}
                               };
