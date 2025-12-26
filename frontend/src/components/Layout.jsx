@@ -529,11 +529,11 @@ export const Layout = ({ children }) => {
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
             <div className="flex flex-col md:flex-row justify-between items-center gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-serif text-sm font-bold text-[#002f02]">Carlsburg</span>
+                <span className="font-serif text-sm font-bold text-[#002f02]">{BRANDING.RESTAURANT_NAME}</span>
                 <span className="text-xs text-gray-500">Cockpit</span>
               </div>
               <p className="text-xs text-gray-400">
-                © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant
+                {BRANDING.COPYRIGHT}
               </p>
             </div>
           </div>
