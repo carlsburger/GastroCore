@@ -6607,10 +6607,49 @@ class GastroCoreAPITester:
         print(f"🎯 Target: {self.base_url}")
         print("=" * 80)
         
-        # Authenticate first
-        auth_success = self.test_authentication()
-        if not auth_success:
-            print("❌ Authentication failed - cannot proceed with Event-Pricing tests")
+        # Authenticate admin only (sufficient for event pricing tests)
+        admin_creds = self.credentials["admin"]
+        result = self.make_request("POST", "auth/login", admin_creds, expected_status=200)
+        
+        if result["success"] and "access_token" in result["data"]:
+            self.tokens["admin"] = result["data"]["access_token"]
+            user_data = result["data"]["user"]
+            
+            # Check must_change_password flag
+            must_change = user_data.get("must_change_password", False)
+            self.log_test(f"Admin Login", True, 
+                        f"Token received, must_change_password: {must_change}")
+            
+            # Change password if required
+            if must_change:
+                change_data = {
+                    "current_password": "Carlsburg2025!",
+                    "new_password": "NewCarlsburg2025!"
+                }
+                
+                change_result = self.make_request("POST", "auth/change-password", 
+                                               change_data, self.tokens["admin"], expected_status=200)
+                
+                if change_result["success"]:
+                    self.log_test("Password change", True, "Password changed successfully")
+                    
+                    # Update credentials for future use
+                    self.credentials["admin"]["password"] = "NewCarlsburg2025!"
+                    
+                    # Re-login to get new token
+                    login_result = self.make_request("POST", "auth/login", 
+                                                   self.credentials["admin"], expected_status=200)
+                    if login_result["success"]:
+                        self.tokens["admin"] = login_result["data"]["access_token"]
+                        self.log_test("Re-login after password change", True)
+                    else:
+                        self.log_test("Re-login after password change", False)
+                        return False
+                else:
+                    self.log_test("Password change", False, f"Status: {change_result['status_code']}")
+                    return False
+        else:
+            self.log_test("Admin Login", False, f"Status: {result['status_code']}")
             return False
         
         # Run Event-Pricing API tests
