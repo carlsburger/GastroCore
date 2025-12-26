@@ -331,12 +331,34 @@ export const Schedule = () => {
         { headers }
       );
       toast.success(`Dienstplan für KW ${week}/${year} erstellt`);
-      // Schedule wurde erstellt - jetzt Daten neu laden
-      // Da year/week bereits korrekt sind, wird fetchData den neuen Schedule finden
-      fetchData();
+      
+      // WICHTIG: Direkt den erstellten Schedule aus der Response verwenden
+      // und nicht auf fetchData warten (Race Condition vermeiden)
+      const newScheduleId = res.data.id;
+      if (newScheduleId) {
+        // Lade den vollständigen Schedule mit Shifts
+        const scheduleRes = await axios.get(
+          `${BACKEND_URL}/api/staff/schedules/${newScheduleId}`,
+          { headers }
+        );
+        setSchedule(scheduleRes.data);
+        setClosedDays({});
+        setEventWarnings([]);
+        
+        // Lade auch Hours Overview
+        try {
+          const hoursRes = await axios.get(`${BACKEND_URL}/api/staff/hours-overview`, {
+            headers,
+            params: { year, week },
+          });
+          setHoursOverview(hoursRes.data);
+        } catch (hoursErr) {
+          console.log("Could not load hours overview:", hoursErr);
+        }
+      }
     } catch (err) {
       const errorDetail = err.response?.data?.detail || "Fehler beim Erstellen";
-      // Falls Schedule bereits existiert, trotzdem Daten laden (könnte durch Race Condition entstehen)
+      // Falls Schedule bereits existiert, trotzdem Daten laden
       if (err.response?.data?.error_code === "VALIDATION_ERROR" && errorDetail.includes("existiert bereits")) {
         toast.info("Dienstplan existiert bereits - wird geladen");
         fetchData();
