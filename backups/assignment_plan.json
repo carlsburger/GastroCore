@@ -1,0 +1,254 @@
+[
+  {
+    "shift_id": "1be81a61-b861-4320-8550-baa446914e36",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-22",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "b857c959-309b-46e1-8667-c8297dd76d2f",
+    "staff_name": "Alicja Caban"
+  },
+  {
+    "shift_id": "64ccb337-2886-4415-a0bf-164d0948682b",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-22",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "9c4a51d4-a925-4aac-bbe3-920168032eba",
+    "staff_name": "Nicole Fenske"
+  },
+  {
+    "shift_id": "de9deed5-668e-47a3-b1a4-634db8edde31",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-22",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "583adbe6-26a0-4f43-b080-83d1491c45f3",
+    "staff_name": "Jacqueline Gebel"
+  },
+  {
+    "shift_id": "0aee41ea-e94e-4f38-b99f-b56692060084",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-22",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "3ae9acf7-d960-498f-9b9b-a807a5ed2df9",
+    "staff_name": "Sascha Graef"
+  },
+  {
+    "shift_id": "acbe986a-821a-47f6-bec0-72ee8429c300",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-23",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "35c8e5f4-23bc-4242-81ec-8304920f0213",
+    "staff_name": "Antje Lassan"
+  },
+  {
+    "shift_id": "a451bf72-9bc9-420c-a269-b80dab553c03",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-23",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "7fd451a9-164c-4186-8e3c-e1b3701535fd",
+    "staff_name": "Justina Listowska"
+  },
+  {
+    "shift_id": "b8defb5c-44d6-4881-83ad-e464a240093a",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-23",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "965974f5-dc99-43dc-b928-21811f9fe909",
+    "staff_name": "Mike Michalak"
+  },
+  {
+    "shift_id": "94460014-2835-41f2-9fa0-29b13ab5da96",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-23",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "b4ed9d8b-9c36-4b64-a7d0-3e577a2ac848",
+    "staff_name": "Annett Senst"
+  },
+  {
+    "shift_id": "e233f98c-ddb4-4e0a-8511-4bfa08dc9127",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-24",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "fb84d0f1-d418-411e-8cea-a4e7377a682e",
+    "staff_name": "Thomas Steinert"
+  },
+  {
+    "shift_id": "5e4381b9-7917-4a98-a98d-aad9f9ce04bb",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-24",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "53687c25-1b76-4bb7-ba48-f84f2c71f52c",
+    "staff_name": "Julia Taebling"
+  },
+  {
+    "shift_id": "118f53d5-9397-4c82-b4a4-d6ba47091350",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-24",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "0dc80158-2ce0-4df4-9cd9-f8bae263f0f9",
+    "staff_name": "Luisa Wolf"
+  },
+  {
+    "shift_id": "244b6818-16ca-4aa1-9fe0-f6973c008687",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-24",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "2fbd98b0-4b38-4c09-87cc-449369837f24",
+    "staff_name": "Leonie Wolgast"
+  },
+  {
+    "shift_id": "acf4259b-e729-4502-9818-63d7c1fa6346",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-25",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "20603e41-240c-4f77-a91c-bcd7cdf55078",
+    "staff_name": "Fiete Ziegler"
+  },
+  {
+    "shift_id": "6b400f71-a1cf-4e65-b705-2311753336ad",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-25",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "b857c959-309b-46e1-8667-c8297dd76d2f",
+    "staff_name": "Alicja Caban"
+  },
+  {
+    "shift_id": "a76c20c2-8f66-4715-a306-f80d23c32168",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-25",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "9c4a51d4-a925-4aac-bbe3-920168032eba",
+    "staff_name": "Nicole Fenske"
+  },
+  {
+    "shift_id": "77711917-8774-4ba6-8a72-d1b84f5629ee",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-25",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "583adbe6-26a0-4f43-b080-83d1491c45f3",
+    "staff_name": "Jacqueline Gebel"
+  },
+  {
+    "shift_id": "46a52ffd-9a65-48de-828e-826c9e82fca8",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-26",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "3ae9acf7-d960-498f-9b9b-a807a5ed2df9",
+    "staff_name": "Sascha Graef"
+  },
+  {
+    "shift_id": "f9a5a8c8-2ced-4554-84d7-b8a7727e282a",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-26",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "35c8e5f4-23bc-4242-81ec-8304920f0213",
+    "staff_name": "Antje Lassan"
+  },
+  {
+    "shift_id": "481b549d-1b70-491f-a377-42f7f259deb3",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-26",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "7fd451a9-164c-4186-8e3c-e1b3701535fd",
+    "staff_name": "Justina Listowska"
+  },
+  {
+    "shift_id": "77aff850-4777-4389-8cc0-fc5cda6394e0",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-26",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "965974f5-dc99-43dc-b928-21811f9fe909",
+    "staff_name": "Mike Michalak"
+  },
+  {
+    "shift_id": "f913f8e3-8e84-4f59-ab42-6c675a3d0d58",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-27",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "b4ed9d8b-9c36-4b64-a7d0-3e577a2ac848",
+    "staff_name": "Annett Senst"
+  },
+  {
+    "shift_id": "a51a3fed-7998-45d0-ac96-4bffe1bf3845",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-27",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "fb84d0f1-d418-411e-8cea-a4e7377a682e",
+    "staff_name": "Thomas Steinert"
+  },
+  {
+    "shift_id": "77897bd3-1d87-492c-bc55-4d9153f06469",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-27",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "53687c25-1b76-4bb7-ba48-f84f2c71f52c",
+    "staff_name": "Julia Taebling"
+  },
+  {
+    "shift_id": "5b1bf228-59ba-495d-bc81-b84c9b6b5b88",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-27",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "0dc80158-2ce0-4df4-9cd9-f8bae263f0f9",
+    "staff_name": "Luisa Wolf"
+  },
+  {
+    "shift_id": "963f3816-e47a-491d-89d0-f4f88b0acb5e",
+    "shift_name": "Service Fr\u00fch",
+    "date": "2025-12-28",
+    "time": "10:00-15:00",
+    "work_area": "Service",
+    "staff_member_id": "2fbd98b0-4b38-4c09-87cc-449369837f24",
+    "staff_name": "Leonie Wolgast"
+  },
+  {
+    "shift_id": "a9a0a362-0875-4cd1-9be1-85c385b8905e",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-28",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "20603e41-240c-4f77-a91c-bcd7cdf55078",
+    "staff_name": "Fiete Ziegler"
+  },
+  {
+    "shift_id": "2f9d269a-eef7-45ac-b122-cb966c265de5",
+    "shift_name": "Service Sp\u00e4t",
+    "date": "2025-12-28",
+    "time": "17:00-20:30",
+    "work_area": "Service",
+    "staff_member_id": "b857c959-309b-46e1-8667-c8297dd76d2f",
+    "staff_name": "Alicja Caban"
+  },
+  {
+    "shift_id": "a6a06e7f-cd99-4b76-9555-03c9a2eb05bc",
+    "shift_name": "Schichtleiter",
+    "date": "2025-12-28",
+    "time": "11:00-20:00",
+    "work_area": "Service",
+    "staff_member_id": "9c4a51d4-a925-4aac-bbe3-920168032eba",
+    "staff_name": "Nicole Fenske"
+  }
+]
