@@ -265,12 +265,17 @@ async def check_shift_conflicts(
 
 
 def get_week_dates(year: int, week: int) -> tuple:
-    """Get start and end date of a calendar week"""
-    first_day = date(year, 1, 1)
-    first_monday = first_day + timedelta(days=(7 - first_day.weekday()) % 7)
-    if first_day.weekday() <= 3:  # Thursday or earlier
-        first_monday -= timedelta(days=7)
-    week_start = first_monday + timedelta(weeks=week - 1)
+    """
+    Get start and end date of an ISO calendar week.
+    Uses ISO 8601 standard: Week 1 is the first week with at least 4 days in the new year.
+    The 4th of January is ALWAYS in week 1.
+    """
+    # ISO 8601: Der 4. Januar ist immer in Woche 1
+    jan_4 = date(year, 1, 4)
+    # Finde den Montag der Woche 1
+    week_1_monday = jan_4 - timedelta(days=jan_4.weekday())
+    # Berechne den Montag der gewünschten Woche
+    week_start = week_1_monday + timedelta(weeks=week - 1)
     week_end = week_start + timedelta(days=6)
     return week_start, week_end
 
