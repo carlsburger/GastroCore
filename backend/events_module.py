@@ -89,6 +89,62 @@ class ActionType(str, Enum):
     SONSTIGES = "SONSTIGES"    # Andere Aktionen
 
 
+# ============== EVENT PRICING ENUMS (Sprint: Event-Preise) ==============
+class EventPricingMode(str, Enum):
+    """Preismodus für Events"""
+    SINGLE = "single"      # Ein fester Preis pro Person
+    VARIANTS = "variants"  # Mehrere Varianten zur Auswahl
+
+
+class PaymentPolicyMode(str, Enum):
+    """Zahlungsmodus bei Reservierung"""
+    NONE = "none"        # Keine Zahlung erforderlich
+    DEPOSIT = "deposit"  # Anzahlung erforderlich
+    FULL = "full"        # Volle Zahlung erforderlich (z.B. Eintritt Kultur)
+
+
+class DepositType(str, Enum):
+    """Anzahlungstyp"""
+    FIXED_PER_PERSON = "fixed_per_person"    # Fester Betrag pro Person
+    PERCENT_OF_TOTAL = "percent_of_total"    # Prozent vom Gesamtpreis
+
+
+class ReservationPaymentStatus(str, Enum):
+    """Zahlungsstatus einer Reservierung mit Event"""
+    PENDING_PAYMENT = "pending_payment"  # Warten auf Zahlung
+    PAID = "paid"                        # Bezahlt
+    EXPIRED = "expired"                  # Zahlungsfrist abgelaufen
+    REFUNDED = "refunded"                # Erstattet
+
+
+# ============== EVENT PRICING MODELS (Sprint: Event-Preise) ==============
+class EventPricingVariant(BaseModel):
+    """Eine Preisvariante für ein Event (z.B. 3-Gänge-Menü)"""
+    code: str = Field(..., min_length=1, max_length=50)  # z.B. "menu_3g", "main_only"
+    name: str = Field(..., min_length=1, max_length=100)  # Anzeigename
+    price_per_person: float = Field(..., ge=0)
+    description: Optional[str] = None
+
+
+class EventPricing(BaseModel):
+    """Preisstruktur für ein Event"""
+    pricing_mode: EventPricingMode = EventPricingMode.SINGLE
+    currency: str = "EUR"
+    single_price_per_person: Optional[float] = Field(None, ge=0)  # Bei pricing_mode="single"
+    variants: Optional[List[EventPricingVariant]] = None  # Bei pricing_mode="variants"
+
+
+class PaymentPolicy(BaseModel):
+    """Zahlungsrichtlinie für ein Event"""
+    mode: PaymentPolicyMode = PaymentPolicyMode.NONE
+    basis: str = "per_person"  # "per_person" oder "per_booking"
+    required: bool = False
+    deposit_value: Optional[float] = Field(None, ge=0)  # Betrag oder Prozent
+    deposit_type: Optional[DepositType] = None
+    payment_window_minutes: int = Field(default=30, ge=5, le=1440)  # 5 min bis 24h
+    hold_reservation_until_paid: bool = True
+
+
 # ============== PYDANTIC MODELS ==============
 
 # --- Event Models ---
