@@ -101,6 +101,7 @@ export const Events = ({ category: propCategory }) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pricingEvent, setPricingEvent] = useState(null); // Für Pricing-Dialog
   
   const [formData, setFormData] = useState({
     title: "",
