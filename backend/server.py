@@ -1231,7 +1231,8 @@ async def autocomplete_guests(
                     "notes": None,
                     "newsletter_subscribed": True,
                     "visit_count": rg["visit_count"],
-                    "last_visit": rg["last_visit"]
+                    "last_visit": rg["last_visit"],
+                    "source": "reservations"
                 })
     
     # Sortiere nach Besuchszähler (Stammgäste zuerst)
