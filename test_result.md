@@ -158,6 +158,43 @@ test_results:
     payment_policy_protected: true
     status: "✅ PASS"
 
+  test_e_event_pricing_integration:
+    test_a_schnitzel_satt:
+      seats: 4
+      price_per_person: 29.90
+      total_price: 119.60
+      payment_mode: "none"
+      status: "neu"
+      status: "✅ PASS"
+    test_b_gaensemenue_main_only:
+      seats: 4
+      price_per_person: 34.90
+      total_price: 139.60
+      payment_mode: "deposit"
+      amount_due: 80.00
+      status: "pending_payment"
+      status: "✅ PASS"
+    test_c_valentinstag_menu_classic:
+      seats: 2
+      price_per_person: 59.90
+      total_price: 119.80
+      payment_mode: "deposit"
+      amount_due: 60.00
+      status: "pending_payment"
+      status: "✅ PASS"
+    test_d_confirm_payment:
+      amount_paid: 80.00
+      payment_method: "bar"
+      final_status: "bestätigt"
+      payment_status: "paid"
+      status: "✅ PASS"
+    test_e_pending_payments_list:
+      pending_count: 4
+      status: "✅ PASS"
+    test_f_expire_unpaid:
+      expired_count: 0
+      status: "✅ PASS"
+
 #====================================================================================================
 # VORHERIGE SESSION (Schichtmodelle)
 #====================================================================================================
