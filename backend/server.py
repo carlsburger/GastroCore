@@ -1194,7 +1194,6 @@ async def autocomplete_guests(
     
     # Auch in Reservierungen suchen (für Gäste die noch nicht in guests sind)
     if len(result) < limit:
-    if len(result) < limit:
         res_guests = await db.reservations.aggregate([
             {
                 "$match": {
