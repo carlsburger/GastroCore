@@ -707,14 +707,22 @@ async def list_staff_members(
     """List all staff members (filtered by user role)"""
     query = {"archived": False}
     
-    # Status-Filter: Mappe "aktiv"/"inaktiv" auf active=true/false
-    # Unterstützt sowohl "status" als auch "active" Feld in DB
+    # Status-Filter: Mappe "aktiv"/"inaktiv" auf is_active/active Felder
+    # Unterstützt: status, active, is_active (für Kompatibilität mit verschiedenen Imports)
     if status:
         if status.lower() == "aktiv":
-            # Entweder status="aktiv" ODER active=true (für Kompatibilität)
-            query["$or"] = [{"status": "aktiv"}, {"active": True, "status": {"$exists": False}}]
+            # Aktive Mitarbeiter: is_active=true ODER active=true ODER status="aktiv"
+            query["$or"] = [
+                {"is_active": True},
+                {"active": True},
+                {"status": "aktiv"}
+            ]
         elif status.lower() == "inaktiv":
-            query["$or"] = [{"status": "inaktiv"}, {"active": False}]
+            query["$or"] = [
+                {"is_active": False},
+                {"active": False},
+                {"status": "inaktiv"}
+            ]
         elif status.lower() != "all":
             query["status"] = status
     
