@@ -622,6 +622,50 @@ export const Schedule = () => {
               ))}
             </div>
             
+            {/* KPI Counter Badges */}
+            {schedule && schedule.shifts && schedule.shifts.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-white border rounded-full shadow-sm">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium cursor-default">
+                        <User className="h-3 w-3" />
+                        <span>{shiftCounts.service}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Service-Schichten (KW {week})</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full text-xs font-medium cursor-default">
+                        <User className="h-3 w-3" />
+                        <span>{shiftCounts.kitchen}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Küchen-Schichten (KW {week})</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full text-xs font-medium cursor-default">
+                        <span>Σ {shiftCounts.total}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Gesamt-Schichten (KW {week})</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+            
             <Button variant="outline" onClick={fetchData} className="rounded-full">
               <RefreshCw className="h-4 w-4" />
             </Button>
