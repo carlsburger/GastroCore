@@ -466,6 +466,7 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
 @events_router.get("")
 async def list_events(
     status: Optional[str] = None,
+    content_category: Optional[str] = None,
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
     user: dict = Depends(require_manager)
@@ -475,6 +476,10 @@ async def list_events(
     
     if status:
         query["status"] = status
+    
+    # Filter nach content_category (AKTION, AKTION_MENUE, VERANSTALTUNG)
+    if content_category:
+        query["content_category"] = content_category
     
     if from_date:
         query["start_datetime"] = {"$gte": from_date}
