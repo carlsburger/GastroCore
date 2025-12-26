@@ -207,6 +207,10 @@ class EventUpdate(BaseModel):
     restriction_notice: Optional[str] = None
     guest_notice: Optional[str] = None
     last_alacarte_time: Optional[str] = None
+    
+    # ============== EVENT-PREISE + ZAHLUNG (Sprint: Event-Preise) ==============
+    event_pricing: Optional[dict] = None  # EventPricing als dict
+    payment_policy: Optional[dict] = None  # PaymentPolicy als dict
 
 
 # --- EventProduct Models (Vorbestell-Items) ---
