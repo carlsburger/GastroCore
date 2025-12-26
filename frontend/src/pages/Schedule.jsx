@@ -207,8 +207,8 @@ export const Schedule = () => {
             { 
               headers, 
               params: { 
-                from: scheduleRes.data.start_date, 
-                to: scheduleRes.data.end_date 
+                from: scheduleRes.data.start_date || scheduleRes.data.week_start, 
+                to: scheduleRes.data.end_date || scheduleRes.data.week_end 
               } 
             }
           );
