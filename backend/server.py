@@ -82,6 +82,9 @@ from opening_hours_module import (
 # Reservation Slots Module (Sprint: Slots & Durchgänge)
 from reservation_slots_module import slots_router
 
+# Reservation Capacity Module (Sprint: Kapazität & Durchgänge)
+from reservation_capacity import capacity_router
+
 # Table Module (Sprint: Tischplan & Belegung)
 from table_module import (
     table_router,
