@@ -1241,6 +1241,90 @@ async def autocomplete_guests(
     return result[:limit]
 
 
+# NEU: Dedizierter Endpoint für guest_contacts (nur Reservierungskontakte, KEIN Marketing)
+@api_router.get("/guest-contacts/search", tags=["Guests"])
+async def search_guest_contacts(
+    q: str = Query(..., min_length=2, description="Suchbegriff (min. 2 Zeichen)"),
+    limit: int = Query(10, ge=1, le=50),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Suche in der Legacy-Gästekontakt-Datenbank.
+    NUR für operative Reservierungszwecke - KEIN Marketing!
+    
+    Sucht in: first_name, last_name, phone, email
+    """
+    safe_search = escape_regex(q)
+    
+    contacts = await db.guest_contacts.find(
+        {
+            "archived": False,
+            "contact_type": "reservation_guest",
+            "$or": [
+                {"first_name": {"$regex": safe_search, "$options": "i"}},
+                {"last_name": {"$regex": safe_search, "$options": "i"}},
+                {"phone": {"$regex": safe_search, "$options": "i"}},
+                {"email": {"$regex": safe_search, "$options": "i"}}
+            ]
+        },
+        {"_id": 0}
+    ).limit(limit).to_list(limit)
+    
+    result = []
+    for contact in contacts:
+        fn = contact.get("first_name", "")
+        ln = contact.get("last_name", "")
+        if fn and ln:
+            display_name = f"{fn[0]}. {ln}"
+        elif ln:
+            display_name = ln
+        elif fn:
+            display_name = fn
+        else:
+            display_name = "Unbekannt"
+        
+        result.append({
+            "id": contact.get("id"),
+            "display_name": display_name,
+            "full_name": f"{fn} {ln}".strip(),
+            "first_name": fn,
+            "last_name": ln,
+            "phone": contact.get("phone"),
+            "email": contact.get("email"),
+            "notes": contact.get("notes"),
+            "marketing_consent": contact.get("marketing_consent", False),
+            "last_reservation_date": contact.get("last_reservation_date"),
+            "reservation_count": contact.get("reservation_count", 0)
+        })
+    
+    return {
+        "query": q,
+        "count": len(result),
+        "contacts": result
+    }
+
+
+@api_router.get("/guest-contacts/stats", tags=["Guests"])
+async def get_guest_contacts_stats(user: dict = Depends(require_manager)):
+    """
+    Statistiken zur guest_contacts Collection.
+    """
+    total = await db.guest_contacts.count_documents({"archived": False})
+    with_email = await db.guest_contacts.count_documents({"archived": False, "email": {"$ne": None, "$ne": ""}})
+    with_phone = await db.guest_contacts.count_documents({"archived": False, "phone": {"$ne": None, "$ne": ""}})
+    with_notes = await db.guest_contacts.count_documents({"archived": False, "notes": {"$ne": None, "$ne": ""}})
+    marketing_false = await db.guest_contacts.count_documents({"archived": False, "marketing_consent": False})
+    
+    return {
+        "total": total,
+        "with_email": with_email,
+        "with_phone": with_phone,
+        "with_notes": with_notes,
+        "marketing_consent_false": marketing_false,
+        "dsgvo_compliant": marketing_false == total
+    }
+
+
 @api_router.post("/guests", tags=["Guests"])
 async def create_guest(data: GuestCreate, user: dict = Depends(require_manager)):
     existing = await db.guests.find_one({"phone": data.phone, "archived": False})
