@@ -1,16 +1,17 @@
 #====================================================================================================
-# Event-Preise + Varianten + Zahlung/Anzahlung Session (26.12.2025)
+# Event-Preise + Varianten + Zahlung/Anzahlung Session FINAL (26.12.2025)
 #====================================================================================================
 
 user_problem_statement: |
-  SESSION TASK – Event-Preise + Varianten + Zahlung/Anzahlung im Reservierungssystem
+  SESSION TASK – Event-Preise + Varianten + Anzahlung/Payment im Reservierungssystem (FINAL)
   
   ZIELE:
   1. Event-Preise mit Single-Price oder Varianten-Modus
   2. Payment-Policy: none/deposit/full je nach Event-Kategorie
   3. Preisberechnung: seats × price_per_person, Anzahlung nach Typ
   4. WP-Sync Schutz: Manuell gepflegte Felder nicht überschreiben
-  5. Admin-UI für Preis- und Zahlungs-Konfiguration
+  5. Reservierungsflow mit pending_payment Status
+  6. Timeout-Logik für expired Status
 
 frontend:
   - task: "EventPricing Dialog Komponente"
