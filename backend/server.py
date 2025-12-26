@@ -756,6 +756,28 @@ async def get_reservations_summary(
     return result
 
 
+# WICHTIG: Spezifische Routen MÜSSEN vor /{reservation_id} kommen
+@api_router.get("/reservations/slots", tags=["Reservations"])
+async def get_reservation_slots_api(
+    date: str = Query(..., description="Datum (YYYY-MM-DD)"),
+    user: dict = Depends(get_current_user)
+):
+    """
+    GET /api/reservations/slots?date=YYYY-MM-DD
+    
+    Liefert alle Slots für ein Datum mit Kapazität und Verfügbarkeit.
+    """
+    from reservation_capacity import calculate_slot_capacity
+    from datetime import datetime
+    
+    try:
+        target = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ungültiges Datumsformat (YYYY-MM-DD erwartet)")
+    
+    return await calculate_slot_capacity(target)
+
+
 @api_router.get("/reservations/{reservation_id}", tags=["Reservations"])
 async def get_reservation(reservation_id: str, user: dict = Depends(get_current_user)):
     if user["role"] == UserRole.MITARBEITER.value:
