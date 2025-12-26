@@ -6433,6 +6433,194 @@ class GastroCoreAPITester:
         
         return smoke_test_result
 
+    def test_event_pricing_api(self):
+        """Test Event-Pricing API Endpoints - Specific requirements from review request"""
+        print("\n💰 Testing Event-Pricing API Endpoints...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Event-Pricing API", False, "Admin token not available")
+            return False
+        
+        pricing_success = True
+        
+        # Test Event IDs from review request
+        test_events = {
+            "schnitzel_ohne_anzahlung": "9f5b382a-c9de-444c-9b0a-5a198af9e948",
+            "schnitzel_mit_anzahlung": "f29696ca-5cab-47a4-88f4-58a6a742e70d",
+            "gaensemenue": "8048b07b-0bb1-4334-86e3-ba8c282eee8b",
+            "valentinstag": "d0f79627-f047-41fe-9ec8-64965ff81b60"
+        }
+        
+        # A) GET /api/events/{event_id}/pricing-info?seats=4
+        # Test Schnitzel satt (OHNE Anzahlung)
+        result = self.make_request("GET", f"events/{test_events['schnitzel_ohne_anzahlung']}/pricing-info", 
+                                 {"seats": 4}, expected_status=200)
+        if result["success"]:
+            data = result["data"]
+            expected_single_price = 29.90
+            expected_total_price = 119.60
+            expected_payment_mode = "none"
+            
+            if (data.get("single_price_per_person") == expected_single_price and 
+                data.get("total_price") == expected_total_price and
+                data.get("payment_policy", {}).get("mode") == expected_payment_mode):
+                self.log_test("A) GET pricing-info Schnitzel ohne Anzahlung", True, 
+                            f"Price: {expected_single_price}€, Total: {expected_total_price}€, Mode: {expected_payment_mode}")
+            else:
+                self.log_test("A) GET pricing-info Schnitzel ohne Anzahlung", False, 
+                            f"Expected: {expected_single_price}€/{expected_total_price}€/{expected_payment_mode}, "
+                            f"Got: {data.get('single_price_per_person')}/{data.get('total_price')}/{data.get('payment_policy', {}).get('mode')}")
+                pricing_success = False
+        else:
+            self.log_test("A) GET pricing-info Schnitzel ohne Anzahlung", False, f"Status: {result['status_code']}")
+            pricing_success = False
+        
+        # B) POST /api/events/{event_id}/calculate-price?seats=4
+        # Test Schnitzel MIT Anzahlung
+        url = f"{self.base_url}/api/events/{test_events['schnitzel_mit_anzahlung']}/calculate-price?seats=4"
+        try:
+            import requests
+            response = requests.post(url, headers={'Content-Type': 'application/json'})
+            if response.status_code == 200:
+                data = response.json()
+                expected_total_price = 119.60
+                expected_amount_due = 40.00  # 10€ × 4
+                
+                if (data.get("total_price") == expected_total_price and 
+                    data.get("amount_due") == expected_amount_due):
+                    self.log_test("B) POST calculate-price Schnitzel mit Anzahlung", True, 
+                                f"Total: {expected_total_price}€, Due: {expected_amount_due}€")
+                else:
+                    self.log_test("B) POST calculate-price Schnitzel mit Anzahlung", False, 
+                                f"Expected: {expected_total_price}€/{expected_amount_due}€, "
+                                f"Got: {data.get('total_price')}/{data.get('amount_due')}")
+                    pricing_success = False
+            else:
+                self.log_test("B) POST calculate-price Schnitzel mit Anzahlung", False, f"Status: {response.status_code}")
+                pricing_success = False
+        except Exception as e:
+            self.log_test("B) POST calculate-price Schnitzel mit Anzahlung", False, f"Error: {str(e)}")
+            pricing_success = False
+        
+        # C) POST /api/events/{event_id}/calculate-price?seats=2&variant_code=main_only
+        # Test Gänsemenü
+        url = f"{self.base_url}/api/events/{test_events['gaensemenue']}/calculate-price?seats=2&variant_code=main_only"
+        try:
+            response = requests.post(url, headers={'Content-Type': 'application/json'})
+            if response.status_code == 200:
+                data = response.json()
+                expected_variant_name = "Hauptgang"
+                expected_total_price = 69.80
+                expected_amount_due = 40.00
+                
+                if (data.get("variant_name") == expected_variant_name and 
+                    data.get("total_price") == expected_total_price and
+                    data.get("amount_due") == expected_amount_due):
+                    self.log_test("C) POST calculate-price Gänsemenü main_only", True, 
+                                f"Variant: {expected_variant_name}, Total: {expected_total_price}€, Due: {expected_amount_due}€")
+                else:
+                    self.log_test("C) POST calculate-price Gänsemenü main_only", False, 
+                                f"Expected: {expected_variant_name}/{expected_total_price}€/{expected_amount_due}€, "
+                                f"Got: {data.get('variant_name')}/{data.get('total_price')}/{data.get('amount_due')}")
+                    pricing_success = False
+            else:
+                self.log_test("C) POST calculate-price Gänsemenü main_only", False, f"Status: {response.status_code}")
+                pricing_success = False
+        except Exception as e:
+            self.log_test("C) POST calculate-price Gänsemenü main_only", False, f"Error: {str(e)}")
+            pricing_success = False
+        
+        # D) POST /api/events/{event_id}/calculate-price?seats=2&variant_code=menu_classic
+        # Test Valentinstag
+        url = f"{self.base_url}/api/events/{test_events['valentinstag']}/calculate-price?seats=2&variant_code=menu_classic"
+        try:
+            response = requests.post(url, headers={'Content-Type': 'application/json'})
+            if response.status_code == 200:
+                data = response.json()
+                expected_total_price = 119.80
+                expected_amount_due = 50.00
+                
+                if (data.get("total_price") == expected_total_price and
+                    data.get("amount_due") == expected_amount_due):
+                    self.log_test("D) POST calculate-price Valentinstag menu_classic", True, 
+                                f"Total: {expected_total_price}€, Due: {expected_amount_due}€")
+                else:
+                    self.log_test("D) POST calculate-price Valentinstag menu_classic", False, 
+                                f"Expected: {expected_total_price}€/{expected_amount_due}€, "
+                                f"Got: {data.get('total_price')}/{data.get('amount_due')}")
+                    pricing_success = False
+            else:
+                self.log_test("D) POST calculate-price Valentinstag menu_classic", False, f"Status: {response.status_code}")
+                pricing_success = False
+        except Exception as e:
+            self.log_test("D) POST calculate-price Valentinstag menu_classic", False, f"Error: {str(e)}")
+            pricing_success = False
+        
+        # E) PATCH /api/events/{event_id}/pricing (auth required)
+        # Test Update mit pricing_mode="single", single_price_per_person=35.00
+        pricing_update_data = {
+            "pricing_mode": "single",
+            "single_price_per_person": 35.00,
+            "currency": "EUR"
+        }
+        result = self.make_request("PATCH", f"events/{test_events['schnitzel_ohne_anzahlung']}/pricing", 
+                                 pricing_update_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            data = result["data"]
+            if data.get("success") and data.get("event_pricing", {}).get("single_price_per_person") == 35.00:
+                self.log_test("E) PATCH pricing update", True, "Pricing updated to 35.00€")
+            else:
+                self.log_test("E) PATCH pricing update", False, f"Update failed or wrong price: {data}")
+                pricing_success = False
+        else:
+            self.log_test("E) PATCH pricing update", False, f"Status: {result['status_code']}")
+            pricing_success = False
+        
+        # F) PATCH /api/events/{event_id}/payment-policy (auth required)
+        # Test Update mit mode="deposit", deposit_value=15, deposit_type="fixed_per_person"
+        policy_update_data = {
+            "mode": "deposit",
+            "deposit_value": 15.0,
+            "deposit_type": "fixed_per_person",
+            "required": True
+        }
+        result = self.make_request("PATCH", f"events/{test_events['schnitzel_ohne_anzahlung']}/payment-policy", 
+                                 policy_update_data, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            data = result["data"]
+            if (data.get("success") and 
+                data.get("payment_policy", {}).get("mode") == "deposit" and
+                data.get("payment_policy", {}).get("deposit_value") == 15.0):
+                self.log_test("F) PATCH payment-policy update", True, "Payment policy updated to deposit 15€")
+            else:
+                self.log_test("F) PATCH payment-policy update", False, f"Update failed or wrong policy: {data}")
+                pricing_success = False
+        else:
+            self.log_test("F) PATCH payment-policy update", False, f"Status: {result['status_code']}")
+            pricing_success = False
+        
+        return pricing_success
+
+    def run_event_pricing_tests(self):
+        """Run only the Event-Pricing API tests"""
+        print("🚀 Starting Event-Pricing API Tests...")
+        print(f"🎯 Target: {self.base_url}")
+        print("=" * 80)
+        
+        # Authenticate first
+        auth_success = self.test_authentication()
+        if not auth_success:
+            print("❌ Authentication failed - cannot proceed with Event-Pricing tests")
+            return False
+        
+        # Run Event-Pricing API tests
+        pricing_test_result = self.test_event_pricing_api()
+        
+        # Print summary
+        self.print_summary([("Event-Pricing API Tests", pricing_test_result)])
+        
+        return pricing_test_result
+
     def run_aktionen_infrastruktur_smoke_test(self):
         """Run only the Aktionen-Infrastruktur Verification SMOKE TEST"""
         print("🚀 Starting Aktionen-Infrastruktur Verification SMOKE TEST...")
