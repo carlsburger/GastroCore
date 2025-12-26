@@ -41,11 +41,13 @@ import {
   Music,
   ChefHat,
   Gift,
+  CreditCard,
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
+import { EventPricingDialog, EventPriceBadge } from "../components/EventPricing";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
