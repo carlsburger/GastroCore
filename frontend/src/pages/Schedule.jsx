@@ -771,21 +771,23 @@ export const Schedule = () => {
                         shifts.map((shift) => {
                           const area = workAreas.find((a) => a.id === shift.work_area_id);
                           
-                          // Mitarbeiter-Name mit Fallback-Reihenfolge:
-                          // 1. full_name, 2. display_name, 3. first_name + last_name, 4. email, 5. shift_name
+                          // Mitarbeiter-Name mit strenger Fallback-Reihenfolge:
+                          // 1. full_name, 2. display_name, 3. first_name + last_name, 4. email
+                          // KEIN Fallback auf Rollen/Work-Areas wie "Service"
                           let displayName = null;
                           const sm = shift.staff_member;
                           if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
                             displayName = sm.full_name 
                               || sm.display_name 
                               || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
+                              || (sm.first_name || sm.last_name || null)
                               || sm.email;
                           }
                           
-                          // Fallback: Schichtname oder "Offen"
+                          // Kein Mitarbeiter zugewiesen = "Nicht zugewiesen"
                           const staffName = displayName 
                             ? formatShortName(displayName) 
-                            : (shift.shift_name || "Offen");
+                            : "Nicht zugewiesen";
                           
                           // Ist die Schicht unbesetzt?
                           const isUnassigned = !displayName;
