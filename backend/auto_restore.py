@@ -1,0 +1,88 @@
+"""
+Auto-Restore System für GastroCore
+===================================
+Wird beim Backend-Start ausgeführt und stellt Daten aus Backups wieder her,
+falls die kritischen Collections leer sind.
+
+WICHTIG: Nur READ + INSERT, kein DROP, kein DELETE
+"""
+
+import json
+import os
+import logging
+from pathlib import Path
+from pymongo import MongoClient
+from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("auto_restore")
+
+BACKUP_DIR = Path("/app/backups")
+CRITICAL_COLLECTIONS = ["staff_members", "tables", "work_areas", "shift_templates"]
+
+def get_db():
+    """MongoDB Verbindung herstellen"""
+    mongo_url = os.getenv("MONGO_URL", "mongodb://localhost:27017/gastrocore")
+    client = MongoClient(mongo_url)
+    db_name = mongo_url.split("/")[-1].split("?")[0]
+    return client[db_name]
+
+def check_and_restore():
+    """Prüft ob kritische Collections leer sind und stellt ggf. wieder her"""
+    db = get_db()
+    
+    # Prüfe ob Restore nötig ist
+    needs_restore = False
+    for coll in CRITICAL_COLLECTIONS:
+        count = db[coll].count_documents({})
+        if count == 0:
+            logger.warning(f"⚠️ Collection '{coll}' ist LEER!")
+            needs_restore = True
+        else:
+            logger.info(f"✓ Collection '{coll}': {count} Dokumente")
+    
+    if not needs_restore:
+        logger.info("✅ Alle kritischen Collections haben Daten - kein Restore nötig")
+        return {"status": "ok", "restored": False}
+    
+    logger.warning("🔄 Starte Auto-Restore aus Backups...")
+    
+    # Finde das beste Backup
+    backup_path = BACKUP_DIR / "post_import_20251226_152821"
+    if not backup_path.exists():
+        logger.error("❌ Backup-Verzeichnis nicht gefunden!")
+        return {"status": "error", "message": "Backup not found"}
+    
+    restored = {}
+    
+    # Restore jede leere Collection
+    for coll in CRITICAL_COLLECTIONS:
+        if db[coll].count_documents({}) == 0:
+            backup_file = backup_path / f"{coll}.json"
+            if backup_file.exists():
+                with open(backup_file, "r") as f:
+                    docs = json.load(f)
+                
+                # Entferne _id falls vorhanden
+                for doc in docs:
+                    if "_id" in doc:
+                        del doc["_id"]
+                
+                if docs:
+                    db[coll].insert_many(docs)
+                    restored[coll] = len(docs)
+                    logger.info(f"✅ Restored {coll}: {len(docs)} Dokumente")
+    
+    # Log Restore
+    db.restore_logs.insert_one({
+        "timestamp": datetime.utcnow().isoformat(),
+        "type": "auto_restore",
+        "restored": restored,
+        "trigger": "empty_collections_detected"
+    })
+    
+    return {"status": "ok", "restored": True, "collections": restored}
+
+if __name__ == "__main__":
+    result = check_and_restore()
+    print(json.dumps(result, indent=2))
