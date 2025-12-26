@@ -2460,28 +2460,39 @@ async def apply_templates_to_schedule(
     dept_values = [d.value for d in data.departments]
     
     # Flexible Template-Query: Unterstützt sowohl alte als auch neue Feldnamen
+    # Verwende $and um beide $or-Bedingungen zu kombinieren
     templates = await db.shift_templates.find({
         "department": {"$in": dept_values},
-        "$or": [
-            {"season": {"$in": [season, "all"]}},
-            {"season": {"$exists": False}},  # Templates ohne season-Feld
+        "$and": [
+            {"$or": [
+                {"season": {"$in": [season, "all"]}},
+                {"season": {"$exists": False}},  # Templates ohne season-Feld
+            ]},
+            {"$or": [
+                {"active": True},
+                {"is_active": True},  # Alternative Feldname
+                {"active": {"$exists": False}},  # Kein active-Feld = aktiv
+            ]}
         ],
-        "$or": [
-            {"active": True},
-            {"is_active": True},  # Alternative Feldname
-        ],
-        "archived": False
+        "archived": {"$ne": True}
     }, {"_id": 0}).to_list(100)
     
-    # Fallback: Wenn keine Templates gefunden, versuche ohne season-Filter
+    # Fallback: Wenn keine Templates gefunden, versuche ohne Filter
     if not templates:
         templates = await db.shift_templates.find({
             "department": {"$in": dept_values},
+            "archived": {"$ne": True}
+        }, {"_id": 0}).to_list(100)
+    
+    # Weiterer Fallback: Alle aktiven Templates (unabhängig von department)
+    if not templates:
+        templates = await db.shift_templates.find({
+            "archived": {"$ne": True},
             "$or": [
                 {"active": True},
                 {"is_active": True},
-            ],
-            "archived": False
+                {"active": {"$exists": False}}
+            ]
         }, {"_id": 0}).to_list(100)
     
     if not templates:
