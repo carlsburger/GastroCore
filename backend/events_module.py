@@ -1154,12 +1154,28 @@ def detect_action_type(title: str) -> Optional[str]:
     return "SONSTIGES"
 
 
-def determine_content_category(event_type: str, categories: List[str] = None) -> str:
+def determine_content_category(event_type: str, categories: List[str] = None, title: str = None) -> str:
     """
-    Bestimmt die content_category basierend auf event_type.
+    Bestimmt die content_category basierend auf event_type UND Titel-Keywords.
+    
+    LOGIK (Priorität):
+    1. Wenn Titel "satt" oder "buffet" enthält → AKTION (Satt-Essen Aktionen)
+    2. Wenn event_type "aktion" oder "aktion_menue" → entsprechende Kategorie
+    3. Sonst → VERANSTALTUNG
     
     Returns: VERANSTALTUNG, AKTION oder AKTION_MENUE
     """
+    # 1. Titel-basierte Erkennung (höchste Priorität für Aktionen)
+    if title:
+        title_lower = title.lower()
+        # "Satt Essen" Aktionen erkennen
+        if "satt" in title_lower or "buffet" in title_lower or "all you can" in title_lower:
+            # Prüfe auf spezifische Menü-Aktionen
+            if any(kw in title_lower for kw in ["rippchen", "ribs", "ente", "gans", "spargel"]):
+                return "AKTION_MENUE"
+            return "AKTION"
+    
+    # 2. event_type basierte Zuordnung
     return CONTENT_CATEGORY_MAPPING.get(event_type, "VERANSTALTUNG")
 
 
