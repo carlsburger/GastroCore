@@ -5941,6 +5941,10 @@ class GastroCoreAPITester:
         print("\n🔄 SHIFT TEMPLATES SMOKE TEST (CARLSBURG COCKPIT):")
         test_results.append(self.test_shift_templates_smoke_test())
         
+        # EVENT-PRICING INTEGRATION TEST - as per review request
+        print("\n🎯 EVENT-PRICING + RESERVIERUNG INTEGRATION TEST:")
+        test_results.append(self.test_event_pricing_integration())
+        
         # Summary
         print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
