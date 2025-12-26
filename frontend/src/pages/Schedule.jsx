@@ -96,12 +96,26 @@ const DEPARTMENT_FILTER = {
 // Eismacher NIE im Dienstplan anzeigen
 const EXCLUDED_ROLES = ["eismacher"];
 
-// Helper: Namen kürzen auf "V. Nachname" - mit Fallbacks
-const formatShortName = (fullName) => {
-  if (!fullName || fullName.trim() === "") return "N.N.";
+/**
+ * ZENTRALE Namen-Formatierung
+ * Verwendet die importierte formatStaffName Funktion aus constants.js
+ * Reihenfolge: full_name → first_name[0]. last_name → display_name → "N.N."
+ */
+const formatShortName = (nameOrStaff) => {
+  // Wenn es ein Staff-Objekt ist
+  if (nameOrStaff && typeof nameOrStaff === "object") {
+    return formatStaffName(nameOrStaff, "short");
+  }
+  
+  // Wenn es ein String ist (Legacy-Support)
+  if (!nameOrStaff || (typeof nameOrStaff === "string" && nameOrStaff.trim() === "")) {
+    return "N.N.";
+  }
+  
+  const fullName = String(nameOrStaff);
   const parts = fullName.trim().split(" ").filter(p => p.length > 0);
   if (parts.length === 0) return "N.N.";
-  if (parts.length === 1) return parts[0]; // Nur Vorname oder Nachname
+  if (parts.length === 1) return parts[0];
   const firstName = parts[0];
   const lastName = parts.slice(1).join(" ");
   if (!firstName) return lastName;
