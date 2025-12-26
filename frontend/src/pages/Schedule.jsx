@@ -856,13 +856,20 @@ export const Schedule = () => {
                           // Gruppiere Schichten nach Mitarbeiter
                           const staffShifts = {};
                           filteredShifts.forEach(shift => {
-                            const staffId = shift.staff_member_id;
+                            const staffId = shift.staff_member_id || `unassigned-${shift.id}`;
                             if (!staffShifts[staffId]) {
-                              const staffFullName = shift.staff_member 
-                                ? `${shift.staff_member.first_name || ''} ${shift.staff_member.last_name || ''}`.trim()
-                                : "?";
+                              // Mitarbeiter-Name mit Fallback-Reihenfolge
+                              let displayName = null;
+                              const sm = shift.staff_member;
+                              if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
+                                displayName = sm.full_name 
+                                  || sm.display_name 
+                                  || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
+                                  || sm.email;
+                              }
                               staffShifts[staffId] = {
-                                name: staffFullName,
+                                name: displayName || shift.shift_name || "Offen",
+                                isUnassigned: !displayName,
                                 shifts: {}
                               };
                             }
