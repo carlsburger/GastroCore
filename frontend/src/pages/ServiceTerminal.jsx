@@ -643,6 +643,63 @@ export const ServiceTerminal = ({ standalone = false, walkInMode = false }) => {
         {viewMode === "week" && (
           <Card className="bg-white print:hidden">
             <CardContent className="p-4">
+              {/* Wochen-Navigation (NEU) */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-stone-100">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    const newStart = new Date(weekData[0]?.date || selectedDate);
+                    newStart.setDate(newStart.getDate() - 7);
+                    setSelectedDate(format(newStart, "yyyy-MM-dd"));
+                    fetchWeekData(format(newStart, "yyyy-MM-dd"));
+                  }} 
+                  className="h-9"
+                >
+                  <ChevronLeft className="h-5 w-5 mr-1" />
+                  Vorherige Woche
+                </Button>
+                
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      const today = format(new Date(), "yyyy-MM-dd");
+                      setSelectedDate(today);
+                      fetchWeekData(today);
+                    }}
+                    className="h-9"
+                  >
+                    Diese Woche
+                  </Button>
+                  <Input 
+                    type="date" 
+                    value={selectedDate} 
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      fetchWeekData(e.target.value);
+                    }} 
+                    className="w-36 h-9" 
+                  />
+                </div>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    const newStart = new Date(weekData[0]?.date || selectedDate);
+                    newStart.setDate(newStart.getDate() + 7);
+                    setSelectedDate(format(newStart, "yyyy-MM-dd"));
+                    fetchWeekData(format(newStart, "yyyy-MM-dd"));
+                  }} 
+                  className="h-9"
+                >
+                  Nächste Woche
+                  <ChevronRight className="h-5 w-5 ml-1" />
+                </Button>
+              </div>
+              
               {loadingWeek ? (
                 <div className="flex items-center justify-center h-48">
                   <Loader2 className="h-8 w-8 animate-spin text-[#002f02]" />
