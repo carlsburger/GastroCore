@@ -1,53 +1,146 @@
 #====================================================================================================
-# Schichtmodelle Session - Normal vs Kulturabend + Apply Idempotent + UI-Fix
+# Event-Preise + Varianten + Zahlung/Anzahlung Session (26.12.2025)
 #====================================================================================================
 
 user_problem_statement: |
-  SESSION TASK – Schichtmodelle korrekt machen (Normal vs Kulturabend) + Apply idempotent + UI-Fix "Close+undefinedmin"
+  SESSION TASK – Event-Preise + Varianten + Zahlung/Anzahlung im Reservierungssystem
   
   ZIELE:
-  1. Schichtmodelle in zwei Betriebsarten: Normal + Kulturabend (bis 00:00 bei Veranstaltungen)
-  2. Schichtende korrekt abbilden (fixed / close_relative)
-  3. UI-Fix: close-relative Ende wird korrekt angezeigt (kein undefined)
-  4. Apply wird idempotent: keine Duplikate bei erneutem Apply
+  1. Event-Preise mit Single-Price oder Varianten-Modus
+  2. Payment-Policy: none/deposit/full je nach Event-Kategorie
+  3. Preisberechnung: seats × price_per_person, Anzahlung nach Typ
+  4. WP-Sync Schutz: Manuell gepflegte Felder nicht überschreiben
+  5. Admin-UI für Preis- und Zahlungs-Konfiguration
 
 frontend:
-  - task: "UI-Fix Close+undefinedmin"
+  - task: "EventPricing Dialog Komponente"
     implemented: true
     working: true
-    file: "ShiftTemplates.jsx"
+    file: "components/EventPricing.jsx"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "✅ FIXED: Zeile 368-370 korrigiert. Jetzt wird 'Close + 30 min' statt 'Close+undefinedmin' angezeigt. Fallback mit ?? Operator implementiert. Kulturabend-Badge hinzugefügt."
+        comment: "✅ Neue Komponente: EventPricingDialog mit Tabs für Preise und Zahlung. Varianten-Editor, Deposit-Konfiguration."
 
-  - task: "Kulturabend-Badge in UI"
+  - task: "Events.jsx Integration"
     implemented: true
     working: true
-    file: "ShiftTemplates.jsx"
+    file: "pages/Events.jsx"
     stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
+    priority: "high"
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "✅ Lila Badge 'Kulturabend' wird bei event_mode='kultur' angezeigt. Event-Mode Dropdown im Dialog hinzugefügt."
+        comment: "✅ Pricing-Button und EventPriceBadge in Event-Liste. Dialog-Integration."
 
 backend:
-  - task: "event_mode Enum + Models"
+  - task: "Event Pricing Enums + Models"
     implemented: true
     working: true
-    file: "staff_module.py"
+    file: "events_module.py"
     stuck_count: 0
     priority: "critical"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
-        comment: "✅ EventMode Enum (normal/kultur) hinzugefügt. ShiftTemplateCreate/Update erweitert mit event_mode Feld."
+        comment: "✅ EventPricingMode, PaymentPolicyMode, DepositType Enums. EventPricing, PaymentPolicy Pydantic Models."
+
+  - task: "Pricing API Endpoints"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ PATCH /events/{id}/pricing, PATCH /events/{id}/payment-policy, GET /events/{id}/pricing-info, POST /events/{id}/calculate-price"
+
+  - task: "WP-Sync Schutz"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ event_pricing und payment_policy sind NICHT in WP-Sync update_fields. Marker-Felder *_modified_at."
+
+metadata:
+  created_by: "main_agent"
+  version: "11.0"
+  session_date: "2025-12-26"
+  test_sequence: 1
+  run_ui: true
+
+#====================================================================================================
+# TEST-ERGEBNISSE
+#====================================================================================================
+
+test_results:
+  test_a_schnitzel_ohne_anzahlung:
+    seats: 4
+    price_per_person: 29.90
+    total_price: 119.60
+    payment_mode: "none"
+    payment_required: false
+    amount_due: 0
+    status: "✅ PASS"
+
+  test_a2_schnitzel_mit_anzahlung:
+    seats: 4
+    price_per_person: 29.90
+    total_price: 119.60
+    payment_mode: "deposit"
+    payment_required: true
+    deposit_per_person: 10.00
+    amount_due: 40.00
+    status: "✅ PASS"
+
+  test_b_gaensemenue:
+    seats: 2
+    variant_hauptgang:
+      price_per_person: 34.90
+      total_price: 69.80
+    variant_3gaenge:
+      price_per_person: 49.90
+      total_price: 99.80
+    payment_mode: "deposit"
+    deposit_per_person: 20.00
+    amount_due: 40.00
+    status: "✅ PASS"
+
+  test_c_valentinstag:
+    seats: 2
+    variant_classic:
+      price_per_person: 59.90
+      total_price: 119.80
+    variant_veg:
+      price_per_person: 49.90
+      total_price: 99.80
+    payment_mode: "deposit"
+    deposit_per_person: 25.00
+    amount_due: 50.00
+    status: "✅ PASS"
+
+  test_d_wp_sync_schutz:
+    event_pricing_protected: true
+    payment_policy_protected: true
+    status: "✅ PASS"
+
+#====================================================================================================
+# VORHERIGE SESSION (Schichtmodelle)
+#====================================================================================================
+
+previous_session:
 
   - task: "Seed Default Templates (Normal + Kulturabend)"
     implemented: true
