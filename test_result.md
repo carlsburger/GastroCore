@@ -84,6 +84,18 @@ backend:
         agent: "main"
         comment: "✅ event_pricing und payment_policy sind NICHT in WP-Sync update_fields. Marker-Felder *_modified_at."
 
+  - task: "Event-Pricing + Reservierung Integration"
+    implemented: true
+    working: true
+    file: "server.py, events_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE INTEGRATION TESTING COMPLETE: All 6 test scenarios passed successfully. A) Schnitzel satt (4 Personen, 29,90€ p.P., keine Anzahlung) → status=neu, total=119.60€, payment=none ✅ B) Gänsemenü main_only (4 Personen, 34,90€ p.P., 20€ Anzahlung) → status=pending_payment, total=139.60€, due=80.00€ ✅ C) Valentinstag menu_classic (2 Personen, 59,90€ p.P., 30€ Anzahlung) → status=pending_payment, total=119.80€, due=60.00€ ✅ D) Payment confirmation (80€, bar) → status=bestätigt, payment_status=paid ✅ E) Pending payments list working ✅ F) Expire unpaid reservations working ✅ All price calculations, status transitions, and payment workflows are functioning correctly."
+
 metadata:
   created_by: "main_agent"
   version: "11.0"
