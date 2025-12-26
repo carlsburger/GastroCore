@@ -6655,6 +6655,12 @@ def main():
     
     tester = GastroCoreAPITester()
     
+    # Check if we should run Event-Pricing API tests
+    if len(sys.argv) > 1 and sys.argv[1] == "--event-pricing":
+        print("Running Event-Pricing API Tests...")
+        success = tester.run_event_pricing_tests()
+        return 0 if success else 1
+    
     # Check if we should run Aktionen-Infrastruktur smoke test
     if len(sys.argv) > 1 and sys.argv[1] == "--aktionen-infrastruktur":
         print("Running Aktionen-Infrastruktur Verification SMOKE TEST...")
