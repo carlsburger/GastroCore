@@ -2076,9 +2076,20 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
                 })
                 
                 if existing:
+                    # PRÜFE FIELDS_LOCKED - Wenn gelockt, keine Änderungen durch Sync!
+                    if existing.get("fields_locked"):
+                        # Nur last_sync_at aktualisieren, keine anderen Felder
+                        await db.events.update_one(
+                            {"id": existing["id"]},
+                            {"$set": {"last_sync_at": now_iso()}}
+                        )
+                        report["unchanged"] += 1
+                        continue
+                    
                     # Prüfe ob sich wirklich etwas geändert hat
                     if has_real_changes(existing, mapped):
                         # ECHTES UPDATE - Nur gemappte Felder aktualisieren
+                        # ABER: event_pricing und payment_policy NIEMALS überschreiben!
                         update_fields = {
                             "title": mapped["title"],
                             "description": mapped["description"],
@@ -2094,6 +2105,16 @@ async def sync_wordpress_events(user: dict = Depends(require_admin)):
                             "updated_at": now_iso(),
                             "last_sync_at": now_iso(),
                         }
+                        
+                        # content_category nur setzen wenn nicht manuell überschrieben
+                        if not existing.get("category_locked"):
+                            # Neu bestimmen basierend auf aktualisierten Daten
+                            new_category = determine_content_category(
+                                mapped["event_type"],
+                                mapped["wp_categories"],
+                                mapped["title"]
+                            )
+                            update_fields["content_category"] = new_category
                         
                         await db.events.update_one(
                             {"id": existing["id"]},
