@@ -615,6 +615,410 @@ async def cancel_event(event_id: str, user: dict = Depends(require_admin)):
     return {"message": "Event abgesagt", "success": True}
 
 
+# ============== EVENT PRICING & PAYMENT ENDPOINTS (Sprint: Event-Preise) ==============
+
+# Default-Preise für bekannte Aktionen
+DEFAULT_EVENT_PRICES = {
+    # AKTIONEN (einzelpreis)
+    "schnitzel_satt": {"pricing_mode": "single", "single_price_per_person": 29.90, "currency": "EUR"},
+    "rippchen_satt": {"pricing_mode": "single", "single_price_per_person": 23.90, "currency": "EUR"},
+    "garnelen_satt": {"pricing_mode": "single", "single_price_per_person": 35.90, "currency": "EUR"},
+    # MENÜ-AKTIONEN (varianten)
+    "gaensemenue": {
+        "pricing_mode": "variants",
+        "currency": "EUR",
+        "variants": [
+            {"code": "main_only", "name": "Hauptgang", "price_per_person": 34.90, "description": "Gänsebraten mit Beilagen"},
+            {"code": "menu_3g", "name": "3-Gänge-Menü", "price_per_person": 49.90, "description": "Suppe + Gänsebraten + Dessert"},
+        ]
+    },
+    "valentinstag": {
+        "pricing_mode": "variants",
+        "currency": "EUR",
+        "variants": [
+            {"code": "menu_classic", "name": "Klassisches Menü", "price_per_person": 59.90, "description": "5-Gänge Genussmenü"},
+            {"code": "menu_veg", "name": "Vegetarisches Menü", "price_per_person": 49.90, "description": "5-Gänge vegetarisch"},
+        ]
+    },
+}
+
+# Default Payment Policies nach Kategorie
+DEFAULT_PAYMENT_POLICIES = {
+    "VERANSTALTUNG": {
+        "mode": "full",
+        "basis": "per_person",
+        "required": True,
+        "payment_window_minutes": 30,
+        "hold_reservation_until_paid": True
+    },
+    "AKTION": {
+        "mode": "none",
+        "basis": "per_person",
+        "required": False,
+        "payment_window_minutes": 30,
+        "hold_reservation_until_paid": False
+    },
+    "AKTION_MENUE": {
+        "mode": "deposit",
+        "basis": "per_person",
+        "required": True,
+        "deposit_value": 20.0,
+        "deposit_type": "fixed_per_person",
+        "payment_window_minutes": 30,
+        "hold_reservation_until_paid": True
+    },
+}
+
+
+class EventPricingUpdate(BaseModel):
+    """Update für Event-Pricing"""
+    pricing_mode: str = Field(..., pattern="^(single|variants)$")
+    currency: str = "EUR"
+    single_price_per_person: Optional[float] = Field(None, ge=0)
+    variants: Optional[List[dict]] = None
+
+
+class PaymentPolicyUpdate(BaseModel):
+    """Update für Payment Policy"""
+    mode: str = Field(..., pattern="^(none|deposit|full)$")
+    basis: str = Field(default="per_person", pattern="^(per_person|per_booking)$")
+    required: bool = False
+    deposit_value: Optional[float] = Field(None, ge=0)
+    deposit_type: Optional[str] = Field(None, pattern="^(fixed_per_person|percent_of_total)$")
+    payment_window_minutes: int = Field(default=30, ge=5, le=1440)
+    hold_reservation_until_paid: bool = True
+
+
+@events_router.patch("/{event_id}/pricing")
+async def update_event_pricing(
+    event_id: str,
+    data: EventPricingUpdate,
+    user: dict = Depends(require_admin)
+):
+    """
+    Update event pricing (Preise/Varianten).
+    Dieses Feld wird bei WP-Sync NICHT überschrieben.
+    """
+    existing = await db.events.find_one({"id": event_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Event")
+    
+    before = safe_dict_for_audit(existing)
+    
+    # Validierung
+    if data.pricing_mode == "single" and data.single_price_per_person is None:
+        raise ValidationException("Bei pricing_mode='single' muss single_price_per_person angegeben werden")
+    if data.pricing_mode == "variants" and (not data.variants or len(data.variants) == 0):
+        raise ValidationException("Bei pricing_mode='variants' müssen Varianten angegeben werden")
+    
+    # Validiere Varianten
+    if data.variants:
+        for v in data.variants:
+            if not v.get("code") or not v.get("name") or v.get("price_per_person") is None:
+                raise ValidationException("Jede Variante braucht code, name und price_per_person")
+    
+    pricing_data = data.model_dump()
+    
+    await db.events.update_one(
+        {"id": event_id},
+        {"$set": {
+            "event_pricing": pricing_data,
+            "event_pricing_modified_at": now_iso(),  # Marker für WP-Sync Schutz
+            "updated_at": now_iso()
+        }}
+    )
+    
+    updated = await db.events.find_one({"id": event_id}, {"_id": 0})
+    await create_audit_log(user, "event", event_id, "update_pricing", before, safe_dict_for_audit(updated))
+    
+    return {
+        "message": "Event-Preise aktualisiert",
+        "event_pricing": pricing_data,
+        "success": True
+    }
+
+
+@events_router.patch("/{event_id}/payment-policy")
+async def update_event_payment_policy(
+    event_id: str,
+    data: PaymentPolicyUpdate,
+    user: dict = Depends(require_admin)
+):
+    """
+    Update event payment policy (Zahlungsrichtlinie).
+    Dieses Feld wird bei WP-Sync NICHT überschrieben.
+    """
+    existing = await db.events.find_one({"id": event_id, "archived": False}, {"_id": 0})
+    if not existing:
+        raise NotFoundException("Event")
+    
+    before = safe_dict_for_audit(existing)
+    category = existing.get("content_category", "VERANSTALTUNG")
+    
+    # Validierung nach Kategorie
+    if category == "VERANSTALTUNG" and data.mode != "full":
+        raise ValidationException("Veranstaltungen (Kultur) erfordern volle Zahlung (mode='full')")
+    
+    if category == "AKTION_MENUE" and data.mode == "none":
+        raise ValidationException("Menü-Aktionen erfordern mindestens eine Anzahlung")
+    
+    if data.mode == "deposit":
+        if data.deposit_value is None or data.deposit_value <= 0:
+            raise ValidationException("Bei Anzahlung muss deposit_value > 0 sein")
+        if data.deposit_type is None:
+            raise ValidationException("Bei Anzahlung muss deposit_type angegeben werden")
+    
+    policy_data = data.model_dump()
+    
+    await db.events.update_one(
+        {"id": event_id},
+        {"$set": {
+            "payment_policy": policy_data,
+            "payment_policy_modified_at": now_iso(),  # Marker für WP-Sync Schutz
+            "updated_at": now_iso()
+        }}
+    )
+    
+    updated = await db.events.find_one({"id": event_id}, {"_id": 0})
+    await create_audit_log(user, "event", event_id, "update_payment_policy", before, safe_dict_for_audit(updated))
+    
+    return {
+        "message": "Zahlungsrichtlinie aktualisiert",
+        "payment_policy": policy_data,
+        "success": True
+    }
+
+
+@events_router.get("/{event_id}/pricing-info")
+async def get_event_pricing_info(event_id: str, seats: int = Query(1, ge=1, le=50)):
+    """
+    Öffentlicher Endpoint: Berechnet Preisinformationen für ein Event.
+    Für Reservierungsformular - zeigt Preis p.P., Gesamtpreis, Anzahlung.
+    """
+    event = await db.events.find_one({"id": event_id, "archived": False}, {"_id": 0})
+    if not event:
+        raise NotFoundException("Event")
+    
+    pricing = event.get("event_pricing", {})
+    policy = event.get("payment_policy", {})
+    category = event.get("content_category", "VERANSTALTUNG")
+    
+    result = {
+        "event_id": event_id,
+        "event_title": event.get("title"),
+        "content_category": category,
+        "seats": seats,
+        "currency": pricing.get("currency", "EUR"),
+        "pricing_mode": pricing.get("pricing_mode", "single"),
+        "variants": None,
+        "single_price_per_person": None,
+        "payment_policy": {
+            "mode": policy.get("mode", "none"),
+            "required": policy.get("required", False),
+            "payment_window_minutes": policy.get("payment_window_minutes", 30),
+        }
+    }
+    
+    # Preis-Infos
+    if pricing.get("pricing_mode") == "variants" and pricing.get("variants"):
+        result["variants"] = [
+            {
+                "code": v["code"],
+                "name": v["name"],
+                "price_per_person": v["price_per_person"],
+                "description": v.get("description"),
+                "total_price": round(v["price_per_person"] * seats, 2)
+            }
+            for v in pricing["variants"]
+        ]
+    elif pricing.get("single_price_per_person"):
+        price_pp = pricing["single_price_per_person"]
+        result["single_price_per_person"] = price_pp
+        result["total_price"] = round(price_pp * seats, 2)
+    elif event.get("ticket_price"):
+        # Fallback auf altes ticket_price Feld
+        price_pp = event["ticket_price"]
+        result["single_price_per_person"] = price_pp
+        result["total_price"] = round(price_pp * seats, 2)
+    
+    # Anzahlung berechnen wenn required
+    if policy.get("required") and policy.get("mode") in ["deposit", "full"]:
+        if policy["mode"] == "full":
+            result["payment_policy"]["amount_due"] = result.get("total_price", 0)
+            result["payment_policy"]["amount_due_label"] = "Voller Eintrittspreis"
+        elif policy["mode"] == "deposit":
+            deposit_type = policy.get("deposit_type", "fixed_per_person")
+            deposit_value = policy.get("deposit_value", 0)
+            
+            if deposit_type == "fixed_per_person":
+                amount_due = round(deposit_value * seats, 2)
+                result["payment_policy"]["amount_due"] = amount_due
+                result["payment_policy"]["amount_due_label"] = f"Anzahlung {deposit_value:.2f} € × {seats} Pers."
+            elif deposit_type == "percent_of_total":
+                total = result.get("total_price", 0)
+                amount_due = round(total * (deposit_value / 100), 2)
+                result["payment_policy"]["amount_due"] = amount_due
+                result["payment_policy"]["amount_due_label"] = f"Anzahlung {deposit_value}% vom Gesamtpreis"
+    
+    return result
+
+
+@events_router.post("/{event_id}/calculate-price")
+async def calculate_event_price(
+    event_id: str,
+    seats: int = Query(..., ge=1, le=50),
+    variant_code: Optional[str] = None
+):
+    """
+    Berechnet den Preis für eine Event-Reservierung.
+    
+    Args:
+        event_id: Event ID
+        seats: Anzahl Personen
+        variant_code: Bei Varianten: welche Variante gewählt wurde
+    
+    Returns:
+        Preisberechnung mit total_price, amount_due, payment_info
+    """
+    event = await db.events.find_one({"id": event_id, "archived": False}, {"_id": 0})
+    if not event:
+        raise NotFoundException("Event")
+    
+    pricing = event.get("event_pricing", {})
+    policy = event.get("payment_policy", {})
+    
+    # Preis pro Person ermitteln
+    price_per_person = 0
+    variant_name = None
+    
+    if pricing.get("pricing_mode") == "variants":
+        if not variant_code:
+            raise ValidationException("Bei Varianten-Pricing muss variant_code angegeben werden")
+        
+        variants = pricing.get("variants", [])
+        selected = next((v for v in variants if v["code"] == variant_code), None)
+        if not selected:
+            raise ValidationException(f"Variante '{variant_code}' nicht gefunden")
+        
+        price_per_person = selected["price_per_person"]
+        variant_name = selected["name"]
+    else:
+        price_per_person = pricing.get("single_price_per_person") or event.get("ticket_price", 0)
+    
+    total_price = round(price_per_person * seats, 2)
+    
+    # Zahlungsbetrag berechnen
+    amount_due = 0
+    payment_required = policy.get("required", False)
+    payment_mode = policy.get("mode", "none")
+    
+    if payment_required:
+        if payment_mode == "full":
+            amount_due = total_price
+        elif payment_mode == "deposit":
+            deposit_type = policy.get("deposit_type", "fixed_per_person")
+            deposit_value = policy.get("deposit_value", 0)
+            
+            if deposit_type == "fixed_per_person":
+                amount_due = round(deposit_value * seats, 2)
+            elif deposit_type == "percent_of_total":
+                amount_due = round(total_price * (deposit_value / 100), 2)
+    
+    return {
+        "event_id": event_id,
+        "seats": seats,
+        "variant_code": variant_code,
+        "variant_name": variant_name,
+        "price_per_person": price_per_person,
+        "total_price": total_price,
+        "currency": pricing.get("currency", "EUR"),
+        "payment_required": payment_required,
+        "payment_mode": payment_mode,
+        "amount_due": amount_due,
+        "payment_window_minutes": policy.get("payment_window_minutes", 30),
+        "calculated_at": now_iso()
+    }
+
+
+@events_router.post("/seed-default-prices")
+async def seed_default_event_prices(user: dict = Depends(require_admin)):
+    """
+    Setzt Default-Preise für bekannte Aktionen.
+    Nur Events OHNE event_pricing werden aktualisiert.
+    """
+    updated_count = 0
+    skipped_count = 0
+    results = []
+    
+    # Mapping von Event-Titeln zu Preis-Keys
+    title_to_price_key = {
+        "schnitzel satt": "schnitzel_satt",
+        "rippchen satt": "rippchen_satt",
+        "garnelen satt": "garnelen_satt",
+        "gänsemenü": "gaensemenue",
+        "gänsebraten": "gaensemenue",
+        "martinsgans": "gaensemenue",
+        "valentinstag": "valentinstag",
+    }
+    
+    # Alle Events ohne event_pricing holen
+    events = await db.events.find({
+        "archived": False,
+        "event_pricing": {"$exists": False}
+    }).to_list(500)
+    
+    for event in events:
+        title_lower = event.get("title", "").lower()
+        category = event.get("content_category", "")
+        
+        # Suche passenden Preis-Key
+        price_key = None
+        for pattern, key in title_to_price_key.items():
+            if pattern in title_lower:
+                price_key = key
+                break
+        
+        if price_key and price_key in DEFAULT_EVENT_PRICES:
+            pricing = DEFAULT_EVENT_PRICES[price_key]
+            policy = DEFAULT_PAYMENT_POLICIES.get(category, DEFAULT_PAYMENT_POLICIES["AKTION"])
+            
+            await db.events.update_one(
+                {"id": event["id"]},
+                {"$set": {
+                    "event_pricing": pricing,
+                    "payment_policy": policy,
+                    "updated_at": now_iso()
+                }}
+            )
+            updated_count += 1
+            results.append({"id": event["id"], "title": event.get("title"), "price_key": price_key})
+        else:
+            # Setze zumindest Default-Payment-Policy nach Kategorie
+            if category in DEFAULT_PAYMENT_POLICIES:
+                policy = DEFAULT_PAYMENT_POLICIES[category]
+                await db.events.update_one(
+                    {"id": event["id"]},
+                    {"$set": {
+                        "payment_policy": policy,
+                        "updated_at": now_iso()
+                    }}
+                )
+            skipped_count += 1
+    
+    await create_audit_log(user, "event", "seed_prices", "seed", None, {
+        "updated": updated_count,
+        "skipped": skipped_count
+    })
+    
+    return {
+        "message": f"{updated_count} Events mit Default-Preisen versehen",
+        "updated": updated_count,
+        "skipped": skipped_count,
+        "details": results[:20],  # Max 20 Details
+        "success": True
+    }
+
+
 # ============== EVENT PRODUCTS ENDPOINTS ==============
 @events_router.get("/{event_id}/products")
 async def list_event_products(event_id: str, user: dict = Depends(require_manager)):
