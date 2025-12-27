@@ -541,7 +541,7 @@ export const StaffDetail = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="contact" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="contact">
               <Phone className="h-4 w-4 mr-2" />
               Kontakt
@@ -552,6 +552,10 @@ export const StaffDetail = () => {
                 Personal/Steuer
               </TabsTrigger>
             )}
+            <TabsTrigger value="absences">
+              <Calendar className="h-4 w-4 mr-2" />
+              Abwesenheiten
+            </TabsTrigger>
             <TabsTrigger value="emergency">
               <Heart className="h-4 w-4 mr-2" />
               Notfall
