@@ -501,7 +501,7 @@ export const StaffDetail = () => {
                     {member.full_name}
                   </h1>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge className="bg-emerald-100 text-emerald-700">{member.position || member.role}</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-700">{normalizeRoleLabel(member.position || member.role)}</Badge>
                     {member.work_area_ids?.length > 0 && (
                       <Badge className="bg-blue-100 text-blue-700">+ Multi-Role</Badge>
                     )}
