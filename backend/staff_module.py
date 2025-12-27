@@ -2537,12 +2537,21 @@ async def apply_templates_to_schedule(
     areas = await db.work_areas.find({"archived": False}, {"_id": 0}).to_list(50)
     service_area = next((a for a in areas if "service" in a.get("name", "").lower()), None)
     kitchen_area = next((a for a in areas if "küche" in a.get("name", "").lower() or "kitchen" in a.get("name", "").lower()), None)
+    reinigung_area = next((a for a in areas if "reinigung" in a.get("name", "").lower()), None)
+    kuechenhilfe_area = next((a for a in areas if "küchenhilfe" in a.get("name", "").lower()), None)
+    eismacher_area = next((a for a in areas if "eismacher" in a.get("name", "").lower()), None)
     
     def get_area_id(department: str) -> str:
         if department == "service" and service_area:
             return service_area["id"]
         elif department == "kitchen" and kitchen_area:
             return kitchen_area["id"]
+        elif department == "reinigung" and reinigung_area:
+            return reinigung_area["id"]
+        elif department == "kuechenhilfe" and kuechenhilfe_area:
+            return kuechenhilfe_area["id"]
+        elif department == "eismacher" and eismacher_area:
+            return eismacher_area["id"]
         return service_area["id"] if service_area else ""
     
     # Get week dates - Support both start_date and week_start
