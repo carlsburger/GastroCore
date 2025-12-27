@@ -179,6 +179,62 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ============== ACTIVE FIELD NORMALIZATION ==============
+# WICHTIG: MongoDB Collection nutzt teils `is_active`, teils `active`.
+# Diese Funktionen stellen sicher, dass BEIDE Varianten korrekt behandelt werden.
+# NICHT ENTFERNEN - Bug-Fix für Feldnamen-Inkonsistenz!
+
+def build_active_tables_query(base_query: dict = None) -> dict:
+    """
+    Erstellt einen Query der SOWOHL `active: true` ALS AUCH `is_active: true` akzeptiert.
+    Fallback: Wenn keines der Felder existiert, wird der Tisch als aktiv behandelt.
+    
+    HINTERGRUND:
+    - Importierte Daten haben oft `is_active`
+    - Neue Daten haben `active`
+    - Dieser Query matcht beide Varianten
+    """
+    query = base_query.copy() if base_query else {}
+    query["archived"] = False
+    # OR-Query: active=true ODER is_active=true ODER (beide fehlen = default aktiv)
+    query["$or"] = [
+        {"active": True},
+        {"is_active": True},
+        {"active": {"$exists": False}, "is_active": {"$exists": False}}
+    ]
+    return query
+
+
+def normalize_table_active_field(table: dict) -> dict:
+    """
+    Normalisiert das Active-Feld beim Laden eines Tisches.
+    - Setzt `active` basierend auf `is_active` (falls vorhanden)
+    - Behält `is_active` bei (keine Migration!)
+    - Fallback: Wenn keines existiert, setze active=True
+    
+    NICHT ENTFERNEN - kritisch für Konsistenz!
+    """
+    if table is None:
+        return None
+    
+    # Normalisierung: is_active → active
+    if "is_active" in table and "active" not in table:
+        table["active"] = table["is_active"]
+    elif "active" not in table and "is_active" not in table:
+        table["active"] = True  # Fallback
+    
+    return table
+
+
+async def get_active_tables_count() -> int:
+    """
+    Zählt aktive Tische (für Startup-Guard).
+    Berücksichtigt sowohl `active` als auch `is_active` Felder.
+    """
+    query = build_active_tables_query()
+    return await db.tables.count_documents(query)
+
+
 def create_entity(data: dict, extra_fields: dict = None) -> dict:
     entity = {
         "id": str(uuid.uuid4()),
