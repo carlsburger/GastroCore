@@ -1621,6 +1621,102 @@ export const Schedule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Vorschläge Dialog - NEU */}
+      <Dialog open={showSuggestionsDialog} onOpenChange={setShowSuggestionsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-500" />
+              Schicht-Vorschläge für {suggestions?.schedule_name}
+            </DialogTitle>
+            <DialogDescription>
+              Regelbasierte Vorschläge für offene Schichten. Klicken Sie auf "Übernehmen", um einen Mitarbeiter zuzuweisen.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {suggestions && (
+            <div className="space-y-4">
+              {/* Stats */}
+              <div className="flex gap-4 p-3 bg-muted rounded-lg text-sm">
+                <span>Schichten gesamt: <strong>{suggestions.stats?.total_shifts}</strong></span>
+                <span>Offen: <strong className="text-orange-600">{suggestions.stats?.open_shifts}</strong></span>
+                <span>Mit Vorschlägen: <strong className="text-green-600">{suggestions.stats?.shifts_with_suggestions}</strong></span>
+              </div>
+              
+              {/* Schichten mit Vorschlägen */}
+              <div className="space-y-3">
+                {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length > 0).map((shift) => (
+                  <Card key={shift.shift_id} className="border-l-4 border-l-blue-400">
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <span className="font-medium">{shift.shift_name}</span>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(shift.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} | {shift.start_time} - {shift.end_time}
+                          </div>
+                        </div>
+                        <Badge variant="outline">{shift.work_area_name}</Badge>
+                      </div>
+                      
+                      {/* Vorschläge */}
+                      <div className="space-y-2 mt-2">
+                        {shift.suggestions.map((sug, idx) => (
+                          <div key={idx} className={`flex items-center justify-between p-2 rounded ${idx === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{sug.staff_name}</span>
+                                <Badge className="text-xs" variant="secondary">Score: {sug.score}</Badge>
+                                {idx === 0 && <Badge className="text-xs bg-green-100 text-green-700">Empfohlen</Badge>}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {sug.reasons?.join(" • ")}
+                              </div>
+                              {sug.warnings?.length > 0 && (
+                                <div className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {sug.warnings.join(" • ")}
+                                </div>
+                              )}
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant={idx === 0 ? "default" : "outline"}
+                              onClick={() => applySuggestion(shift.shift_id, sug.staff_member_id)}
+                              className="ml-2"
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Übernehmen
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                {/* Schichten ohne Vorschläge */}
+                {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length === 0).length > 0 && (
+                  <div className="text-sm text-muted-foreground p-3 bg-orange-50 rounded-lg">
+                    <AlertCircle className="h-4 w-4 inline mr-2 text-orange-500" />
+                    {suggestions.shifts_with_suggestions.filter(s => s.suggestions?.length === 0).length} Schichten ohne passende Mitarbeiter
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSuggestionsDialog(false)}>
+              Schließen
+            </Button>
+            <Button onClick={loadSuggestions} disabled={loadingSuggestions}>
+              {loadingSuggestions && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Aktualisieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
