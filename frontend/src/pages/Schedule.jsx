@@ -866,11 +866,11 @@ export const Schedule = () => {
                     Vorlagen
                   </Button>
                 )}
-                {/* Vorschläge Button - NEU */}
+                {/* Vorschläge Button - NEU (mit Badge für gecachte Anzahl) */}
                 {schedule.status === "entwurf" && (
                   <Button 
                     variant="outline" 
-                    onClick={loadSuggestions}
+                    onClick={() => suggestions ? setShowSuggestionsDialog(true) : loadSuggestions()}
                     disabled={loadingSuggestions}
                     className="rounded-full border-blue-400 text-blue-600 hover:bg-blue-50"
                   >
@@ -880,6 +880,11 @@ export const Schedule = () => {
                       <User className="h-4 w-4 mr-2" />
                     )}
                     Vorschläge
+                    {suggestions?.stats?.open_shifts > 0 && (
+                      <Badge className="ml-1 h-5 bg-orange-500 text-white text-xs">
+                        {suggestions.stats.open_shifts}
+                      </Badge>
+                    )}
                   </Button>
                 )}
                 <Button variant="outline" onClick={handleExportCSV} className="rounded-full">
