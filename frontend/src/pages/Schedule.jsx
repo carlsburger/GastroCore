@@ -490,8 +490,8 @@ export const Schedule = () => {
     }
   };
 
-  // NEU: Schicht-Vorschläge laden
-  const loadSuggestions = async () => {
+  // NEU: Schicht-Vorschläge laden (gecacht, einmal für ganze Woche)
+  const loadSuggestions = async (showDialog = true) => {
     if (!schedule) {
       toast.error("Kein Dienstplan ausgewählt");
       return;
@@ -503,7 +503,10 @@ export const Schedule = () => {
         { headers }
       );
       setSuggestions(response.data);
-      setShowSuggestionsDialog(true);
+      if (showDialog) {
+        setShowSuggestionsDialog(true);
+      }
+      toast.success(`${response.data.stats?.shifts_with_suggestions || 0} Schichten mit Vorschlägen geladen`);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Fehler beim Laden der Vorschläge");
     } finally {
@@ -511,22 +514,46 @@ export const Schedule = () => {
     }
   };
 
-  // NEU: Vorschlag übernehmen
-  const applySuggestion = async (shiftId, staffMemberId) => {
+  // NEU: Vorschlag übernehmen (optimistisches UI Update)
+  const applySuggestion = async (shiftId, staffMemberId, staffName) => {
+    setApplyingShiftId(shiftId);
     try {
       await axios.post(
         `${BACKEND_URL}/api/staff/shifts/${shiftId}/apply-suggestion?staff_member_id=${staffMemberId}`,
         {},
         { headers }
       );
-      toast.success("Zuweisung übernommen");
-      // Aktualisiere Vorschläge
-      loadSuggestions();
+      toast.success(`${staffName || "Mitarbeiter"} zugewiesen`);
+      
+      // Optimistisches Update: Entferne Schicht aus Vorschlägen
+      if (suggestions) {
+        setSuggestions(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            open_shifts: Math.max(0, (prev.stats?.open_shifts || 1) - 1),
+            shifts_with_suggestions: Math.max(0, (prev.stats?.shifts_with_suggestions || 1) - 1)
+          },
+          shifts_with_suggestions: prev.shifts_with_suggestions?.filter(s => s.shift_id !== shiftId) || []
+        }));
+      }
+      
       // Aktualisiere Hauptansicht
-      fetchData();
+      await fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Fehler beim Übernehmen");
+      const errorMsg = err.response?.data?.detail || "Fehler beim Übernehmen";
+      toast.error(errorMsg);
+    } finally {
+      setApplyingShiftId(null);
     }
+  };
+
+  // Toggle für einklappbare Schicht-Vorschläge
+  const toggleShiftExpanded = (shiftId) => {
+    setExpandedShifts(prev => ({
+      ...prev,
+      [shiftId]: !prev[shiftId]
+    }));
   };
 
   const handleExportPDF = async () => {
