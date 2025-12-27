@@ -567,6 +567,75 @@ export const Schedule = () => {
     }));
   };
 
+  // NEU: Auto-Besetzen Vorschau laden
+  const loadAutoAssignPreview = async () => {
+    if (!schedule) {
+      toast.error("Kein Dienstplan ausgewählt");
+      return;
+    }
+    setLoadingAutoAssign(true);
+    setAutoAssignPreview(null);
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/staff/schedules/${schedule.id}/apply-suggestions`,
+        {
+          strategy: "top1",
+          limit: autoAssignSettings.limit,
+          min_score: autoAssignSettings.min_score,
+          dry_run: true,
+          respect_constraints: true,
+          skip_if_assigned: true,
+          work_area_filter: autoAssignSettings.work_area_filter
+        },
+        { headers }
+      );
+      setAutoAssignPreview(response.data);
+      setShowAutoAssignDialog(true);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Laden der Vorschau");
+    } finally {
+      setLoadingAutoAssign(false);
+    }
+  };
+
+  // NEU: Auto-Besetzen ausführen
+  const executeAutoAssign = async () => {
+    if (!schedule || !autoAssignPreview) return;
+    
+    setApplyingAutoAssign(true);
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/staff/schedules/${schedule.id}/apply-suggestions`,
+        {
+          strategy: "top1",
+          limit: autoAssignSettings.limit,
+          min_score: autoAssignSettings.min_score,
+          dry_run: false,
+          respect_constraints: true,
+          skip_if_assigned: true,
+          work_area_filter: autoAssignSettings.work_area_filter
+        },
+        { headers }
+      );
+      
+      const appliedCount = response.data.stats?.applied_count || 0;
+      toast.success(`${appliedCount} Schichten automatisch besetzt!`);
+      
+      // Cache invalidieren
+      setSuggestions(null);
+      setAutoAssignPreview(null);
+      setShowAutoAssignDialog(false);
+      
+      // UI aktualisieren
+      await fetchData();
+      
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Anwenden");
+    } finally {
+      setApplyingAutoAssign(false);
+    }
+  };
+
   const handleExportPDF = async () => {
     if (!schedule) return;
     try {
