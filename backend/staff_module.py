@@ -1696,11 +1696,19 @@ async def get_hours_overview(
         planned_hours = sum(s.get("hours", 0) or 0 for s in member_shifts)
         weekly_hours = member.get("weekly_hours", 0) or 0
         
-        # Resolve work area name from work_area_ids
+        # Resolve work area name from work_area_id or work_area_ids
+        work_area_id = member.get("work_area_id")
         work_area_ids = member.get("work_area_ids", [])
         work_area_name = "—"
-        if work_area_ids and len(work_area_ids) > 0:
+        
+        # Prioritize single work_area_id, fall back to work_area_ids array
+        if work_area_id:
+            work_area_name = work_area_map.get(work_area_id, "—")
+        elif work_area_ids and len(work_area_ids) > 0:
             work_area_name = work_area_map.get(work_area_ids[0], "—")
+        
+        # Use work_area_id for KPI (single value)
+        effective_work_area_id = work_area_id or (work_area_ids[0] if work_area_ids else None)
         
         # Resolve display name: full_name > first_name + last_name
         display_name = member.get("full_name")
