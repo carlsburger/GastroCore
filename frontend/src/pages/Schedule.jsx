@@ -49,6 +49,7 @@ import {
   Filter,
   Wand2,
   AlertCircle,
+  Shield,
 } from "lucide-react";
 import axios from "axios";
 
