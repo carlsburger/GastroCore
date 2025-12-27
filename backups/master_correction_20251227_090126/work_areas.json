@@ -1,0 +1,54 @@
+[
+  {
+    "id": "572928f0-b26b-4739-8f88-3bea0d239de7",
+    "name": "Service",
+    "slug": "service",
+    "color": "#3B82F6",
+    "sort_order": 1,
+    "archived": false
+  },
+  {
+    "id": "2289f435-4c56-4752-93ba-5479b429df04",
+    "name": "K\u00fcche",
+    "slug": "kitchen",
+    "color": "#EF4444",
+    "sort_order": 2,
+    "archived": false
+  },
+  {
+    "id": "f52def28-f767-4ef6-a46e-feef31a93213",
+    "name": "Reinigung",
+    "slug": "reinigung",
+    "color": "#10B981",
+    "sort_order": 3,
+    "archived": false
+  },
+  {
+    "id": "11f2c800-920b-46fb-8817-1bf058d1897b",
+    "name": "Schichtleiter",
+    "slug": "schichtleiter",
+    "color": "#8B5CF6",
+    "sort_order": 4,
+    "archived": false
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-eismacher001",
+    "name": "Eismacher",
+    "description": "Eisproduktion - auch an Ruhetagen",
+    "sort_order": 50,
+    "active": true,
+    "created_at": "2025-12-27T00:27:38.445Z",
+    "updated_at": "2025-12-27T00:27:38.445Z",
+    "archived": false
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-kuechenhilfe1",
+    "name": "K\u00fcchenhilfe",
+    "description": "K\u00fcchenhilfe / Sp\u00fcle",
+    "sort_order": 25,
+    "active": true,
+    "created_at": "2025-12-27T00:27:38.445Z",
+    "updated_at": "2025-12-27T00:27:38.445Z",
+    "archived": false
+  }
+]
