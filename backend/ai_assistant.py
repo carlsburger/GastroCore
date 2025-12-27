@@ -19,7 +19,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+# AI integration (with fallback)
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    AI_AVAILABLE = True
+except ImportError:
+    AI_AVAILABLE = False
+    # Stub classes
+    class UserMessage:
+        def __init__(self, content: str):
+            self.content = content
+    class LlmChat:
+        def __init__(self, *args, **kwargs):
+            pass
+        async def send_message(self, messages):
+            return "KI-Modul nicht verfügbar - emergentintegrations nicht installiert."
 from core.database import db
 from core.auth import get_current_user, require_roles, require_admin, require_manager
 
