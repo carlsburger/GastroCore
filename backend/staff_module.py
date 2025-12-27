@@ -3033,6 +3033,122 @@ def calculate_staff_hours_this_week(staff_id: str, schedule_id: str, all_shifts:
     return total_hours
 
 
+# ============== ZEIT-OVERLAP-PRÜFUNG ==============
+"""
+Robuste Prüfung ob Schichten zeitlich überlappen.
+Erlaubt mehrere Schichten am selben Tag NUR wenn keine Zeitüberlappung.
+"""
+
+def parse_shift_times(shift: dict) -> tuple:
+    """
+    Parst Start- und Endzeit einer Schicht.
+    Returns: (start_minutes, end_minutes, is_valid)
+    - Zeiten als Minuten ab Mitternacht für einfache Vergleiche
+    - Über-Mitternacht-Schichten werden erkannt (end < start)
+    """
+    start_time = shift.get("start_time", "")
+    end_time = shift.get("end_time", "")
+    
+    if not start_time or not end_time:
+        return (None, None, False)
+    
+    try:
+        # Parse HH:MM Format
+        start_parts = start_time.split(":")
+        end_parts = end_time.split(":")
+        
+        start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
+        end_minutes = int(end_parts[0]) * 60 + int(end_parts[1])
+        
+        # Über Mitternacht: end < start -> end += 24h (in Minuten)
+        if end_minutes <= start_minutes:
+            end_minutes += 24 * 60
+        
+        return (start_minutes, end_minutes, True)
+    except (ValueError, IndexError):
+        return (None, None, False)
+
+
+def shifts_overlap(
+    a_start: int, a_end: int, 
+    b_start: int, b_end: int, 
+    buffer_minutes: int = 0
+) -> bool:
+    """
+    Prüft ob zwei Zeiträume überlappen.
+    
+    Args:
+        a_start, a_end: Erste Schicht (Minuten ab Mitternacht)
+        b_start, b_end: Zweite Schicht (Minuten ab Mitternacht)
+        buffer_minutes: Mindestabstand zwischen Schichten (Default: 0)
+    
+    Returns:
+        True wenn Overlap, False wenn keine Überlappung
+    
+    Overlap-Definition:
+        a_start < b_end - buffer AND b_start < a_end - buffer
+    
+    Beispiele (buffer=0):
+        09:00-11:00 + 11:00-16:00 -> False (kein Overlap, direkt anschließend)
+        09:00-12:00 + 11:00-16:00 -> True (Overlap 11-12)
+        20:00-24:00 + 00:00-02:00 -> False (über Mitternacht, kein Overlap)
+    """
+    if a_start is None or b_start is None:
+        return True  # Bei ungültigen Zeiten: sicherheitshalber als Overlap behandeln
+    
+    # Anpassung für Buffer
+    a_end_adj = a_end - buffer_minutes
+    b_end_adj = b_end - buffer_minutes
+    
+    # Overlap wenn: a beginnt vor b endet UND b beginnt vor a endet
+    return a_start < b_end_adj and b_start < a_end_adj
+
+
+def check_shift_overlap_for_staff(
+    staff_id: str,
+    new_shift: dict,
+    all_shifts: list,
+    buffer_minutes: int = 0
+) -> tuple:
+    """
+    Prüft ob eine neue Schicht mit bestehenden Schichten des Mitarbeiters überlappt.
+    
+    Args:
+        staff_id: ID des Mitarbeiters
+        new_shift: Die neue Schicht (dict mit date, start_time, end_time)
+        all_shifts: Alle Schichten im Schedule
+        buffer_minutes: Mindestabstand zwischen Schichten
+    
+    Returns:
+        (has_overlap: bool, overlapping_shift: dict or None, reason: str)
+    """
+    new_date = new_shift.get("date", "")
+    new_start, new_end, new_valid = parse_shift_times(new_shift)
+    
+    if not new_valid:
+        return (False, None, "cannot_validate_overlap")
+    
+    # Finde alle Schichten des Mitarbeiters am selben Tag
+    for existing in all_shifts:
+        if existing.get("staff_member_id") != staff_id:
+            continue
+        if existing.get("date") != new_date:
+            continue
+        if existing.get("id") == new_shift.get("id"):
+            continue  # Nicht mit sich selbst vergleichen
+        
+        ex_start, ex_end, ex_valid = parse_shift_times(existing)
+        
+        if not ex_valid:
+            # Bestehende Schicht hat ungültige Zeiten -> sicherheitshalber Overlap annehmen
+            return (True, existing, "existing_shift_invalid_times")
+        
+        if shifts_overlap(new_start, new_end, ex_start, ex_end, buffer_minutes):
+            return (True, existing, "overlapping_shift_same_day")
+    
+    return (False, None, "no_overlap")
+
+
 def calculate_suggestion_score(
     staff: dict,
     shift: dict,
