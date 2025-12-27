@@ -3245,7 +3245,7 @@ async def get_shift_suggestions(
     Nur Vorschläge, keine automatische Zuweisung.
     """
     try:
-        suggestions = generate_shift_suggestions(schedule_id)
+        suggestions = await generate_shift_suggestions_async(schedule_id)
         return suggestions
     except NotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
