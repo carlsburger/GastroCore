@@ -523,6 +523,28 @@ async def calculate_effective_hours(target_date: date) -> dict:
         result["closure_reason"] = full_day_closure["reason"]
         return result
     
+    # ========== 1.5 FESTE SONDERTAGE (Priorität über Saisons) ==========
+    special_day = await get_special_day_for_date(target_date)
+    if special_day:
+        if special_day.get("is_closed"):
+            result["is_open"] = False
+            result["is_closed_full_day"] = True
+            result["closure_reason"] = special_day.get("reason", special_day.get("name", "Sondertag"))
+            result["period_name"] = special_day.get("name")
+            return result
+        else:
+            # Sonderöffnung
+            result["is_open"] = True
+            result["is_closed_full_day"] = False
+            result["blocks"] = [{
+                "start": special_day.get("opening_time", "12:00"),
+                "end": special_day.get("closing_time", "16:00"),
+                "reservable": True,
+                "label": special_day.get("name", "Sonderöffnung")
+            }]
+            result["period_name"] = special_day.get("name")
+            return result
+    
     # ========== 2. FEIERTAGE ==========
     # Feiertage überschreiben Ruhetage → offen 11:30-20:00
     if is_holiday:
