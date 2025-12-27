@@ -778,21 +778,29 @@ export const Schedule = () => {
           </Card>
         ) : (
           <>
-            {/* Event Warnings Banner */}
+            {/* Veranstaltungen dieser Woche - NEUTRAL, NICHT als Warnung/Fehler */}
             {eventWarnings.length > 0 && (
-              <Card className="border-amber-400 bg-amber-50">
+              <Card className="border-blue-200 bg-blue-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-medium text-amber-800">Event-Hinweise für diese Woche</p>
-                      <ul className="mt-1 space-y-1">
-                        {eventWarnings.map((w, idx) => (
-                          <li key={idx} className="text-sm text-amber-700">
-                            {w.message}
-                          </li>
+                      <p className="font-medium text-blue-800">Veranstaltungen in dieser Woche</p>
+                      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {eventWarnings.map((event, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm text-blue-700 bg-white/50 rounded px-2 py-1">
+                            <span className="text-xs text-blue-500 font-mono">
+                              {event.date ? new Date(event.date).toLocaleDateString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit'}) : ''}
+                            </span>
+                            <span className="truncate" title={event.event_name || event.display_text}>
+                              {event.event_name || event.display_text || event.message}
+                            </span>
+                            {event.start_time && (
+                              <span className="text-xs text-blue-400">{event.start_time}</span>
+                            )}
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
