@@ -3294,10 +3294,17 @@ async def generate_shift_suggestions_async(schedule_id: str) -> dict:
             if not is_valid:
                 continue  # Constraint verletzt
             
-            # 4. Berechne Statistiken
+            # 4. Zeit-Overlap-Check (NEU: zeitbasiert statt harter Blockade)
+            has_overlap, overlapping_shift, overlap_reason = check_shift_overlap_for_staff(
+                staff_id, shift, all_shifts, buffer_minutes=0
+            )
+            if has_overlap:
+                continue  # Zeitüberlappung mit bestehender Schicht
+            
+            # 5. Berechne Statistiken
             hours_planned = calculate_staff_hours_this_week(staff_id, schedule_id, all_shifts)
             
-            # Schichten heute zählen
+            # Schichten heute zählen (für Score-Berechnung)
             shifts_today = sum(1 for s in all_shifts 
                              if s.get("staff_member_id") == staff_id 
                              and s.get("date") == shift_date)
@@ -3307,7 +3314,7 @@ async def generate_shift_suggestions_async(schedule_id: str) -> dict:
                                   if s.get("staff_member_id") == staff_id 
                                   and s.get("schedule_id") == schedule_id)
             
-            # 5. Score berechnen
+            # 6. Score berechnen
             score, reasons, warnings = calculate_suggestion_score(
                 staff, shift, hours_planned, shifts_today, shifts_this_week, is_primary
             )
