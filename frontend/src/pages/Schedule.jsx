@@ -861,7 +861,14 @@ export const Schedule = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="font-serif text-3xl font-medium text-primary">Dienstplan</h1>
-            <p className="text-muted-foreground">KW {week} / {year} • {viewMode === "week" ? "Wochenübersicht" : "Monatsübersicht"}</p>
+            <p className="text-muted-foreground">
+              KW {schedule?.week || week} / {schedule?.year || year} • {viewMode === "week" ? "Wochenübersicht" : "Monatsübersicht"}
+              {schedule?.week_start && (
+                <span className="ml-2 text-xs">
+                  ({new Date(schedule.week_start).toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit'})} - {new Date(schedule.week_end).toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit'})})
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex gap-2 flex-wrap">
             {/* View Mode Toggle (Woche/Monat) */}
