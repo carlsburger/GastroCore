@@ -422,9 +422,28 @@ export const Staff = () => {
 
                       {/* Badges & Actions */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className={roleConfig.color}>{roleConfig.label}</Badge>
+                        {/* Primary Work Area Badge */}
+                        {(() => {
+                          const primaryArea = workAreas.find(a => a.id === member.work_area_id);
+                          const secondaryAreas = (member.work_area_ids || [])
+                            .map(id => workAreas.find(a => a.id === id))
+                            .filter(Boolean);
+                          
+                          return (
+                            <>
+                              <Badge className="bg-emerald-100 text-emerald-700">
+                                {primaryArea?.name || member.position || "—"}
+                              </Badge>
+                              {secondaryAreas.length > 0 && (
+                                <Badge className="bg-blue-100 text-blue-700">
+                                  + {secondaryAreas.map(a => a.name).join(", ")}
+                                </Badge>
+                              )}
+                            </>
+                          );
+                        })()}
                         <Badge className={empConfig.color}>
-                          {empConfig.label} ({member.weekly_hours}h)
+                          {member.weekly_hours || 0} Std/Woche
                         </Badge>
                         <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
                         
