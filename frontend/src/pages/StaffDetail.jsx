@@ -94,6 +94,35 @@ const CHECKLIST_LABELS = {
   emergency_contact: "Notfallkontakt",
 };
 
+// Erlaubte Rollen-Bezeichnungen
+const ALLOWED_ROLES = [
+  "Servicekraft", "Koch", "Küchenchef", "Eismacher", "Aushilfe", 
+  "Reinigungskraft", "Reinigung", "Küchenhilfe", "Schichtleiter",
+  "Inhaber", "Inhaber / Schichtleiter", "Reinigung + Küchenhilfe"
+];
+
+// Normalisiere Rollen-Label: Entferne Firmenformen wie GmbH, UG, etc.
+const normalizeRoleLabel = (raw) => {
+  if (!raw) return "";
+  
+  let label = String(raw).trim();
+  
+  // Entferne Firmenformen am Ende (case-insensitive)
+  const companyForms = [
+    "GmbH & Co. KG", "GmbH & Co KG", "GmbH", "UG", "KG", "OHG", "GbR", "e.K.", "e.V.", "AG"
+  ];
+  
+  for (const form of companyForms) {
+    const regex = new RegExp(`\\s*${form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+    label = label.replace(regex, '');
+  }
+  
+  // Entferne doppelte Leerzeichen
+  label = label.replace(/\s+/g, ' ').trim();
+  
+  return label;
+};
+
 // Masked Field Component with reveal toggle
 const MaskedField = ({ label, maskedValue, hasValue, fieldName, memberId, onReveal }) => {
   const [revealed, setRevealed] = useState(false);
