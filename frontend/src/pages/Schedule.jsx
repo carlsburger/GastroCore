@@ -967,6 +967,22 @@ export const Schedule = () => {
                     )}
                   </Button>
                 )}
+                {/* Auto-Besetzen Button - NEU */}
+                {schedule.status === "entwurf" && (
+                  <Button 
+                    variant="outline" 
+                    onClick={loadAutoAssignPreview}
+                    disabled={loadingAutoAssign}
+                    className="rounded-full border-green-400 text-green-600 hover:bg-green-50"
+                  >
+                    {loadingAutoAssign ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-4 w-4 mr-2" />
+                    )}
+                    Auto-Besetzen
+                  </Button>
+                )}
                 <Button variant="outline" onClick={handleExportCSV} className="rounded-full">
                   <FileText className="h-4 w-4 mr-2" />
                   CSV
