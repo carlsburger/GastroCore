@@ -235,6 +235,31 @@ async def get_active_tables_count() -> int:
     return await db.tables.count_documents(query)
 
 
+async def startup_tables_check():
+    """
+    STARTUP-GUARD: Prüft beim Backend-Start ob Tische verfügbar sind.
+    Loggt WARNING wenn keine aktiven Tische gefunden werden.
+    
+    WICHTIG: Führt KEIN Auto-Repair oder Import durch!
+    Nur Logging zur Früherkennung von Problemen.
+    """
+    try:
+        count = await get_active_tables_count()
+        total_count = await db.tables.count_documents({"archived": False})
+        
+        if count == 0:
+            logger.warning("=" * 60)
+            logger.warning("WARN: No active tables found – check active/is_active mapping!")
+            logger.warning(f"       Total tables in DB: {total_count}")
+            logger.warning(f"       Tables matching active query: {count}")
+            logger.warning("       This will block reservations & capacity logic!")
+            logger.warning("=" * 60)
+        else:
+            logger.info(f"✅ Tables Startup Check: {count} active tables found (total: {total_count})")
+    except Exception as e:
+        logger.error(f"❌ Tables Startup Check failed: {e}")
+
+
 def create_entity(data: dict, extra_fields: dict = None) -> dict:
     entity = {
         "id": str(uuid.uuid4()),
