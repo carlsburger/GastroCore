@@ -19,13 +19,38 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 
-# Import from emergentintegrations
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout, 
-    CheckoutSessionResponse, 
-    CheckoutStatusResponse, 
-    CheckoutSessionRequest
-)
+# Import from emergentintegrations (with fallback)
+try:
+    from emergentintegrations.payments.stripe.checkout import (
+        StripeCheckout, 
+        CheckoutSessionResponse, 
+        CheckoutStatusResponse, 
+        CheckoutSessionRequest
+    )
+    STRIPE_AVAILABLE = True
+except ImportError:
+    # Fallback stub classes when emergentintegrations not available
+    STRIPE_AVAILABLE = False
+    
+    class CheckoutSessionResponse:
+        checkout_url: str = ""
+        session_id: str = ""
+        status: str = "unavailable"
+        
+    class CheckoutStatusResponse:
+        status: str = "unavailable"
+        payment_status: str = "unavailable"
+        
+    class CheckoutSessionRequest:
+        pass
+        
+    class StripeCheckout:
+        def __init__(self, *args, **kwargs):
+            pass
+        async def create_session(self, *args, **kwargs):
+            raise HTTPException(status_code=503, detail="Stripe-Integration nicht verfügbar")
+        async def get_status(self, *args, **kwargs):
+            raise HTTPException(status_code=503, detail="Stripe-Integration nicht verfügbar")
 
 # Import from main server module
 from core.database import db
