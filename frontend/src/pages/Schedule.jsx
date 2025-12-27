@@ -817,13 +817,14 @@ export const Schedule = () => {
                 const closedInfo = closedDays[date];
                 const isWknd = isWeekend(date);  // Sa/So hervorheben
                 const isClosed = !!closedInfo;
-                const eventWarning = getEventWarningForDate(date);
+                const dayEvents = getEventsForDate(date);  // Alle Events für diesen Tag
+                const hasEvents = dayEvents.length > 0;
 
                 return (
                   <Card key={date} className={`
                     ${isToday ? "ring-2 ring-primary" : ""} 
                     ${isClosed ? "bg-red-50" : ""} 
-                    ${eventWarning ? "border-amber-400" : ""}
+                    ${hasEvents ? "border-blue-300" : ""}
                     ${isWknd && !isClosed ? "bg-amber-50/50" : ""}
                   `}>
                     <CardHeader className="pb-1 px-2 pt-2">
@@ -845,6 +846,30 @@ export const Schedule = () => {
                           </Button>
                         )}
                       </div>
+                      {/* Event-Banner pro Tag (NEUTRAL - blau) */}
+                      {hasEvents && !isClosed && dayEvents.map((event, eventIdx) => (
+                        <TooltipProvider key={eventIdx}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="mt-1 flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px]">
+                                <Calendar className="h-3 w-3 flex-shrink-0" />
+                                <span className="font-medium truncate">
+                                  {event.start_time && `${event.start_time} `}
+                                  {event.event_name?.substring(0, 20) || 'Event'}
+                                  {event.event_name?.length > 20 ? '...' : ''}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="max-w-xs">
+                                <p className="font-medium">{event.event_name}</p>
+                                {event.start_time && <p className="text-xs">Beginn: {event.start_time} Uhr</p>}
+                                {event.expected_guests > 0 && <p className="text-xs">Erw. Gäste: {event.expected_guests}</p>}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
                       {/* Closure Banner */}
                       {isClosed && (
                         <TooltipProvider>
