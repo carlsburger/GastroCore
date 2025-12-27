@@ -93,7 +93,8 @@ from table_module import (
     TableSubArea,
     OccupancyStatus,
     calculate_table_occupancy,
-    suggest_tables_for_party
+    suggest_tables_for_party,
+    startup_tables_check  # STARTUP-GUARD für active/is_active Prüfung
 )
 
 # ============== APP SETUP ==============
