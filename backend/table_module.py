@@ -537,6 +537,8 @@ async def suggest_tables_for_party(
     """
     KI-Vorschläge für passende Tische/Kombinationen.
     Gibt Empfehlungen zurück, KEINE automatische Zuweisung.
+    
+    HINWEIS: Nutzt build_active_tables_query für active/is_active Kompatibilität.
     """
     suggestions = []
     
@@ -544,10 +546,10 @@ async def suggest_tables_for_party(
     occupancy = await calculate_table_occupancy(date_str, time_str, area=area)
     free_tables = [o for o in occupancy if o.status == OccupancyStatus.FREI]
     
-    # Alle Tische laden für Details
-    table_docs = {t["id"]: t for t in await db.tables.find(
-        {"archived": False, "active": True}, {"_id": 0}
-    ).to_list(500)}
+    # Alle Tische laden für Details - mit Normalisierung für active/is_active
+    query = build_active_tables_query()
+    tables_raw = await db.tables.find(query, {"_id": 0}).to_list(500)
+    table_docs = {t["id"]: normalize_table_active_field(t) for t in tables_raw}
     
     # 1. Einzeltische die passen
     for occ in free_tables:
