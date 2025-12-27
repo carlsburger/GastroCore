@@ -2901,3 +2901,399 @@ async def export_schedule_pdf(
             }
         )
 
+
+# ============== REGELBASIERTE DIENSTPLAN-VORSCHLÄGE ==============
+"""
+Shift Suggestion Engine - Generiert Vorschläge für Schichtbesetzung
+KEINE automatische Zuweisung, nur Empfehlungen mit Begründung
+"""
+
+class ShiftSuggestionReason(str, Enum):
+    """Gründe für Vorschläge"""
+    AVAILABLE = "verfügbar"
+    MATCHING_AREA = "passender Bereich"
+    LOW_HOURS = "wenige Stunden geplant"
+    LOW_SHIFTS = "wenige Schichten diese Woche"
+    MULTI_ROLE = "Multi-Role geeignet"
+    PREFERRED_DAY = "bevorzugter Tag"
+    
+class ShiftSuggestionWarning(str, Enum):
+    """Warnungen bei Vorschlägen"""
+    NEAR_HOUR_LIMIT = "nahe Wochenstunden-Grenze"
+    CONSTRAINT_LIMIT = "nahe Constraint-Limit"
+    ALREADY_SHIFT_TODAY = "bereits Schicht heute"
+
+
+def check_availability_block(staff: dict, shift_date: str) -> tuple[bool, str]:
+    """
+    Prüft ob Mitarbeiter an diesem Datum verfügbar ist.
+    Returns: (is_available, reason)
+    """
+    blocks = staff.get("availability_blocks", [])
+    
+    for block in blocks:
+        block_type = block.get("type", "")
+        start_date = block.get("start_date")
+        end_date = block.get("end_date")
+        
+        # Prüfe Datumsbereich
+        if start_date and end_date:
+            if start_date <= shift_date <= end_date:
+                reason = block.get("reason", f"Abwesenheit ({block_type})")
+                return False, reason
+        
+        # Schulphase (generell eingeschränkt, aber nicht blockiert)
+        if block_type == "school":
+            return True, "Schulphase - eingeschränkt verfügbar"
+    
+    return True, ""
+
+
+def check_constraints(staff: dict, shift_date: str, shift_data: dict, existing_shifts: list) -> tuple[bool, list]:
+    """
+    Prüft Aushilfen-Constraints (z.B. nur Wochenende, max Tage/Monat)
+    Returns: (is_valid, warnings)
+    """
+    constraints = staff.get("constraints", {})
+    warnings = []
+    
+    if not constraints:
+        return True, warnings
+    
+    # Parse Datum
+    try:
+        dt = datetime.fromisoformat(shift_date)
+        weekday = dt.weekday()  # 0=Montag, 6=Sonntag
+        month = dt.month
+        year = dt.year
+    except:
+        return True, warnings
+    
+    # Nur Wochenende?
+    if constraints.get("weekend_only"):
+        if weekday not in [5, 6]:  # Samstag=5, Sonntag=6
+            return False, ["nur Wochenende erlaubt"]
+    
+    # Max Samstage/Sonntage pro Monat
+    max_sat = constraints.get("max_saturdays_per_month")
+    max_sun = constraints.get("max_sundays_per_month")
+    
+    if max_sat or max_sun:
+        # Zähle bereits geplante Samstage/Sonntage im Monat
+        staff_id = staff.get("id")
+        saturdays = 0
+        sundays = 0
+        
+        for shift in existing_shifts:
+            if shift.get("staff_member_id") != staff_id:
+                continue
+            try:
+                s_date = datetime.fromisoformat(shift.get("date", ""))
+                if s_date.month == month and s_date.year == year:
+                    if s_date.weekday() == 5:
+                        saturdays += 1
+                    elif s_date.weekday() == 6:
+                        sundays += 1
+            except:
+                continue
+        
+        if max_sat and weekday == 5 and saturdays >= max_sat:
+            return False, [f"max. {max_sat} Samstage/Monat erreicht"]
+        
+        if max_sun and weekday == 6 and sundays >= max_sun:
+            return False, [f"max. {max_sun} Sonntage/Monat erreicht"]
+        
+        # Warnung bei Nähe zum Limit
+        if max_sat and weekday == 5 and saturdays == max_sat - 1:
+            warnings.append(f"letzter erlaubter Samstag ({saturdays + 1}/{max_sat})")
+        if max_sun and weekday == 6 and sundays == max_sun - 1:
+            warnings.append(f"letzter erlaubter Sonntag ({sundays + 1}/{max_sun})")
+    
+    return True, warnings
+
+
+def calculate_staff_hours_this_week(staff_id: str, schedule_id: str, all_shifts: list) -> float:
+    """Berechnet bereits geplante Stunden für Mitarbeiter in dieser Woche"""
+    total_hours = 0.0
+    
+    for shift in all_shifts:
+        if shift.get("staff_member_id") != staff_id:
+            continue
+        if shift.get("schedule_id") != schedule_id:
+            continue
+        
+        try:
+            start = datetime.strptime(shift.get("start_time", "09:00"), "%H:%M")
+            end = datetime.strptime(shift.get("end_time", "17:00"), "%H:%M")
+            hours = (end - start).seconds / 3600
+            total_hours += hours
+        except:
+            total_hours += 8  # Default
+    
+    return total_hours
+
+
+def calculate_suggestion_score(
+    staff: dict,
+    shift: dict,
+    hours_planned: float,
+    shifts_today: int,
+    shifts_this_week: int,
+    is_primary_area: bool
+) -> tuple[float, list, list]:
+    """
+    Berechnet Score für einen Mitarbeiter für eine Schicht.
+    Returns: (score, reasons, warnings)
+    """
+    score = 50.0  # Basis-Score
+    reasons = []
+    warnings = []
+    
+    weekly_hours = staff.get("weekly_hours", 40)
+    
+    # 1. Bereichs-Match
+    if is_primary_area:
+        score += 20
+        reasons.append(f"primärer Bereich")
+    else:
+        score += 10
+        reasons.append(f"sekundärer Bereich (Multi-Role)")
+    
+    # 2. Stunden-Auslastung
+    utilization = hours_planned / weekly_hours if weekly_hours > 0 else 1.0
+    
+    if utilization < 0.3:
+        score += 25
+        reasons.append(f"nur {hours_planned:.0f}h von {weekly_hours}h geplant")
+    elif utilization < 0.6:
+        score += 15
+        reasons.append(f"{hours_planned:.0f}h von {weekly_hours}h geplant")
+    elif utilization < 0.9:
+        score += 5
+    elif utilization >= 1.0:
+        score -= 15
+        warnings.append(f"Wochenstunden bereits erreicht ({hours_planned:.0f}/{weekly_hours}h)")
+    
+    # 3. Schichten heute
+    if shifts_today == 0:
+        score += 10
+        reasons.append("keine Schicht heute")
+    elif shifts_today == 1:
+        score -= 5
+        warnings.append("bereits 1 Schicht heute")
+    else:
+        score -= 20
+        warnings.append(f"bereits {shifts_today} Schichten heute")
+    
+    # 4. Schichten diese Woche (Fairness)
+    if shifts_this_week <= 2:
+        score += 10
+    elif shifts_this_week <= 4:
+        score += 5
+    elif shifts_this_week >= 6:
+        score -= 10
+        warnings.append(f"bereits {shifts_this_week} Schichten diese Woche")
+    
+    return score, reasons, warnings
+
+
+def generate_shift_suggestions(schedule_id: str) -> dict:
+    """
+    Generiert Schichtvorschläge für alle offenen Schichten eines Schedules.
+    KEINE Zuweisung, nur Empfehlungen.
+    """
+    # Lade Schedule
+    schedule = db.schedules.find_one({"id": schedule_id})
+    if not schedule:
+        raise NotFoundException(f"Schedule {schedule_id} nicht gefunden")
+    
+    # Lade alle Schichten für dieses Schedule
+    all_shifts = list(db.shifts.find({"schedule_id": schedule_id}))
+    
+    # Lade alle aktiven Mitarbeiter
+    all_staff = list(db.staff_members.find({"is_active": {"$ne": False}}))
+    
+    # Lade Work Areas für Mapping
+    work_areas = {wa["id"]: wa["name"] for wa in db.work_areas.find()}
+    
+    # Ergebnis-Struktur
+    result = {
+        "schedule_id": schedule_id,
+        "schedule_name": schedule.get("name", f"KW{schedule.get('week')}/{schedule.get('year')}"),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "shifts_with_suggestions": [],
+        "stats": {
+            "total_shifts": len(all_shifts),
+            "open_shifts": 0,
+            "shifts_with_suggestions": 0
+        }
+    }
+    
+    # Für jede Schicht ohne Zuweisung
+    for shift in all_shifts:
+        # Überspringe bereits zugewiesene Schichten
+        if shift.get("staff_member_id"):
+            continue
+        
+        result["stats"]["open_shifts"] += 1
+        
+        shift_date = shift.get("date", "")
+        shift_work_area = shift.get("work_area_id", "")
+        shift_name = shift.get("shift_name", "Schicht")
+        
+        suggestions = []
+        
+        # Prüfe jeden Mitarbeiter
+        for staff in all_staff:
+            staff_id = staff.get("id")
+            staff_name = staff.get("name", "")
+            
+            # 1. Verfügbarkeits-Check
+            is_available, avail_reason = check_availability_block(staff, shift_date)
+            if not is_available:
+                continue  # Nicht verfügbar, kein Vorschlag
+            
+            # 2. Bereichs-Kompatibilität
+            primary_area = staff.get("work_area_id")
+            secondary_areas = staff.get("work_area_ids", [])
+            
+            is_primary = (shift_work_area == primary_area)
+            is_secondary = (shift_work_area in secondary_areas)
+            
+            if not is_primary and not is_secondary:
+                continue  # Falscher Bereich
+            
+            # 3. Constraint-Check
+            is_valid, constraint_warnings = check_constraints(staff, shift_date, shift, all_shifts)
+            if not is_valid:
+                continue  # Constraint verletzt
+            
+            # 4. Berechne Statistiken
+            hours_planned = calculate_staff_hours_this_week(staff_id, schedule_id, all_shifts)
+            
+            # Schichten heute zählen
+            shifts_today = sum(1 for s in all_shifts 
+                             if s.get("staff_member_id") == staff_id 
+                             and s.get("date") == shift_date)
+            
+            # Schichten diese Woche zählen
+            shifts_this_week = sum(1 for s in all_shifts 
+                                  if s.get("staff_member_id") == staff_id 
+                                  and s.get("schedule_id") == schedule_id)
+            
+            # 5. Score berechnen
+            score, reasons, warnings = calculate_suggestion_score(
+                staff, shift, hours_planned, shifts_today, shifts_this_week, is_primary
+            )
+            
+            # Constraint-Warnungen hinzufügen
+            warnings.extend(constraint_warnings)
+            
+            # Availability-Hinweis (z.B. Schulphase)
+            if avail_reason:
+                warnings.append(avail_reason)
+            
+            suggestions.append({
+                "staff_member_id": staff_id,
+                "staff_name": staff_name,
+                "score": round(score, 1),
+                "reasons": reasons,
+                "warnings": warnings,
+                "hours_planned": round(hours_planned, 1),
+                "weekly_hours": staff.get("weekly_hours", 40)
+            })
+        
+        # Sortiere nach Score (beste zuerst), max 3 Vorschläge
+        suggestions.sort(key=lambda x: x["score"], reverse=True)
+        top_suggestions = suggestions[:3]
+        
+        if top_suggestions:
+            result["stats"]["shifts_with_suggestions"] += 1
+        
+        result["shifts_with_suggestions"].append({
+            "shift_id": shift.get("id"),
+            "shift_name": shift_name,
+            "date": shift_date,
+            "start_time": shift.get("start_time"),
+            "end_time": shift.get("end_time"),
+            "work_area_id": shift_work_area,
+            "work_area_name": work_areas.get(shift_work_area, "Unbekannt"),
+            "suggestions": top_suggestions
+        })
+    
+    return result
+
+
+# API Endpoint für Vorschläge
+@staff_router.get("/schedules/{schedule_id}/shift-suggestions")
+async def get_shift_suggestions(
+    schedule_id: str,
+    current_user: dict = Depends(require_manager)
+):
+    """
+    Generiert Schichtvorschläge für alle offenen Schichten eines Schedules.
+    Nur Vorschläge, keine automatische Zuweisung.
+    """
+    try:
+        suggestions = generate_shift_suggestions(schedule_id)
+        return suggestions
+    except NotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Fehler bei Vorschlagsgenerierung: {e}")
+        raise HTTPException(status_code=500, detail=f"Fehler: {str(e)}")
+
+
+@staff_router.post("/shifts/{shift_id}/apply-suggestion")
+async def apply_shift_suggestion(
+    shift_id: str,
+    staff_member_id: str,
+    current_user: dict = Depends(require_manager)
+):
+    """
+    Wendet einen Vorschlag an (weist Mitarbeiter der Schicht zu).
+    Dies ist die bewusste Übernahme durch den Planer.
+    """
+    # Prüfe ob Schicht existiert
+    shift = db.shifts.find_one({"id": shift_id})
+    if not shift:
+        raise HTTPException(status_code=404, detail="Schicht nicht gefunden")
+    
+    # Prüfe ob bereits zugewiesen
+    if shift.get("staff_member_id"):
+        raise HTTPException(status_code=400, detail="Schicht bereits zugewiesen")
+    
+    # Prüfe ob Mitarbeiter existiert
+    staff = db.staff_members.find_one({"id": staff_member_id})
+    if not staff:
+        raise HTTPException(status_code=404, detail="Mitarbeiter nicht gefunden")
+    
+    # Zuweisung durchführen
+    db.shifts.update_one(
+        {"id": shift_id},
+        {
+            "$set": {
+                "staff_member_id": staff_member_id,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "assigned_by": current_user.get("id"),
+                "assignment_source": "suggestion"
+            }
+        }
+    )
+    
+    # Audit Log
+    create_audit_log(
+        action="shift_assigned",
+        entity_type="shift",
+        entity_id=shift_id,
+        actor_id=current_user.get("id"),
+        changes={"staff_member_id": staff_member_id, "source": "suggestion"}
+    )
+    
+    return {
+        "success": True,
+        "message": f"{staff.get('name')} wurde der Schicht zugewiesen",
+        "shift_id": shift_id,
+        "staff_member_id": staff_member_id
+    }
+
