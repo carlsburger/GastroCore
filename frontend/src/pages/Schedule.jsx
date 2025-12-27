@@ -259,10 +259,18 @@ export const Schedule = () => {
   });
   const [applyingTemplates, setApplyingTemplates] = useState(false);
   
-  // NEW: Schicht-Vorschläge
+  // NEW: Schicht-Vorschläge (verbessert)
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [expandedShifts, setExpandedShifts] = useState({}); // Für einklappbare Vorschläge
+  const [applyingShiftId, setApplyingShiftId] = useState(null); // Track welche Schicht gerade zugewiesen wird
+  
+  // Cache für Vorschläge pro Schicht (schneller Zugriff)
+  const getSuggestionForShift = (shiftId) => {
+    if (!suggestions?.shifts_with_suggestions) return null;
+    return suggestions.shifts_with_suggestions.find(s => s.shift_id === shiftId);
+  };
 
   const [shiftData, setShiftData] = useState({
     staff_member_id: "",
