@@ -325,9 +325,13 @@ def weekday_name_de(day_num: int) -> str:
 async def get_active_period_for_date(target_date: date) -> Optional[dict]:
     """
     Finde die aktive Periode für ein Datum.
+    Unterstützt:
+    - Feste Datumsbereiche (start_date/end_date im Format YYYY-MM-DD)
+    - Wiederkehrende Saisons (start_month_day/end_month_day im Format MM-DD)
     Bei Überlappung gewinnt höhere Priority.
     """
     date_str = target_date.strftime("%Y-%m-%d")
+    month_day = target_date.strftime("%m-%d")
     
     # Alle aktiven Perioden laden
     periods = await db.opening_hours_master.find(
@@ -336,11 +340,27 @@ async def get_active_period_for_date(target_date: date) -> Optional[dict]:
     
     matching = []
     for period in periods:
-        start = datetime.strptime(period["start_date"], "%Y-%m-%d").date()
-        end = datetime.strptime(period["end_date"], "%Y-%m-%d").date()
+        # Variante 1: Wiederkehrende Saison (MM-DD Format)
+        if period.get("start_month_day") and period.get("end_month_day"):
+            start_md = period["start_month_day"]
+            end_md = period["end_month_day"]
+            
+            # Prüfe ob Datum in Saison fällt
+            if start_md <= end_md:
+                # Normale Saison (z.B. 04-01 bis 10-31)
+                if start_md <= month_day <= end_md:
+                    matching.append(period)
+            else:
+                # Saison über Jahreswechsel (z.B. 11-01 bis 03-31)
+                if month_day >= start_md or month_day <= end_md:
+                    matching.append(period)
         
-        if start <= target_date <= end:
-            matching.append(period)
+        # Variante 2: Feste Datumsbereich (YYYY-MM-DD)
+        elif period.get("start_date") and period.get("end_date"):
+            start = period["start_date"]
+            end = period["end_date"]
+            if start <= date_str <= end:
+                matching.append(period)
     
     if not matching:
         return None
@@ -348,6 +368,21 @@ async def get_active_period_for_date(target_date: date) -> Optional[dict]:
     # Sortiere nach Priority (höchste zuerst)
     matching.sort(key=lambda x: x.get("priority", 0), reverse=True)
     return matching[0]
+
+
+async def get_special_day_for_date(target_date: date) -> Optional[dict]:
+    """
+    Prüfe ob ein fester Sondertag (z.B. 24.12, 01.01, 31.12) vorliegt.
+    Sondertage haben höchste Priorität über Saisons.
+    """
+    month_day = target_date.strftime("%m-%d")
+    
+    special_day = await db.special_days.find_one({
+        "month_day": month_day,
+        "active": True
+    })
+    
+    return special_day
 
 
 async def get_closures_for_date(target_date: date) -> List[dict]:
