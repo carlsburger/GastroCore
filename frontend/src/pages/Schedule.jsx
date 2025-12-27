@@ -830,7 +830,12 @@ export const Schedule = () => {
   const getShiftCounts = () => {
     if (!schedule?.shifts) return { service: 0, kitchen: 0, total: 0 };
     
-    const allShifts = schedule.shifts.filter(s => !EXCLUDED_ROLES.includes(s.role));
+    // Invalide und ausgeschlossene Schichten nicht zählen
+    const allShifts = schedule.shifts.filter(s => {
+      if (s.status === 'invalid' || s.valid === false) return false;
+      if (EXCLUDED_ROLES.includes(s.role)) return false;
+      return true;
+    });
     
     const serviceRoles = DEPARTMENT_FILTER.service.roles;
     const kitchenRoles = DEPARTMENT_FILTER.kitchen.roles;
