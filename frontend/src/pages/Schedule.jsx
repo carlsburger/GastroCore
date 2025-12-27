@@ -420,8 +420,15 @@ export const Schedule = () => {
   
   // Filter shifts by department - erweitert
   const getFilteredShifts = (shifts) => {
-    // Eismacher NIE anzeigen
-    const filtered = shifts.filter(s => !EXCLUDED_ROLES.includes(s.role));
+    // 1. Invalide Schichten (Ruhetage, Test, etc.) NIE anzeigen
+    // 2. Eismacher NIE anzeigen
+    const filtered = shifts.filter(s => {
+      // Invalide Schichten ausfiltern (status === 'invalid' oder valid === false)
+      if (s.status === 'invalid' || s.valid === false) return false;
+      // Eismacher ausfiltern
+      if (EXCLUDED_ROLES.includes(s.role)) return false;
+      return true;
+    });
     
     if (departmentFilter === "all") return filtered;
     
