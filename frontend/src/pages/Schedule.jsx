@@ -482,6 +482,45 @@ export const Schedule = () => {
     }
   };
 
+  // NEU: Schicht-Vorschläge laden
+  const loadSuggestions = async () => {
+    if (!schedule) {
+      toast.error("Kein Dienstplan ausgewählt");
+      return;
+    }
+    setLoadingSuggestions(true);
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/staff/schedules/${schedule.id}/shift-suggestions`,
+        { headers }
+      );
+      setSuggestions(response.data);
+      setShowSuggestionsDialog(true);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Laden der Vorschläge");
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // NEU: Vorschlag übernehmen
+  const applySuggestion = async (shiftId, staffMemberId) => {
+    try {
+      await axios.post(
+        `${BACKEND_URL}/api/staff/shifts/${shiftId}/apply-suggestion?staff_member_id=${staffMemberId}`,
+        {},
+        { headers }
+      );
+      toast.success("Zuweisung übernommen");
+      // Aktualisiere Vorschläge
+      loadSuggestions();
+      // Aktualisiere Hauptansicht
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fehler beim Übernehmen");
+    }
+  };
+
   const handleExportPDF = async () => {
     if (!schedule) return;
     try {
