@@ -362,13 +362,15 @@ async def calculate_table_occupancy(
     Berechne Belegungsstatus für alle Tische.
     Quelle der Wahrheit: Reservierungen + Kombinationen + Events.
     KEINE persistente occupancy-Tabelle.
-    """
-    # Alle aktiven Tische laden
-    table_query = {"archived": False, "active": True}
-    if area:
-        table_query["area"] = area
     
-    tables = await db.tables.find(table_query, {"_id": 0}).to_list(500)
+    HINWEIS: Nutzt build_active_tables_query für active/is_active Kompatibilität.
+    """
+    # Alle aktiven Tische laden - mit Normalisierung für active/is_active
+    base_query = {"area": area} if area else {}
+    table_query = build_active_tables_query(base_query)
+    
+    tables_raw = await db.tables.find(table_query, {"_id": 0}).to_list(500)
+    tables = [normalize_table_active_field(t) for t in tables_raw]
     
     # Zeit-Bereich berechnen
     if time_str:
