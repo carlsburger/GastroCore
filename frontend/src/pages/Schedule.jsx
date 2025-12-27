@@ -1004,6 +1004,7 @@ export const Schedule = () => {
                               if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
                                 displayName = sm.full_name 
                                   || sm.display_name 
+                                  || sm.name  // NEU: name Feld unterstützen
                                   || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
                                   || (sm.first_name || sm.last_name || null)
                                   || sm.email;
