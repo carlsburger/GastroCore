@@ -546,17 +546,12 @@ async def calculate_effective_hours(target_date: date) -> dict:
             return result
     
     # ========== 2. FEIERTAGE ==========
-    # Feiertage überschreiben Ruhetage → offen 11:30-20:00
-    if is_holiday:
-        result["is_open"] = True
-        result["is_closed_full_day"] = False
-        result["blocks"] = [
-            {"start": "11:30", "end": "20:00", "reservable": True, "label": f"Feiertag: {holiday_name}"}
-        ]
-        result["period_name"] = "Feiertag"
-        return result
+    # NEU: Feiertage ändern NICHTS automatisch
+    # Ruhetag bleibt Ruhetag, Öffnungszeiten bleiben gleich
+    # Sonderöffnungen nur via Event/Override oder special_days
+    # (is_holiday Flag wird trotzdem gesetzt für Info-Zwecke)
     
-    # ========== 3. PERIODEN ==========
+    # ========== 3. PERIODEN (Saisons) ==========
     period = await get_active_period_for_date(target_date)
     
     if period:
