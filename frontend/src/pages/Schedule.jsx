@@ -331,9 +331,9 @@ export const Schedule = () => {
     });
   };
   
-  // Get event warning for a specific date
-  const getEventWarningForDate = (date) => {
-    return eventWarnings.find(w => w.date === date);
+  // Get ALL events for a specific date (multiple events possible)
+  const getEventsForDate = (date) => {
+    return eventWarnings.filter(e => e.date === date);
   };
   
   // Helper: Check if date is weekend (Saturday or Sunday)
