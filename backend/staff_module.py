@@ -1683,6 +1683,18 @@ async def get_hours_overview(
     work_areas = await db.work_areas.find({"archived": {"$ne": True}}, {"_id": 0}).to_list(100)
     work_area_map = {a["id"]: a["name"] for a in work_areas}
     
+    # Helper: Calculate hours from start_time and end_time strings
+    def calc_hours_from_times(start_time: str, end_time: str) -> float:
+        """Calculate hours between two time strings (HH:MM format)"""
+        try:
+            if not start_time or not end_time:
+                return 0
+            start_h, start_m = map(int, start_time.split(":"))
+            end_h, end_m = map(int, end_time.split(":"))
+            return (end_h * 60 + end_m - start_h * 60 - start_m) / 60
+        except:
+            return 0
+    
     # Get all shifts for this week
     shifts = await db.shifts.find({
         "shift_date": {"$gte": week_start.isoformat(), "$lte": week_end.isoformat()},
@@ -1693,7 +1705,15 @@ async def get_hours_overview(
     overview = []
     for member in staff_members:
         member_shifts = [s for s in shifts if s.get("staff_member_id") == member.get("id")]
-        planned_hours = sum(s.get("hours", 0) or 0 for s in member_shifts)
+        
+        # Calculate planned hours: use hours field OR calculate from times
+        planned_hours = 0
+        for s in member_shifts:
+            if s.get("hours"):
+                planned_hours += s.get("hours", 0)
+            else:
+                planned_hours += calc_hours_from_times(s.get("start_time"), s.get("end_time"))
+        
         weekly_hours = member.get("weekly_hours", 0) or 0
         
         # Resolve work area name from work_area_id or work_area_ids
@@ -1710,8 +1730,8 @@ async def get_hours_overview(
         # Use work_area_id for KPI (single value)
         effective_work_area_id = work_area_id or (work_area_ids[0] if work_area_ids else None)
         
-        # Resolve display name: full_name > first_name + last_name
-        display_name = member.get("full_name")
+        # Resolve display name: name > full_name > first_name + last_name
+        display_name = member.get("name") or member.get("full_name")
         if not display_name:
             fn = member.get("first_name", "")
             ln = member.get("last_name", "")
