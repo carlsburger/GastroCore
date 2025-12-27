@@ -831,6 +831,22 @@ export const Schedule = () => {
                     Vorlagen
                   </Button>
                 )}
+                {/* Vorschläge Button - NEU */}
+                {schedule.status === "entwurf" && (
+                  <Button 
+                    variant="outline" 
+                    onClick={loadSuggestions}
+                    disabled={loadingSuggestions}
+                    className="rounded-full border-blue-400 text-blue-600 hover:bg-blue-50"
+                  >
+                    {loadingSuggestions ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <User className="h-4 w-4 mr-2" />
+                    )}
+                    Vorschläge
+                  </Button>
+                )}
                 <Button variant="outline" onClick={handleExportCSV} className="rounded-full">
                   <FileText className="h-4 w-4 mr-2" />
                   CSV
