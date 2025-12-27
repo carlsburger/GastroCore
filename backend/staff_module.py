@@ -3102,19 +3102,29 @@ def generate_shift_suggestions(schedule_id: str) -> dict:
     Generiert Schichtvorschläge für alle offenen Schichten eines Schedules.
     KEINE Zuweisung, nur Empfehlungen.
     """
+    # Synchrone Hilfsfunktion - wird von async Endpoint aufgerufen
+    raise NotImplementedError("Use async version")
+
+
+async def generate_shift_suggestions_async(schedule_id: str) -> dict:
+    """
+    Generiert Schichtvorschläge für alle offenen Schichten eines Schedules.
+    KEINE Zuweisung, nur Empfehlungen. (Async Version)
+    """
     # Lade Schedule
-    schedule = db.schedules.find_one({"id": schedule_id})
+    schedule = await db.schedules.find_one({"id": schedule_id})
     if not schedule:
         raise NotFoundException(f"Schedule {schedule_id} nicht gefunden")
     
     # Lade alle Schichten für dieses Schedule
-    all_shifts = list(db.shifts.find({"schedule_id": schedule_id}))
+    all_shifts = await db.shifts.find({"schedule_id": schedule_id}).to_list(1000)
     
     # Lade alle aktiven Mitarbeiter
-    all_staff = list(db.staff_members.find({"is_active": {"$ne": False}}))
+    all_staff = await db.staff_members.find({"is_active": {"$ne": False}}).to_list(500)
     
     # Lade Work Areas für Mapping
-    work_areas = {wa["id"]: wa["name"] for wa in db.work_areas.find()}
+    work_area_list = await db.work_areas.find().to_list(100)
+    work_areas = {wa["id"]: wa["name"] for wa in work_area_list}
     
     # Ergebnis-Struktur
     result = {
