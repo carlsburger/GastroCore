@@ -3401,6 +3401,22 @@ async def apply_shift_suggestion(
     if not staff:
         raise HTTPException(status_code=404, detail="Mitarbeiter nicht gefunden")
     
+    # NEU: Zeit-Overlap Safety-Guard
+    schedule_id = shift.get("schedule_id")
+    all_shifts = await db.shifts.find({"schedule_id": schedule_id}).to_list(1000)
+    
+    has_overlap, overlapping_shift, overlap_reason = check_shift_overlap_for_staff(
+        staff_member_id, shift, all_shifts, buffer_minutes=0
+    )
+    
+    if has_overlap:
+        overlap_name = overlapping_shift.get("shift_name", "unbekannt") if overlapping_shift else "unbekannt"
+        overlap_time = f"{overlapping_shift.get('start_time', '?')}-{overlapping_shift.get('end_time', '?')}" if overlapping_shift else "?"
+        raise HTTPException(
+            status_code=409,
+            detail=f"Zeitüberlappung: {staff.get('name')} hat bereits '{overlap_name}' ({overlap_time}) am gleichen Tag"
+        )
+    
     # Zuweisung durchführen
     await db.shifts.update_one(
         {"id": shift_id},
