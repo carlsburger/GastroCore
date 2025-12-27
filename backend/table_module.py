@@ -654,12 +654,16 @@ async def get_tables_by_area(
     sub_area: Optional[TableSubArea] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Hole Tische eines Bereichs"""
-    query = {"area": area.value, "archived": False, "active": True}
+    """Hole Tische eines Bereichs - unterstützt active UND is_active Felder"""
+    # Nutze den normalisierten Query für active/is_active Kompatibilität
+    query = build_active_tables_query({"area": area.value})
     if sub_area:
         query["sub_area"] = sub_area.value
     
     tables = await db.tables.find(query, {"_id": 0}).sort("table_number", 1).to_list(100)
+    
+    # Normalisiere Tisch-Dokumente
+    tables = [normalize_table_active_field(t) for t in tables]
     
     # Gruppiere nach Subbereich (für Restaurant)
     if area == TableArea.RESTAURANT:
