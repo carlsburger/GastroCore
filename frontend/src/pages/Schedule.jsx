@@ -259,15 +259,16 @@ export const Schedule = () => {
           setClosedDays({});
         }
         
-        // NEW: Fetch Event Warnings
+        // Event-Informationen laden (keine "Warnings" - nur Info für Disposition)
         try {
-          const warningsRes = await axios.get(
+          const eventsRes = await axios.get(
             `${BACKEND_URL}/api/staff/schedules/${existingSchedule.id}/event-warnings`,
             { headers }
           );
-          setEventWarnings(warningsRes.data.warnings || []);
-        } catch (warnErr) {
-          console.log("Could not load event warnings:", warnErr);
+          // Neues API-Format: events statt warnings
+          setEventWarnings(eventsRes.data.events || eventsRes.data.warnings || []);
+        } catch (eventsErr) {
+          console.log("Could not load event info:", eventsErr);
           setEventWarnings([]);
         }
       } else {
