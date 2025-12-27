@@ -1907,6 +1907,163 @@ export const Schedule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Auto-Besetzen Dialog - NEU */}
+      <Dialog open={showAutoAssignDialog} onOpenChange={setShowAutoAssignDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Wand2 className="h-5 w-5 text-green-500" />
+              Woche automatisch besetzen
+            </DialogTitle>
+            <DialogDescription>
+              Vorschau der automatischen Zuweisung. Manuelle Zuweisungen werden NICHT überschrieben.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Einstellungen */}
+          <div className="flex gap-4 p-3 bg-muted rounded-lg text-sm mb-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="limit" className="text-xs">Max Schichten:</Label>
+              <Input
+                id="limit"
+                type="number"
+                value={autoAssignSettings.limit}
+                onChange={(e) => setAutoAssignSettings(prev => ({...prev, limit: parseInt(e.target.value) || 20}))}
+                className="w-16 h-7 text-sm"
+                min={1}
+                max={100}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="minScore" className="text-xs">Min Score:</Label>
+              <Input
+                id="minScore"
+                type="number"
+                value={autoAssignSettings.min_score}
+                onChange={(e) => setAutoAssignSettings(prev => ({...prev, min_score: parseInt(e.target.value) || 0}))}
+                className="w-16 h-7 text-sm"
+                min={0}
+                max={200}
+              />
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={loadAutoAssignPreview}
+              disabled={loadingAutoAssign}
+              className="h-7"
+            >
+              {loadingAutoAssign ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aktualisieren"}
+            </Button>
+          </div>
+          
+          {autoAssignPreview && (
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              {/* Stats */}
+              <div className="flex gap-3 text-sm">
+                <Badge variant="outline">Offen: {autoAssignPreview.open_shifts}</Badge>
+                <Badge className="bg-green-100 text-green-700">
+                  Würde zuweisen: {autoAssignPreview.would_apply?.length || 0}
+                </Badge>
+                <Badge className="bg-orange-100 text-orange-700">
+                  Übersprungen: {autoAssignPreview.skipped?.length || 0}
+                </Badge>
+              </div>
+              
+              {/* Würde zuweisen */}
+              {autoAssignPreview.would_apply?.length > 0 && (
+                <div className="border rounded-lg p-3 bg-green-50">
+                  <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    Würde zuweisen ({autoAssignPreview.would_apply.length})
+                  </h4>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {autoAssignPreview.would_apply.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-sm p-1 bg-white rounded">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs h-5">{item.work_area}</Badge>
+                          <span>{item.shift_name}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {new Date(item.date).toLocaleDateString("de-DE", {weekday: "short"})} {item.time}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{item.staff_name}</span>
+                          <span className="text-xs text-muted-foreground">({item.score})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Übersprungen */}
+              {autoAssignPreview.skipped?.length > 0 && (
+                <details className="border rounded-lg overflow-hidden">
+                  <summary className="p-2 bg-orange-50 cursor-pointer hover:bg-orange-100 text-sm flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    <span className="font-medium text-orange-700">
+                      Übersprungen ({autoAssignPreview.skipped.length})
+                    </span>
+                  </summary>
+                  <div className="p-2 space-y-1 bg-white text-xs max-h-32 overflow-y-auto">
+                    {autoAssignPreview.skipped.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-1 bg-gray-50 rounded">
+                        <span>{item.shift_name || item.shift_id}</span>
+                        <Badge variant="outline" className="text-xs h-5">
+                          {item.reason === "no_candidates" && "Keine Kandidaten"}
+                          {item.reason === "already_assigned" && "Bereits besetzt"}
+                          {item.reason === "below_min_score" && `Score zu niedrig (${item.best_score})`}
+                          {!["no_candidates", "already_assigned", "below_min_score"].includes(item.reason) && item.reason}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+              
+              {/* Keine Zuweisungen möglich */}
+              {autoAssignPreview.would_apply?.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <AlertCircle className="h-10 w-10 mx-auto mb-2 text-orange-400" />
+                  <p className="font-medium">Keine automatischen Zuweisungen möglich</p>
+                  <p className="text-sm mt-1">Alle Schichten sind besetzt oder haben keine passenden Kandidaten.</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Sicherheitshinweis */}
+          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded text-xs text-blue-700 mt-2">
+            <Shield className="h-4 w-4 flex-shrink-0" />
+            <span>Manuelle Zuweisungen werden nicht überschrieben. Jede Zuweisung ist nachvollziehbar.</span>
+          </div>
+          
+          <DialogFooter className="pt-2 border-t mt-2">
+            <Button variant="outline" onClick={() => setShowAutoAssignDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={executeAutoAssign}
+              disabled={applyingAutoAssign || !autoAssignPreview?.would_apply?.length}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {applyingAutoAssign ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Wird angewendet...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Jetzt anwenden ({autoAssignPreview?.would_apply?.length || 0})
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
