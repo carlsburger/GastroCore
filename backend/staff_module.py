@@ -3265,7 +3265,7 @@ async def apply_shift_suggestion(
     Dies ist die bewusste Übernahme durch den Planer.
     """
     # Prüfe ob Schicht existiert
-    shift = db.shifts.find_one({"id": shift_id})
+    shift = await db.shifts.find_one({"id": shift_id})
     if not shift:
         raise HTTPException(status_code=404, detail="Schicht nicht gefunden")
     
@@ -3274,12 +3274,12 @@ async def apply_shift_suggestion(
         raise HTTPException(status_code=400, detail="Schicht bereits zugewiesen")
     
     # Prüfe ob Mitarbeiter existiert
-    staff = db.staff_members.find_one({"id": staff_member_id})
+    staff = await db.staff_members.find_one({"id": staff_member_id})
     if not staff:
         raise HTTPException(status_code=404, detail="Mitarbeiter nicht gefunden")
     
     # Zuweisung durchführen
-    db.shifts.update_one(
+    await db.shifts.update_one(
         {"id": shift_id},
         {
             "$set": {
@@ -3292,7 +3292,7 @@ async def apply_shift_suggestion(
     )
     
     # Audit Log
-    create_audit_log(
+    await create_audit_log(
         action="shift_assigned",
         entity_type="shift",
         entity_id=shift_id,
