@@ -2665,76 +2665,96 @@ async def apply_templates_to_schedule(
 @staff_router.get("/schedules/{schedule_id}/event-warnings")
 async def get_schedule_event_warnings(schedule_id: str, user: dict = Depends(require_manager)):
     """
-    Check for events in the schedule week and return staffing warnings.
-    Rule: 
-    - Event with >=40 expected guests → min 3 service
-    - Event with >=70 expected guests → min 4 service
+    Liefert Veranstaltungs-Informationen für eine Dienstplan-Woche.
+    
+    HINWEIS: Diese Daten sind KEINE Fehler/Warnungen, sondern reine INFORMATIONEN
+    für die Dispositionsplanung. Das Frontend zeigt sie entsprechend neutral an.
+    
+    Staffing-Empfehlung (nicht Fehler):
+    - Event mit >=40 Gästen → empfohlen 3 Service
+    - Event mit >=70 Gästen → empfohlen 4 Service
     """
     schedule = await db.schedules.find_one({"id": schedule_id, "archived": False}, {"_id": 0})
     if not schedule:
         raise NotFoundException("Dienstplan")
     
-    warnings = []
+    # Korrektur: Nutze start_date/end_date statt week_start/week_end
+    week_start = schedule.get("start_date") or schedule.get("week_start")
+    week_end = schedule.get("end_date") or schedule.get("week_end")
     
-    # Get events for this week
-    week_start = schedule.get("week_start")
-    week_end = schedule.get("week_end")
+    if not week_start or not week_end:
+        return {"events": [], "has_events": False, "events_count": 0}
     
-    events = await db.events.find({
-        "event_date": {"$gte": week_start, "$lte": week_end},
+    # Events laden: start_datetime beginnt mit YYYY-MM-DD (String-Vergleich)
+    # Events haben start_datetime als ISO-String "2026-01-09T17:00:00"
+    all_events = await db.events.find({
         "status": {"$in": ["published", "sold_out"]},
         "archived": False
-    }, {"_id": 0}).to_list(50)
+    }, {"_id": 0}).to_list(200)
     
-    if not events:
-        return {"warnings": [], "has_events": False}
+    # Filter Events für diese Woche (basierend auf start_datetime)
+    events_in_week = []
+    for event in all_events:
+        start_dt = event.get("start_datetime", "")
+        if start_dt:
+            # Extrahiere Datum aus ISO-String "2026-01-09T17:00:00" → "2026-01-09"
+            event_date = start_dt[:10] if "T" in start_dt else start_dt
+            if week_start <= event_date <= week_end:
+                event["_computed_date"] = event_date
+                events_in_week.append(event)
     
-    # Get shifts for the schedule
+    if not events_in_week:
+        return {"events": [], "has_events": False, "events_count": 0}
+    
+    # Shifts für den Schedule laden
     shifts = await db.shifts.find({
         "schedule_id": schedule_id,
         "archived": False
     }, {"_id": 0}).to_list(500)
     
-    for event in events:
-        event_date = event.get("event_date")
-        expected_guests = event.get("max_capacity", 0)
+    # Events mit Tagesbezug und Staffing-Info aufbereiten
+    events_info = []
+    for event in events_in_week:
+        event_date = event.get("_computed_date")
+        expected_guests = event.get("capacity_total", 0) or event.get("max_capacity", 0)
         
-        # Check bookings for this event
-        bookings = await db.event_bookings.find({
-            "event_id": event.get("id"),
-            "status": {"$in": ["confirmed", "pending"]}
-        }, {"_id": 0}).to_list(200)
+        # Staffing-Empfehlung berechnen
+        recommended_service = 2  # Default
+        if expected_guests >= 70:
+            recommended_service = 4
+        elif expected_guests >= 40:
+            recommended_service = 3
         
-        actual_guests = sum(b.get("total_quantity", 0) for b in bookings)
-        
-        # Determine required service staff
-        required_service = 2  # Default
-        if actual_guests >= 70 or expected_guests >= 70:
-            required_service = 4
-        elif actual_guests >= 40 or expected_guests >= 40:
-            required_service = 3
-        
-        # Count planned service staff for this day
-        day_shifts = [s for s in shifts if s.get("shift_date") == event_date]
+        # Geplante Service-Schichten für diesen Tag zählen
+        day_shifts = [s for s in shifts if s.get("shift_date") == event_date or s.get("date") == event_date]
         service_shifts = [s for s in day_shifts if s.get("role") in ["service", "schichtleiter"]]
-        assigned_service = len([s for s in service_shifts if s.get("staff_member_id")])
+        planned_service = len([s for s in service_shifts if s.get("staff_member_id")])
         
-        if assigned_service < required_service:
-            warnings.append({
-                "date": event_date,
-                "event_name": event.get("title"),
-                "event_id": event.get("id"),
-                "expected_guests": max(actual_guests, expected_guests),
-                "required_service": required_service,
-                "planned_service": assigned_service,
-                "shortage": required_service - assigned_service,
-                "message": f"Event '{event.get('title')}': benötigt {required_service} Service – aktuell geplant {assigned_service}"
-            })
+        # Event-Zeit extrahieren
+        start_dt = event.get("start_datetime", "")
+        event_time = start_dt[11:16] if "T" in start_dt else ""  # "17:00"
+        
+        events_info.append({
+            "date": event_date,
+            "event_name": event.get("title"),
+            "event_id": event.get("id"),
+            "event_type": event.get("event_type", "kultur"),
+            "content_category": event.get("content_category", "VERANSTALTUNG"),
+            "start_time": event_time,
+            "expected_guests": expected_guests,
+            "recommended_service": recommended_service,
+            "planned_service": planned_service,
+            # Formatierte Anzeige für Frontend
+            "display_text": f"{event.get('title')} ({event_time} Uhr)"
+        })
+    
+    # Nach Datum sortieren
+    events_info.sort(key=lambda x: (x.get("date", ""), x.get("start_time", "")))
     
     return {
-        "warnings": warnings,
-        "has_events": len(events) > 0,
-        "events_count": len(events)
+        "events": events_info,
+        "has_events": len(events_info) > 0,
+        "events_count": len(events_info)
     }
 
 
