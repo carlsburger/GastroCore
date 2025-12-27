@@ -2912,6 +2912,10 @@ async def startup():
     await init_default_settings()
     await init_default_reminder_rules()
     
+    # TABLES STARTUP-GUARD: Prüfe ob aktive Tische vorhanden sind
+    # Wichtig für active/is_active Feldkompatibilität
+    await startup_tables_check()
+    
     # WordPress Sync Scheduler starten
     import asyncio
     asyncio.create_task(wordpress_sync_scheduler())
