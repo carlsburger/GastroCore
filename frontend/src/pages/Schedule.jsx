@@ -258,6 +258,11 @@ export const Schedule = () => {
     season: null, // null = auto-detect
   });
   const [applyingTemplates, setApplyingTemplates] = useState(false);
+  
+  // NEW: Schicht-Vorschläge
+  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
+  const [suggestions, setSuggestions] = useState(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const [shiftData, setShiftData] = useState({
     staff_member_id: "",
