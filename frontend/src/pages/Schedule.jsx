@@ -938,60 +938,92 @@ export const Schedule = () => {
                         </TooltipProvider>
                       )}
                     </CardHeader>
-                    <CardContent className="px-2 pb-2 space-y-0.5">
+                    <CardContent className="px-2 pb-2 space-y-1">
                       {isClosed ? (
                         <p className="text-xs text-red-600 text-center py-2">Geschlossen</p>
                       ) : shifts.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-2">-</p>
                       ) : (
-                        shifts.map((shift) => {
-                          const area = workAreas.find((a) => a.id === shift.work_area_id);
+                        // Gruppiere Schichten nach Bereich (department/role)
+                        (() => {
+                          // Gruppierung erstellen
+                          const groupedShifts = {};
+                          const sortOrder = ['service', 'schichtleiter', 'kitchen', 'kueche', 'kuechenhilfe', 'reinigung', 'eismacher'];
                           
-                          // Mitarbeiter-Name mit strenger Fallback-Reihenfolge:
-                          // 1. full_name, 2. display_name, 3. name, 4. first_name + last_name, 5. email
-                          // KEIN Fallback auf Rollen/Work-Areas wie "Service"
-                          let displayName = null;
-                          const sm = shift.staff_member;
-                          if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
-                            displayName = sm.full_name 
-                              || sm.display_name 
-                              || sm.name  // NEU: name Feld unterstützen
-                              || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
-                              || (sm.first_name || sm.last_name || null)
-                              || sm.email;
-                          }
+                          shifts.forEach(shift => {
+                            const dept = shift.department || shift.role || 'sonstige';
+                            if (!groupedShifts[dept]) {
+                              groupedShifts[dept] = [];
+                            }
+                            groupedShifts[dept].push(shift);
+                          });
                           
-                          // Kein Mitarbeiter zugewiesen = "Nicht zugewiesen"
-                          const staffName = displayName 
-                            ? formatShortName(displayName) 
-                            : "Nicht zugewiesen";
+                          // Sortiere Bereiche nach definierter Reihenfolge
+                          const sortedDepts = Object.keys(groupedShifts).sort((a, b) => {
+                            const idxA = sortOrder.indexOf(a.toLowerCase());
+                            const idxB = sortOrder.indexOf(b.toLowerCase());
+                            if (idxA === -1 && idxB === -1) return 0;
+                            if (idxA === -1) return 1;
+                            if (idxB === -1) return -1;
+                            return idxA - idxB;
+                          });
                           
-                          // Ist die Schicht unbesetzt?
-                          const isUnassigned = !displayName;
-                          
-                          // Zeit kompakt: "10:00–15:00"
-                          const timeRange = `${shift.start_time?.slice(0,5) || "?"}–${shift.end_time?.slice(0,5) || "?"}`;
-                          
-                          return (
-                            <div
-                              key={shift.id}
-                              className={`px-1.5 py-0.5 rounded text-[11px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between gap-1 ${isUnassigned ? 'border-dashed' : ''}`}
-                              style={{ 
-                                backgroundColor: area?.color + "12", 
-                                borderLeft: `2px solid ${area?.color}`,
-                                borderStyle: isUnassigned ? 'dashed' : 'solid'
-                              }}
-                              onClick={() => schedule.status !== "archiviert" && openShiftDialog(date, shift)}
-                            >
-                              <span className={`font-medium truncate ${isUnassigned ? 'text-muted-foreground italic' : ''}`}>
-                                {staffName}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap">
-                                {timeRange}
-                              </span>
-                            </div>
-                          );
-                        })
+                          return sortedDepts.map(dept => {
+                            const config = getWorkAreaConfig(dept);
+                            const deptShifts = groupedShifts[dept];
+                            
+                            return (
+                              <div key={dept} className={`rounded ${config.bgLight} p-1`}>
+                                {/* Bereichs-Header (nur wenn mehrere Bereiche) */}
+                                {sortedDepts.length > 1 && (
+                                  <div className={`text-[9px] font-semibold ${config.text} mb-0.5 px-1`}>
+                                    {config.label}
+                                  </div>
+                                )}
+                                {/* Schichten in diesem Bereich */}
+                                <div className="space-y-0.5">
+                                  {deptShifts.map((shift) => {
+                                    // Mitarbeiter-Name ermitteln
+                                    let displayName = null;
+                                    const sm = shift.staff_member;
+                                    if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
+                                      displayName = sm.full_name 
+                                        || sm.display_name 
+                                        || sm.name
+                                        || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
+                                        || (sm.first_name || sm.last_name || null)
+                                        || sm.email;
+                                    }
+                                    
+                                    const staffName = displayName 
+                                      ? formatShortName(displayName) 
+                                      : "Nicht zugewiesen";
+                                    const isUnassigned = !displayName;
+                                    const timeRange = `${shift.start_time?.slice(0,5) || "?"}–${shift.end_time?.slice(0,5) || "?"}`;
+                                    
+                                    return (
+                                      <div
+                                        key={shift.id}
+                                        className={`px-1.5 py-0.5 rounded text-[11px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between gap-1 bg-white/60 ${isUnassigned ? 'border border-dashed border-gray-300' : ''}`}
+                                        style={{ 
+                                          borderLeft: `3px solid ${config.color}`
+                                        }}
+                                        onClick={() => schedule.status !== "archiviert" && openShiftDialog(date, shift)}
+                                      >
+                                        <span className={`font-medium truncate ${isUnassigned ? 'text-muted-foreground italic' : ''}`}>
+                                          {staffName}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap">
+                                          {timeRange}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()
                       )}
                     </CardContent>
                   </Card>
