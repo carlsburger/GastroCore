@@ -273,13 +273,18 @@ async def validate_combination_tables(table_ids: List[str]) -> Dict[str, Any]:
     - Alle Tische müssen im gleichen Bereich sein
     - Alle Tische müssen im gleichen Subbereich sein (für Restaurant)
     - Tisch 3 darf NIE kombiniert werden
+    
+    HINWEIS: Prüft sowohl `active` als auch `is_active` Feld.
     """
     tables = []
     for tid in table_ids:
         table = await get_table_by_id(tid)
         if not table:
             return {"valid": False, "error": f"Tisch mit ID {tid} nicht gefunden"}
-        if not table.get("active"):
+        
+        # Normalisiere active-Feld und prüfe
+        table = normalize_table_active_field(table)
+        if not table.get("active") and not table.get("is_active"):
             return {"valid": False, "error": f"Tisch {table['table_number']} ist nicht aktiv"}
         if not table.get("combinable", True):
             return {"valid": False, "error": f"Tisch {table['table_number']} ist nicht kombinierbar"}
