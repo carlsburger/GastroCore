@@ -3440,7 +3440,8 @@ class SkipReason(str, Enum):
     BELOW_MIN_SCORE = "below_min_score"
     UNAVAILABLE_AVAILABILITY_BLOCK = "unavailable_availability_block"
     WORK_AREA_MISMATCH = "work_area_mismatch"
-    DOUBLE_SHIFT_SAME_DAY = "double_shift_same_day"
+    OVERLAPPING_SHIFT_SAME_DAY = "overlapping_shift_same_day"  # NEU: Zeitüberlappung
+    CANNOT_VALIDATE_OVERLAP = "cannot_validate_overlap"  # NEU: Zeiten fehlen
     CONSTRAINT_WEEKEND_ONLY = "constraint_weekend_only"
     CONSTRAINT_MONTHLY_LIMIT = "constraint_monthly_limit"
 
