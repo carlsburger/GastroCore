@@ -472,9 +472,12 @@ export const StaffDetail = () => {
                     {member.full_name}
                   </h1>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge className="bg-emerald-100 text-emerald-700">{member.role}</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-700">{member.position || member.role}</Badge>
+                    {member.work_area_ids?.length > 0 && (
+                      <Badge className="bg-blue-100 text-blue-700">+ Multi-Role</Badge>
+                    )}
                     <Badge className="bg-purple-100 text-purple-700">
-                      {member.employment_type} ({member.weekly_hours}h/Woche)
+                      {member.weekly_hours || 0} Stunden / Woche
                     </Badge>
                     <Badge className={member.status === "aktiv" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
                       {member.status === "aktiv" ? "Aktiv" : "Inaktiv"}
