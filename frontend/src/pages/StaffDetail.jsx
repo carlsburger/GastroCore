@@ -823,6 +823,84 @@ export const StaffDetail = () => {
             </TabsContent>
           )}
 
+          {/* Abwesenheiten Tab */}
+          <TabsContent value="absences" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  Abwesenheiten & Verfügbarkeit
+                </CardTitle>
+                <CardDescription>Saisonale Abwesenheiten, Urlaub und Verfügbarkeitsblöcke</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Availability Blocks */}
+                {member?.availability_blocks?.length > 0 ? (
+                  <div className="space-y-3">
+                    {member.availability_blocks.map((block, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Badge className={
+                            block.type === "unavailable" ? "bg-red-100 text-red-700" :
+                            block.type === "school" ? "bg-amber-100 text-amber-700" :
+                            "bg-blue-100 text-blue-700"
+                          }>
+                            {block.type === "unavailable" ? "Nicht verfügbar" :
+                             block.type === "school" ? "Schulphase" :
+                             block.type}
+                          </Badge>
+                          <span className="text-sm">{block.reason}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {block.start_date && block.end_date && (
+                            <span>{block.start_date} – {block.end_date}</span>
+                          )}
+                          {block.recurring && (
+                            <Badge variant="outline" className="ml-2">Wiederkehrend</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>Keine Abwesenheiten eingetragen</p>
+                  </div>
+                )}
+
+                {/* Constraints (für Aushilfen) */}
+                {member?.constraints && Object.keys(member.constraints).length > 0 && (
+                  <div className="mt-6 border-t pt-4">
+                    <h4 className="font-medium mb-3">Einsatz-Einschränkungen</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {member.constraints.weekend_only && (
+                        <Badge className="bg-amber-100 text-amber-700 py-2 justify-center">
+                          Nur Wochenende
+                        </Badge>
+                      )}
+                      {member.constraints.max_saturdays_per_month && (
+                        <Badge className="bg-blue-100 text-blue-700 py-2 justify-center">
+                          Max. {member.constraints.max_saturdays_per_month} Samstage / Monat
+                        </Badge>
+                      )}
+                      {member.constraints.max_sundays_per_month && (
+                        <Badge className="bg-blue-100 text-blue-700 py-2 justify-center">
+                          Max. {member.constraints.max_sundays_per_month} Sonntage / Monat
+                        </Badge>
+                      )}
+                      {member.constraints.max_monthly_earnings && (
+                        <Badge className="bg-green-100 text-green-700 py-2 justify-center">
+                          Max. {member.constraints.max_monthly_earnings} € / Monat
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Emergency Contact Tab */}
           <TabsContent value="emergency" className="space-y-4">
             <Card>
