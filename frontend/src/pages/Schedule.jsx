@@ -79,18 +79,96 @@ const SHIFT_ROLES = {
   service: { label: "Service", color: "#10b981" },
   schichtleiter: { label: "Schichtleiter", color: "#f59e0b" },
   kueche: { label: "Küche", color: "#f97316" },
+  kitchen: { label: "Küche", color: "#f97316" },  // Alias
   kuechenhilfe: { label: "Küchenhilfe", color: "#fb923c" },
   reinigung: { label: "Reinigung", color: "#94a3b8" },
+  eismacher: { label: "Eismacher", color: "#38bdf8" },
   bar: { label: "Bar", color: "#8b5cf6" },
   aushilfe: { label: "Aushilfe", color: "#6b7280" },
 };
 
-// Department Filter Options - erweitert mit Reinigung
+// ZENTRALE Work Area Farb-Map (für konsistente Darstellung in Woche & Tag)
+const WORK_AREA_COLOR_MAP = {
+  service: { 
+    color: "#10b981", 
+    bgLight: "bg-emerald-50", 
+    bgMedium: "bg-emerald-100",
+    border: "border-emerald-300",
+    text: "text-emerald-700",
+    label: "Service"
+  },
+  schichtleiter: { 
+    color: "#f59e0b", 
+    bgLight: "bg-amber-50", 
+    bgMedium: "bg-amber-100",
+    border: "border-amber-300",
+    text: "text-amber-700",
+    label: "Schichtleiter"
+  },
+  kitchen: { 
+    color: "#f97316", 
+    bgLight: "bg-orange-50", 
+    bgMedium: "bg-orange-100",
+    border: "border-orange-300",
+    text: "text-orange-700",
+    label: "Küche"
+  },
+  kueche: { 
+    color: "#f97316", 
+    bgLight: "bg-orange-50", 
+    bgMedium: "bg-orange-100",
+    border: "border-orange-300",
+    text: "text-orange-700",
+    label: "Küche"
+  },
+  kuechenhilfe: { 
+    color: "#fb923c", 
+    bgLight: "bg-amber-50", 
+    bgMedium: "bg-amber-100",
+    border: "border-amber-200",
+    text: "text-amber-600",
+    label: "Küchenhilfe"
+  },
+  reinigung: { 
+    color: "#64748b", 
+    bgLight: "bg-slate-50", 
+    bgMedium: "bg-slate-100",
+    border: "border-slate-300",
+    text: "text-slate-700",
+    label: "Reinigung"
+  },
+  eismacher: { 
+    color: "#38bdf8", 
+    bgLight: "bg-sky-50", 
+    bgMedium: "bg-sky-100",
+    border: "border-sky-300",
+    text: "text-sky-700",
+    label: "Eismacher"
+  },
+  default: { 
+    color: "#9ca3af", 
+    bgLight: "bg-gray-50", 
+    bgMedium: "bg-gray-100",
+    border: "border-gray-300",
+    text: "text-gray-700",
+    label: "Sonstige"
+  }
+};
+
+// Helper: Get work area config by department/role name
+const getWorkAreaConfig = (department) => {
+  if (!department) return WORK_AREA_COLOR_MAP.default;
+  const key = department.toLowerCase().replace(/ü/g, 'ue').replace(/ä/g, 'ae');
+  return WORK_AREA_COLOR_MAP[key] || WORK_AREA_COLOR_MAP.default;
+};
+
+// Department Filter Options - erweitert mit Reinigung & Eismacher
 const DEPARTMENT_FILTER = {
   all: { label: "Alle", color: "bg-gray-100 text-gray-700", roles: [] },
-  service: { label: "Service", color: "bg-green-100 text-green-700", roles: ["service", "schichtleiter", "bar", "aushilfe"] },
-  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700", roles: ["kueche", "kuechenhilfe"] },
+  service: { label: "Service", color: "bg-emerald-100 text-emerald-700", roles: ["service", "schichtleiter", "bar", "aushilfe"] },
+  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700", roles: ["kueche", "kitchen", "kuechenhilfe"] },
   reinigung: { label: "Reinigung", color: "bg-slate-100 text-slate-700", roles: ["reinigung"] },
+  eismacher: { label: "Eismacher", color: "bg-sky-100 text-sky-700", roles: ["eismacher"] },
 };
 
 // Eismacher NIE im Dienstplan anzeigen
