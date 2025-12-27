@@ -1657,95 +1657,149 @@ export const Schedule = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Vorschläge Dialog - NEU */}
+      {/* Vorschläge Dialog - KOMPAKT & EINKLAPPBAR */}
       <Dialog open={showSuggestionsDialog} onOpenChange={setShowSuggestionsDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <User className="h-5 w-5 text-blue-500" />
-              Schicht-Vorschläge für {suggestions?.schedule_name}
+              Vorschläge für {suggestions?.schedule_name}
             </DialogTitle>
-            <DialogDescription>
-              Regelbasierte Vorschläge für offene Schichten. Klicken Sie auf "Übernehmen", um einen Mitarbeiter zuzuweisen.
-            </DialogDescription>
+            {suggestions && (
+              <div className="flex gap-3 text-sm mt-1">
+                <Badge variant="outline">{suggestions.stats?.total_shifts} Schichten</Badge>
+                <Badge className="bg-orange-100 text-orange-700">{suggestions.stats?.open_shifts} offen</Badge>
+                <Badge className="bg-green-100 text-green-700">{suggestions.stats?.shifts_with_suggestions} mit Vorschlägen</Badge>
+              </div>
+            )}
           </DialogHeader>
           
           {suggestions && (
-            <div className="space-y-4">
-              {/* Stats */}
-              <div className="flex gap-4 p-3 bg-muted rounded-lg text-sm">
-                <span>Schichten gesamt: <strong>{suggestions.stats?.total_shifts}</strong></span>
-                <span>Offen: <strong className="text-orange-600">{suggestions.stats?.open_shifts}</strong></span>
-                <span>Mit Vorschlägen: <strong className="text-green-600">{suggestions.stats?.shifts_with_suggestions}</strong></span>
-              </div>
-              
-              {/* Schichten mit Vorschlägen */}
-              <div className="space-y-3">
-                {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length > 0).map((shift) => (
-                  <Card key={shift.shift_id} className="border-l-4 border-l-blue-400">
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <span className="font-medium">{shift.shift_name}</span>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(shift.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} | {shift.start_time} - {shift.end_time}
-                          </div>
-                        </div>
-                        <Badge variant="outline">{shift.work_area_name}</Badge>
-                      </div>
-                      
-                      {/* Vorschläge */}
-                      <div className="space-y-2 mt-2">
-                        {shift.suggestions.map((sug, idx) => (
-                          <div key={idx} className={`flex items-center justify-between p-2 rounded ${idx === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{sug.staff_name}</span>
-                                <Badge className="text-xs" variant="secondary">Score: {sug.score}</Badge>
-                                {idx === 0 && <Badge className="text-xs bg-green-100 text-green-700">Empfohlen</Badge>}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {sug.reasons?.join(" • ")}
-                              </div>
-                              {sug.warnings?.length > 0 && (
-                                <div className="text-xs text-orange-600 mt-1 flex items-center gap-1">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  {sug.warnings.join(" • ")}
-                                </div>
-                              )}
-                            </div>
-                            <Button 
-                              size="sm" 
-                              variant={idx === 0 ? "default" : "outline"}
-                              onClick={() => applySuggestion(shift.shift_id, sug.staff_member_id)}
-                              className="ml-2"
-                            >
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+              {/* Schichten mit Vorschlägen - KOMPAKT */}
+              {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length > 0).map((shift) => (
+                <div key={shift.shift_id} className="border rounded-lg overflow-hidden">
+                  {/* Header - klickbar zum Einklappen */}
+                  <div 
+                    className="flex items-center justify-between p-2 bg-slate-50 cursor-pointer hover:bg-slate-100"
+                    onClick={() => toggleShiftExpanded(shift.shift_id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge className="text-xs" style={{backgroundColor: WORK_AREA_COLOR_MAP[shift.work_area_name?.toLowerCase()]?.color + '20', color: WORK_AREA_COLOR_MAP[shift.work_area_name?.toLowerCase()]?.color || '#666'}}>
+                        {shift.work_area_name}
+                      </Badge>
+                      <span className="font-medium text-sm">{shift.shift_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(shift.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} • {shift.start_time}-{shift.end_time}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Quick-Apply: Top-Vorschlag direkt */}
+                      {shift.suggestions[0] && (
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          className="h-7 text-xs"
+                          disabled={applyingShiftId === shift.shift_id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            applySuggestion(shift.shift_id, shift.suggestions[0].staff_member_id, shift.suggestions[0].staff_name);
+                          }}
+                        >
+                          {applyingShiftId === shift.shift_id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>
                               <Check className="h-3 w-3 mr-1" />
-                              Übernehmen
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                
-                {/* Schichten ohne Vorschläge */}
-                {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length === 0).length > 0 && (
-                  <div className="text-sm text-muted-foreground p-3 bg-orange-50 rounded-lg">
-                    <AlertCircle className="h-4 w-4 inline mr-2 text-orange-500" />
-                    {suggestions.shifts_with_suggestions.filter(s => s.suggestions?.length === 0).length} Schichten ohne passende Mitarbeiter
+                              {shift.suggestions[0].staff_name?.split(' ')[0]}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      <ChevronRight className={`h-4 w-4 transition-transform ${expandedShifts[shift.shift_id] ? 'rotate-90' : ''}`} />
+                    </div>
                   </div>
-                )}
-              </div>
+                  
+                  {/* Expandierter Bereich mit allen Vorschlägen */}
+                  {expandedShifts[shift.shift_id] && (
+                    <div className="p-2 space-y-1 bg-white">
+                      {shift.suggestions.map((sug, idx) => (
+                        <div key={idx} className={`flex items-center justify-between p-2 rounded text-sm ${idx === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">{sug.staff_name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({sug.hours_planned}/{sug.weekly_hours}h)
+                              </span>
+                              {idx === 0 && <Badge className="text-xs bg-green-100 text-green-700 h-5">★ Top</Badge>}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {sug.reasons?.slice(0, 2).join(" • ")}
+                            </div>
+                            {sug.warnings?.length > 0 && (
+                              <div className="text-xs text-orange-600 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">{sug.warnings[0]}</span>
+                              </div>
+                            )}
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant={idx === 0 ? "default" : "outline"}
+                            className="ml-2 h-7 text-xs flex-shrink-0"
+                            disabled={applyingShiftId === shift.shift_id}
+                            onClick={() => applySuggestion(shift.shift_id, sug.staff_member_id, sug.staff_name)}
+                          >
+                            {applyingShiftId === shift.shift_id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Check className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* Schichten ohne Vorschläge - EINKLAPPBAR */}
+              {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length === 0).length > 0 && (
+                <details className="border rounded-lg overflow-hidden">
+                  <summary className="p-2 bg-orange-50 cursor-pointer hover:bg-orange-100 text-sm flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    <span className="font-medium text-orange-700">
+                      {suggestions.shifts_with_suggestions.filter(s => s.suggestions?.length === 0).length} Schichten ohne passende Mitarbeiter
+                    </span>
+                  </summary>
+                  <div className="p-2 space-y-1 bg-white text-xs">
+                    {suggestions.shifts_with_suggestions?.filter(s => s.suggestions?.length === 0).map((shift) => (
+                      <div key={shift.shift_id} className="flex justify-between items-center p-1 bg-gray-50 rounded">
+                        <span>{shift.shift_name}</span>
+                        <span className="text-muted-foreground">
+                          {new Date(shift.date).toLocaleDateString("de-DE", { weekday: "short" })} • {shift.work_area_name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {/* Keine offenen Schichten */}
+              {suggestions.stats?.open_shifts === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Check className="h-12 w-12 mx-auto mb-2 text-green-500" />
+                  <p className="font-medium">Alle Schichten sind besetzt!</p>
+                </div>
+              )}
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="pt-2 border-t mt-2">
             <Button variant="outline" onClick={() => setShowSuggestionsDialog(false)}>
               Schließen
             </Button>
-            <Button onClick={loadSuggestions} disabled={loadingSuggestions}>
+            <Button onClick={() => loadSuggestions(false)} disabled={loadingSuggestions}>
               {loadingSuggestions && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Aktualisieren
             </Button>
