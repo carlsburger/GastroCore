@@ -897,13 +897,14 @@ export const Schedule = () => {
                           const area = workAreas.find((a) => a.id === shift.work_area_id);
                           
                           // Mitarbeiter-Name mit strenger Fallback-Reihenfolge:
-                          // 1. full_name, 2. display_name, 3. first_name + last_name, 4. email
+                          // 1. full_name, 2. display_name, 3. name, 4. first_name + last_name, 5. email
                           // KEIN Fallback auf Rollen/Work-Areas wie "Service"
                           let displayName = null;
                           const sm = shift.staff_member;
                           if (sm && typeof sm === 'object' && Object.keys(sm).length > 0) {
                             displayName = sm.full_name 
                               || sm.display_name 
+                              || sm.name  // NEU: name Feld unterstützen
                               || (sm.first_name && sm.last_name ? `${sm.first_name} ${sm.last_name}`.trim() : null)
                               || (sm.first_name || sm.last_name || null)
                               || sm.email;
