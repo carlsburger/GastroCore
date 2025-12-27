@@ -856,34 +856,7 @@ export const Schedule = () => {
           </Card>
         ) : (
           <>
-            {/* Veranstaltungen dieser Woche - NEUTRAL, NICHT als Warnung/Fehler */}
-            {eventWarnings.length > 0 && (
-              <Card className="border-blue-200 bg-blue-50/50">
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-medium text-blue-800">Veranstaltungen in dieser Woche</p>
-                      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {eventWarnings.map((event, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm text-blue-700 bg-white/50 rounded px-2 py-1">
-                            <span className="text-xs text-blue-500 font-mono">
-                              {event.date ? new Date(event.date).toLocaleDateString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit'}) : ''}
-                            </span>
-                            <span className="truncate" title={event.event_name || event.display_text}>
-                              {event.event_name || event.display_text || event.message}
-                            </span>
-                            {event.start_time && (
-                              <span className="text-xs text-blue-400">{event.start_time}</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Event-Block wurde entfernt - Events werden nur noch tagbezogen angezeigt */}
             
             {/* Week Grid (nur bei viewMode === "week") */}
             {viewMode === "week" && (
