@@ -794,16 +794,29 @@ export const Schedule = () => {
     let newWeek = week + direction;
     let newYear = year;
     
+    // ISO 8601: Jahr kann 52 oder 53 Wochen haben
+    // Berechne max Wochen für das Jahr
+    const getISOWeeksInYear = (y) => {
+      const d = new Date(y, 11, 31);
+      const data = getISOWeekData(d);
+      return data.week === 1 ? 52 : data.week;
+    };
+    
+    const maxWeeks = getISOWeeksInYear(year);
+    
     if (newWeek < 1) {
-      newWeek = 52;
       newYear--;
-    } else if (newWeek > 52) {
+      newWeek = getISOWeeksInYear(newYear);
+    } else if (newWeek > maxWeeks) {
       newWeek = 1;
       newYear++;
     }
     
     setWeek(newWeek);
     setYear(newYear);
+    
+    // Debug log
+    console.log(`[Navigate] KW ${week}/${year} → KW ${newWeek}/${newYear}`);
   };
 
   const getWeekDates = () => {
