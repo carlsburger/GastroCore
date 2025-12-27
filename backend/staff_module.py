@@ -3572,10 +3572,12 @@ async def batch_apply_suggestions(
             if not is_valid:
                 continue
             
-            # 4. Double-Shift-Check
-            key = f"{shift_date}_{staff_id}"
-            if staff_shifts_by_date.get(key, 0) >= 1:
-                # Bereits eine Schicht heute - überpringe für Auto-Besetzung
+            # 4. Zeit-Overlap-Check (NEU: zeitbasiert)
+            has_overlap, overlapping_shift, overlap_reason = check_shift_overlap_for_staff(
+                staff_id, shift, all_shifts, buffer_minutes=0
+            )
+            if has_overlap:
+                # Zeitüberlappung -> überspringe diesen Kandidaten
                 continue
             
             # 5. Berechne Score
