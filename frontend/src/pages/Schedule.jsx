@@ -272,6 +272,17 @@ export const Schedule = () => {
     return suggestions.shifts_with_suggestions.find(s => s.shift_id === shiftId);
   };
 
+  // NEU: Auto-Besetzen State
+  const [showAutoAssignDialog, setShowAutoAssignDialog] = useState(false);
+  const [autoAssignPreview, setAutoAssignPreview] = useState(null);
+  const [loadingAutoAssign, setLoadingAutoAssign] = useState(false);
+  const [applyingAutoAssign, setApplyingAutoAssign] = useState(false);
+  const [autoAssignSettings, setAutoAssignSettings] = useState({
+    limit: 20,
+    min_score: 0,
+    work_area_filter: null
+  });
+
   const [shiftData, setShiftData] = useState({
     staff_member_id: "",
     work_area_id: "",
