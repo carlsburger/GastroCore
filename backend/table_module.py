@@ -625,14 +625,17 @@ async def list_tables(
     active_only: bool = True,
     current_user: dict = Depends(get_current_user)
 ):
-    """Liste alle Tische"""
-    query = {"archived": False}
+    """Liste alle Tische - unterstützt active UND is_active Felder"""
+    if active_only:
+        # Nutze den normalisierten Query für active/is_active Kompatibilität
+        query = build_active_tables_query()
+    else:
+        query = {"archived": False}
+    
     if area:
         query["area"] = area.value
     if sub_area:
         query["sub_area"] = sub_area.value
-    if active_only:
-        query["active"] = True
     
     tables = await db.tables.find(query, {"_id": 0}).sort([
         ("area", 1),
@@ -641,7 +644,8 @@ async def list_tables(
         ("table_number", 1)
     ]).to_list(500)
     
-    return tables
+    # Normalisiere jedes Tisch-Dokument
+    return [normalize_table_active_field(t) for t in tables]
 
 
 @table_router.get("/by-area/{area}")
