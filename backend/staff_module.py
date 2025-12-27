@@ -1669,8 +1669,15 @@ async def get_hours_overview(
     """Get Soll/Ist hours overview for a week"""
     week_start, week_end = get_week_dates(year, week)
     
-    # Get all active staff members
-    staff_members = await db.staff_members.find({"archived": False, "status": "aktiv"}, {"_id": 0}).to_list(500)
+    # Get all active staff members - Support both status AND is_active fields
+    staff_members = await db.staff_members.find({
+        "archived": False, 
+        "$or": [
+            {"status": "aktiv"},
+            {"is_active": True},
+            {"status": {"$exists": False}, "is_active": {"$exists": False}}  # Fallback
+        ]
+    }, {"_id": 0}).to_list(500)
     
     # Get all work areas for name resolution
     work_areas = await db.work_areas.find({"archived": {"$ne": True}}, {"_id": 0}).to_list(100)
