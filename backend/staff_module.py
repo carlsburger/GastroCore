@@ -3307,3 +3307,287 @@ async def apply_shift_suggestion(
         "staff_member_id": staff_member_id
     }
 
+
+
+# ============== BATCH AUTO-BESETZUNG ==============
+"""
+Batch-Endpoint für automatische Schichtbesetzung
+- Vorschau (dry_run=true) oder Ausführung (dry_run=false)
+- Idempotent: bereits zugewiesene Schichten werden übersprungen
+- Skip-Gründe werden dokumentiert
+"""
+
+class SkipReason(str, Enum):
+    """Gründe warum eine Schicht übersprungen wird"""
+    ALREADY_ASSIGNED = "already_assigned"
+    NO_CANDIDATES = "no_candidates"
+    BELOW_MIN_SCORE = "below_min_score"
+    UNAVAILABLE_AVAILABILITY_BLOCK = "unavailable_availability_block"
+    WORK_AREA_MISMATCH = "work_area_mismatch"
+    DOUBLE_SHIFT_SAME_DAY = "double_shift_same_day"
+    CONSTRAINT_WEEKEND_ONLY = "constraint_weekend_only"
+    CONSTRAINT_MONTHLY_LIMIT = "constraint_monthly_limit"
+
+
+class ApplySuggestionsRequest(BaseModel):
+    """Request Body für Batch-Apply"""
+    strategy: str = "top1"  # nur bester Kandidat je Shift
+    limit: int = 20  # max Schichten pro Run
+    dry_run: bool = True  # Vorschau oder ausführen
+    min_score: float = 0  # Mindest-Score
+    respect_constraints: bool = True  # immer true
+    skip_if_assigned: bool = True  # immer true
+    work_area_filter: Optional[List[str]] = None  # Optional: nur bestimmte Bereiche
+
+
+async def batch_apply_suggestions(
+    schedule_id: str,
+    request: ApplySuggestionsRequest,
+    current_user: dict
+) -> dict:
+    """
+    Batch-Anwendung von Schichtvorschlägen.
+    dry_run=true: nur Vorschau
+    dry_run=false: tatsächliche Anwendung
+    """
+    # Lade Schedule
+    schedule = await db.schedules.find_one({"id": schedule_id})
+    if not schedule:
+        raise NotFoundException(f"Schedule {schedule_id} nicht gefunden")
+    
+    # Lade alle Daten
+    all_shifts = await db.shifts.find({"schedule_id": schedule_id}).to_list(1000)
+    all_staff = await db.staff_members.find({"is_active": {"$ne": False}}).to_list(500)
+    work_area_list = await db.work_areas.find().to_list(100)
+    work_areas = {wa["id"]: wa["name"] for wa in work_area_list}
+    work_area_ids_by_name = {wa["name"].lower(): wa["id"] for wa in work_area_list}
+    
+    # Filter: nur offene Schichten
+    open_shifts = [s for s in all_shifts if not s.get("staff_member_id")]
+    
+    # Optional: Work Area Filter
+    if request.work_area_filter:
+        filter_ids = set()
+        for name in request.work_area_filter:
+            wa_id = work_area_ids_by_name.get(name.lower())
+            if wa_id:
+                filter_ids.add(wa_id)
+        if filter_ids:
+            open_shifts = [s for s in open_shifts if s.get("work_area_id") in filter_ids]
+    
+    # Limit anwenden
+    open_shifts = open_shifts[:request.limit]
+    
+    # Ergebnis-Struktur
+    result = {
+        "schedule_id": schedule_id,
+        "schedule_name": schedule.get("name", f"KW{schedule.get('week')}/{schedule.get('year')}"),
+        "open_shifts": len([s for s in all_shifts if not s.get("staff_member_id")]),
+        "processed": len(open_shifts),
+        "would_apply": [],
+        "applied": [],
+        "skipped": [],
+        "failed": [],
+        "stats": {
+            "applied_count": 0,
+            "skipped_count": 0,
+            "failed_count": 0
+        }
+    }
+    
+    # Track welche Staff bereits heute eine Schicht haben (für Double-Shift-Check)
+    staff_shifts_by_date = {}
+    for shift in all_shifts:
+        if shift.get("staff_member_id"):
+            date = shift.get("date", "")
+            staff_id = shift.get("staff_member_id")
+            key = f"{date}_{staff_id}"
+            staff_shifts_by_date[key] = staff_shifts_by_date.get(key, 0) + 1
+    
+    # Für jeden offenen Shift den besten Kandidaten finden
+    for shift in open_shifts:
+        shift_id = shift.get("id")
+        shift_date = shift.get("date", "")
+        shift_work_area = shift.get("work_area_id", "")
+        shift_name = shift.get("shift_name", "Schicht")
+        
+        # Bereits zugewiesen? (Sicherheitscheck)
+        if shift.get("staff_member_id"):
+            result["skipped"].append({
+                "shift_id": shift_id,
+                "shift_name": shift_name,
+                "reason": SkipReason.ALREADY_ASSIGNED.value
+            })
+            result["stats"]["skipped_count"] += 1
+            continue
+        
+        # Kandidaten sammeln
+        candidates = []
+        
+        for staff in all_staff:
+            staff_id = staff.get("id")
+            staff_name = staff.get("name", "")
+            
+            # 1. Verfügbarkeits-Check
+            is_available, avail_reason = check_availability_block(staff, shift_date)
+            if not is_available:
+                continue
+            
+            # 2. Bereichs-Kompatibilität
+            primary_area = staff.get("work_area_id")
+            secondary_areas = staff.get("work_area_ids", [])
+            
+            is_primary = (shift_work_area == primary_area)
+            is_secondary = (shift_work_area in secondary_areas)
+            
+            if not is_primary and not is_secondary:
+                continue
+            
+            # 3. Constraint-Check
+            is_valid, constraint_warnings = check_constraints(staff, shift_date, shift, all_shifts)
+            if not is_valid:
+                continue
+            
+            # 4. Double-Shift-Check
+            key = f"{shift_date}_{staff_id}"
+            if staff_shifts_by_date.get(key, 0) >= 1:
+                # Bereits eine Schicht heute - überpringe für Auto-Besetzung
+                continue
+            
+            # 5. Berechne Score
+            hours_planned = calculate_staff_hours_this_week(staff_id, schedule_id, all_shifts)
+            shifts_today = sum(1 for s in all_shifts 
+                             if s.get("staff_member_id") == staff_id 
+                             and s.get("date") == shift_date)
+            shifts_this_week = sum(1 for s in all_shifts 
+                                  if s.get("staff_member_id") == staff_id 
+                                  and s.get("schedule_id") == schedule_id)
+            
+            score, reasons, warnings = calculate_suggestion_score(
+                staff, shift, hours_planned, shifts_today, shifts_this_week, is_primary
+            )
+            
+            if score >= request.min_score:
+                candidates.append({
+                    "staff_member_id": staff_id,
+                    "staff_name": staff_name,
+                    "score": round(score, 1),
+                    "reasons": reasons,
+                    "warnings": warnings
+                })
+        
+        # Keine Kandidaten?
+        if not candidates:
+            result["skipped"].append({
+                "shift_id": shift_id,
+                "shift_name": shift_name,
+                "date": shift_date,
+                "work_area": work_areas.get(shift_work_area, "Unbekannt"),
+                "reason": SkipReason.NO_CANDIDATES.value
+            })
+            result["stats"]["skipped_count"] += 1
+            continue
+        
+        # Sortiere nach Score und nimm Top-1
+        candidates.sort(key=lambda x: x["score"], reverse=True)
+        best = candidates[0]
+        
+        # Min-Score Check
+        if best["score"] < request.min_score:
+            result["skipped"].append({
+                "shift_id": shift_id,
+                "shift_name": shift_name,
+                "reason": SkipReason.BELOW_MIN_SCORE.value,
+                "best_score": best["score"],
+                "min_score": request.min_score
+            })
+            result["stats"]["skipped_count"] += 1
+            continue
+        
+        # Zu would_apply hinzufügen
+        apply_item = {
+            "shift_id": shift_id,
+            "shift_name": shift_name,
+            "date": shift_date,
+            "time": f"{shift.get('start_time', '?')}-{shift.get('end_time', '?')}",
+            "work_area": work_areas.get(shift_work_area, "Unbekannt"),
+            "staff_member_id": best["staff_member_id"],
+            "staff_name": best["staff_name"],
+            "score": best["score"],
+            "reasons": best["reasons"]
+        }
+        result["would_apply"].append(apply_item)
+        
+        # Bei dry_run=false: tatsächlich anwenden
+        if not request.dry_run:
+            try:
+                await db.shifts.update_one(
+                    {"id": shift_id, "staff_member_id": None},  # Nur wenn noch nicht zugewiesen
+                    {
+                        "$set": {
+                            "staff_member_id": best["staff_member_id"],
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                            "assigned_by": current_user.get("id"),
+                            "assignment_source": "batch_auto"
+                        }
+                    }
+                )
+                
+                # Track für Double-Shift
+                key = f"{shift_date}_{best['staff_member_id']}"
+                staff_shifts_by_date[key] = staff_shifts_by_date.get(key, 0) + 1
+                
+                result["applied"].append(apply_item)
+                result["stats"]["applied_count"] += 1
+                
+            except Exception as e:
+                result["failed"].append({
+                    "shift_id": shift_id,
+                    "shift_name": shift_name,
+                    "error": str(e)
+                })
+                result["stats"]["failed_count"] += 1
+        else:
+            result["stats"]["applied_count"] += 1  # Für dry_run: zeigt was angewendet WÜRDE
+    
+    # Audit Log bei tatsächlicher Anwendung
+    if not request.dry_run and result["stats"]["applied_count"] > 0:
+        await create_audit_log(
+            action="batch_shift_assignment",
+            entity_type="schedule",
+            entity_id=schedule_id,
+            actor_id=current_user.get("id"),
+            changes={
+                "applied_count": result["stats"]["applied_count"],
+                "skipped_count": result["stats"]["skipped_count"],
+                "strategy": request.strategy,
+                "limit": request.limit
+            }
+        )
+    
+    return result
+
+
+@staff_router.post("/schedules/{schedule_id}/apply-suggestions")
+async def apply_suggestions_batch(
+    schedule_id: str,
+    request: ApplySuggestionsRequest,
+    current_user: dict = Depends(require_manager)
+):
+    """
+    Batch-Anwendung von Schichtvorschlägen.
+    
+    dry_run=true: Nur Vorschau, was angewendet werden würde
+    dry_run=false: Tatsächliche Anwendung
+    
+    Idempotent: Bereits zugewiesene Schichten werden übersprungen.
+    """
+    try:
+        result = await batch_apply_suggestions(schedule_id, request, current_user)
+        return result
+    except NotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Batch-Apply Fehler: {e}")
+        raise HTTPException(status_code=500, detail=f"Fehler: {str(e)}")
+
