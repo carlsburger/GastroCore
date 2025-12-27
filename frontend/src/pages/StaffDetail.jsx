@@ -235,7 +235,7 @@ export const StaffDetail = () => {
         email: member.email || "",
         mobile_phone: member.mobile_phone || "",
         street: member.street || "",
-        zip_code: member.zip_code || "",
+        zip_code: member.zip_code ?? member.postal_code ?? "",
         city: member.city || "",
         date_of_birth: member.date_of_birth || "",
         tax_id: "", // Never pre-fill encrypted fields
