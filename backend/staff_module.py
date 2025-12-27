@@ -1725,7 +1725,7 @@ async def get_hours_overview(
             "first_name": member.get("first_name", ""),
             "last_name": member.get("last_name", ""),
             "work_area": work_area_name,  # NEU: Bereich für Anzeige
-            "work_area_id": work_area_ids[0] if work_area_ids else None,  # NEU: ID für KPI
+            "work_area_id": effective_work_area_id,  # NEU: ID für KPI
             "employment_type": member.get("employment_type"),
             "weekly_hours_target": weekly_hours,
             "planned_hours": round(planned_hours, 2),
