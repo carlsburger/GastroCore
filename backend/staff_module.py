@@ -3469,8 +3469,14 @@ async def generate_shift_suggestions_async(schedule_id: str) -> dict:
     # Lade alle Schichten für dieses Schedule
     all_shifts = await db.shifts.find({"schedule_id": schedule_id}).to_list(1000)
     
-    # Lade alle aktiven Mitarbeiter
-    all_staff = await db.staff_members.find({"is_active": {"$ne": False}}).to_list(500)
+    # Lade alle aktiven Mitarbeiter (support both active and is_active fields)
+    all_staff = await db.staff_members.find({
+        "$or": [
+            {"active": True},
+            {"is_active": True}
+        ],
+        "archived": {"$ne": True}
+    }).to_list(500)
     
     # Lade Work Areas für Mapping
     work_area_list = await db.work_areas.find().to_list(100)
