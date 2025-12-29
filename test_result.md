@@ -23,7 +23,7 @@ user_problem_statement: |
   
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
-  - Backend: https://systemcheck.preview.emergentagent.com
+  - Backend: https://system-healthcheck.preview.emergentagent.com
 
 backend:
   - task: "B1 - Standarddauer Guard"
