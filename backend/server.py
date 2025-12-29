@@ -2963,6 +2963,12 @@ app.include_router(import_router)
 app.include_router(timeclock_router)
 app.include_router(shifts_v2_router)
 
+# Absences & Documents Module (Sprint: Modul 30 V1.1 - Abwesenheit & Personalakte)
+app.include_router(absences_router)
+app.include_router(documents_router)
+app.include_router(admin_absences_router)
+app.include_router(admin_documents_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
