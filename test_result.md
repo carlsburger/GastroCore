@@ -449,22 +449,25 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "15.0"
+  version: "16.0"
   session_date: "2025-12-29"
-  test_sequence: 4
+  test_sequence: 5
   run_ui: false
 
 test_plan:
   current_focus:
-    - "B1 - Standarddauer Guard"
-    - "C1 - Gäste pro Stunde API"
-    - "B3 - Slot-API"
-  stuck_tasks:
-    - "B1 - Standarddauer Guard"
+    - "Event Dashboard Summary API"
+    - "Event Dashboard Legacy API"
+    - "Default Capacity Verification"
+    - "Event Prefix Verification"
+    - "Short Name Truncation"
+  stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
 
 agent_communication:
+  - agent: "testing"
+    message: "✅ EVENT-DASHBOARD WIDGET BACKEND TESTING COMPLETE (2025-12-29): All 5 backend tests passed successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) GET /api/events/dashboard/events-summary: Returns proper structure with kulturveranstaltungen (VA, 12 events), aktionen (AK, 21 events), menuaktionen (MA, 0 events) ✅ 2) default_capacity = 95 VERIFIED (not 100!) ✅ CRITICAL 3) Event prefixes correct: VA for VERANSTALTUNG, AK for AKTION, MA for AKTION_MENUE ✅ 4) short_name max 28 characters with '…' truncation working ✅ 5) Legacy endpoint /api/events/dashboard/kultur-summary working for backward compatibility ✅. All acceptance criteria from review request satisfied. Event Dashboard Widget Backend is production-ready."
   - agent: "testing"
     message: "❌ MODUL 20 BACKEND-GUARDS TESTING COMPLETE (2025-12-29): CRITICAL BUG FOUND in reservation guards implementation. DETAILED FINDINGS: 1) B1 Standarddauer Guard: ❌ CRITICAL BUG - apply_reservation_guards() function exists in reservation_guards.py but is NOT called in server.py reservation creation endpoint. Test showed duration_minutes=180 passed through unchanged instead of being enforced to 115 minutes. Guards module is imported but not integrated. 2) C1 Gäste pro Stunde API: ✅ WORKING - GET /api/reservations/hourly returns proper structure with hours array, total aggregation working correctly. 3) B3 Slot-API: ✅ WORKING - GET /public/availability returns proper structure with time, available, disabled fields. SUCCESS RATE: 2/3 tests passed (66.7%). CRITICAL ACTION REQUIRED: Main agent must call apply_reservation_guards() in server.py reservation creation endpoint to activate the guards."
   - agent: "testing"
