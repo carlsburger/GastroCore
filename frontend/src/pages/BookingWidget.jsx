@@ -183,18 +183,15 @@ export const BookingWidget = () => {
         if (name) {
           setRestaurantInitial(name.charAt(0).toUpperCase());
         }
-      } catch (err) {
-        // Fallback - try settings endpoint
-        try {
-          const settingsRes = await axios.get(`${BACKEND_URL}/api/public/settings`);
-          const name = settingsRes.data.restaurant_name || "";
-          setRestaurantName(name);
-          if (name) {
-            setRestaurantInitial(name.charAt(0).toUpperCase());
-          }
-        } catch (e) {
-          // Silent fallback to defaults
+        // Öffnungszeiten aus Response
+        if (response.data.opening_hours_weekly_text) {
+          setOpeningHoursText(response.data.opening_hours_weekly_text);
         }
+        if (response.data.opening_hours_season_label) {
+          setOpeningHoursSeasonLabel(response.data.opening_hours_season_label);
+        }
+      } catch (err) {
+        // Silent fallback to defaults
       }
     };
     loadBranding();
