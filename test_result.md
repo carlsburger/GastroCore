@@ -339,16 +339,33 @@ abschlussreport:
 #====================================================================================================
 
 testing_protocol: |
-  BACKEND TESTING:
+  BACKEND TESTING - MODUL 30 (Dienstplan + Timeclock):
   1. Login mit admin@carlsburg.de / Carlsburg2025!
-  2. GET /api/staff/shift-templates prüfen
-  3. POST /api/staff/schedules/{id}/apply-templates testen
-  4. Idempotenz durch wiederholten Apply verifizieren
   
-  FRONTEND TESTING:
-  - /shift-templates Seite öffnen
-  - Prüfen: Keine "undefined" in Zeiten-Spalte
-  - Prüfen: Kulturabend-Badge sichtbar
+  TIMECLOCK TESTS:
+  - T1: POST /api/timeclock/clock-in → 201, State=WORKING
+  - T2: POST /api/timeclock/clock-in (zweiter Versuch) → 409 CONFLICT
+  - T3: POST /api/timeclock/break-start → State=BREAK
+  - T4: POST /api/timeclock/clock-out während BREAK → 409 BLOCKED (CRITICAL!)
+  - T5: POST /api/timeclock/break-end → State=WORKING
+  - T6: POST /api/timeclock/clock-out → State=CLOSED
+  - T7: GET /api/timeclock/today → Arbeitszeit, Pausenzeit summiert
+  
+  SHIFTS V2 TESTS:
+  - S1: POST /api/staff/shifts/v2 mit assigned_staff_ids=[] → 201
+  - S2: POST /api/staff/shifts/v2 mit assigned_staff_ids=[id1,id2] → 201
+  - S3: POST /api/staff/shifts/v2/{id}/publish → Status=PUBLISHED
+  - S4: POST /api/staff/shifts/v2/{id}/cancel → Status=CANCELLED
+  - S5: POST /api/staff/shifts/v2/{id}/assign → assigned_staff_ids aktualisiert
+  - S6: POST /api/staff/shifts/v2/{id}/unassign → staff_id entfernt
+  - S7: GET /api/staff/shifts/v2/my → Nur PUBLISHED Schichten
+  
+  MIGRATION TEST:
+  - M1: POST /api/staff/shifts/v2/migrate-legacy → Legacy-Schichten migriert
+  
+  SWAP TEST:
+  - W1: POST /api/staff/shifts/v2/{id}/swap auf DRAFT → 400 ERROR
+  - W2: POST /api/staff/shifts/v2/{id}/swap auf PUBLISHED → Success
   
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
