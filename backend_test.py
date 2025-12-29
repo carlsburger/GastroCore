@@ -6623,6 +6623,13 @@ class GastroCoreAPITester:
         test_results.append(self.test_modul30_shifts_v2())
         test_results.append(self.test_modul30_admin_overview())
         
+        # MODUL 30 V1.1: ABWESENHEITEN & PERSONALAKTE TESTS - as per review request
+        print("\n📋 MODUL 30 V1.1: ABWESENHEITEN & PERSONALAKTE TESTING:")
+        test_results.append(self.test_modul30_v11_absences_employee())
+        test_results.append(self.test_modul30_v11_absences_admin())
+        test_results.append(self.test_modul30_v11_documents())
+        test_results.append(self.test_modul30_v11_daily_overview_with_absences())
+        
         # TIMECLOCK REGRESSION TEST - Mini-Fix for CLOSED State
         print("\n⏰ TIMECLOCK REGRESSION TEST - MINI-FIX:")
         test_results.append(self.test_timeclock_regression_mini_fix())
