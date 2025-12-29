@@ -129,8 +129,8 @@ class Modul30V11Tester:
         # 3. POST /api/staff/absences mit Body
         vacation_data = {
             "type": "VACATION",
-            "start_date": "2025-01-15",
-            "end_date": "2025-01-20",
+            "start_date": "2025-02-15",  # Changed to avoid conflicts
+            "end_date": "2025-02-20",
             "notes_employee": "Familienurlaub"
         }
         
