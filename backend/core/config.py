@@ -82,6 +82,34 @@ class Settings(BaseSettings):
             sys.exit(1)
         return v
     
+    @field_validator('MONGO_URL')
+    @classmethod
+    def validate_mongo_url(cls, v: str, info) -> str:
+        """ATLAS-GUARD: Prüfe MongoDB-URI gegen REQUIRE_ATLAS"""
+        # Hinweis: REQUIRE_ATLAS wird separat aus ENV gelesen da Validierung früh läuft
+        require_atlas = os.getenv("REQUIRE_ATLAS", "false").lower() == "true"
+        
+        is_atlas = "mongodb+srv://" in v or ".mongodb.net" in v
+        is_localhost = "localhost" in v or "127.0.0.1" in v
+        
+        if require_atlas:
+            if is_localhost:
+                print("=" * 60, file=sys.stderr)
+                print("ATLAS-GUARD FEHLER: REQUIRE_ATLAS=true aber localhost-URI!", file=sys.stderr)
+                print(f"Aktuelle URI beginnt mit: {v[:30]}...", file=sys.stderr)
+                print("Bitte Atlas-URI in /app/backend/.env setzen", file=sys.stderr)
+                print("=" * 60, file=sys.stderr)
+                sys.exit(1)
+            
+            if not is_atlas:
+                print("=" * 60, file=sys.stderr)
+                print("ATLAS-GUARD FEHLER: REQUIRE_ATLAS=true aber keine Atlas-URI!", file=sys.stderr)
+                print("URI muss 'mongodb+srv://' oder '.mongodb.net' enthalten", file=sys.stderr)
+                print("=" * 60, file=sys.stderr)
+                sys.exit(1)
+        
+        return v
+    
     class Config:
         env_file = ".env"
         extra = "ignore"
