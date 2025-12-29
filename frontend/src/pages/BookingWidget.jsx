@@ -167,6 +167,33 @@ export const BookingWidget = () => {
     }
   };
 
+  // Load restaurant branding
+  useEffect(() => {
+    const loadBranding = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/public/restaurant-info`);
+        const name = response.data.name || response.data.restaurant_name || "";
+        setRestaurantName(name);
+        if (name) {
+          setRestaurantInitial(name.charAt(0).toUpperCase());
+        }
+      } catch (err) {
+        // Fallback - try settings endpoint
+        try {
+          const settingsRes = await axios.get(`${BACKEND_URL}/api/public/settings`);
+          const name = settingsRes.data.restaurant_name || "";
+          setRestaurantName(name);
+          if (name) {
+            setRestaurantInitial(name.charAt(0).toUpperCase());
+          }
+        } catch (e) {
+          // Silent fallback to defaults
+        }
+      }
+    };
+    loadBranding();
+  }, []);
+
   useEffect(() => {
     if (date && partySize) {
       checkAvailability();
