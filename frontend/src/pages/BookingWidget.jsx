@@ -63,6 +63,9 @@ export const BookingWidget = () => {
   // Restaurant branding
   const [restaurantName, setRestaurantName] = useState("");
   const [restaurantInitial, setRestaurantInitial] = useState("C");
+  const [openingHoursText, setOpeningHoursText] = useState("");
+  const [openingHoursSeasonLabel, setOpeningHoursSeasonLabel] = useState("");
+  const [logoLoaded, setLogoLoaded] = useState(false);
   
   // Translations
   const t = {
