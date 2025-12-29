@@ -410,6 +410,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Modul 30 V1.1: Abwesenheiten Admin */}
+          <Route
+            path="/absences"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <AbsencesAdmin />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/schedule"
             element={
