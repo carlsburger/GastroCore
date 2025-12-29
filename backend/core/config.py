@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     MONGO_URL: str = Field(...)  # Required - kein Default!
     DB_NAME: str = Field(default="gastrocore")
     
+    # ATLAS-GUARD: Wenn true, nur mongodb+srv:// oder .mongodb.net erlaubt
+    REQUIRE_ATLAS: bool = Field(default=False)
+    
+    # AUTO-RESTORE Control
+    AUTO_RESTORE_ENABLED: bool = Field(default=False)
+    
     # Security - KRITISCH: MUSS aus .env kommen!
     # KEINE automatische Generierung, KEINE unsicheren Defaults
     JWT_SECRET: str = Field(...)  # Required - kein Default!
