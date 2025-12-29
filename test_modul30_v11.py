@@ -367,8 +367,14 @@ class Modul30V11Tester:
                                 f"Unexpected response: {doc_response}")
                     success = False
             else:
+                error_detail = ""
+                try:
+                    error_response = response.json()
+                    error_detail = f" - {error_response.get('detail', 'Unknown error')}"
+                except:
+                    error_detail = f" - {response.text}"
                 self.log_test("13. POST /api/admin/staff/{id}/documents", False, 
-                            f"Status: {response.status_code}")
+                            f"Status: {response.status_code}{error_detail}")
                 success = False
         except Exception as e:
             self.log_test("13. POST /api/admin/staff/{id}/documents", False, f"Error: {str(e)}")
