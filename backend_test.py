@@ -6575,6 +6575,377 @@ class GastroCoreAPITester:
         
         return regression_success
 
+    # ============== MODUL 30 V1.1: ABWESENHEITEN & PERSONALAKTE TESTS ==============
+    
+    def test_modul30_v11_absences_employee(self):
+        """Test Modul 30 V1.1: Abwesenheiten (Employee perspective)"""
+        print("\n📋 Testing Abwesenheiten (Employee perspective)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Absences Employee Tests", False, "Admin token not available")
+            return False
+        
+        absences_success = True
+        
+        # T1: GET /api/staff/absences/me → Should return empty list or existing absences
+        result = self.make_request("GET", "staff/absences/me", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            absences_data = result["data"]
+            if "data" in absences_data and isinstance(absences_data["data"], list):
+                self.log_test("T1: GET /api/staff/absences/me", True, 
+                            f"Retrieved {len(absences_data['data'])} absences")
+            else:
+                self.log_test("T1: GET /api/staff/absences/me", False, "Invalid response format")
+                absences_success = False
+        else:
+            self.log_test("T1: GET /api/staff/absences/me", False, f"Status: {result['status_code']}")
+            absences_success = False
+        
+        # T2: POST /api/staff/absences - Create vacation request
+        vacation_data = {
+            "type": "VACATION",
+            "start_date": "2025-01-15",
+            "end_date": "2025-01-20",
+            "notes_employee": "Familienurlaub"
+        }
+        
+        result = self.make_request("POST", "staff/absences", vacation_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            absence_response = result["data"]
+            if (absence_response.get("data", {}).get("status") == "REQUESTED" and 
+                absence_response.get("data", {}).get("days_count") == 6):
+                self.log_test("T2: POST /api/staff/absences (vacation)", True, 
+                            f"Status: {absence_response['data']['status']}, Days: {absence_response['data']['days_count']}")
+                self.test_data["vacation_absence_id"] = absence_response["data"]["id"]
+            else:
+                self.log_test("T2: POST /api/staff/absences (vacation)", False, 
+                            f"Unexpected response: {absence_response}")
+                absences_success = False
+        else:
+            self.log_test("T2: POST /api/staff/absences (vacation)", False, f"Status: {result['status_code']}")
+            absences_success = False
+        
+        # T3: GET /api/staff/absences/me → Should contain the new request
+        result = self.make_request("GET", "staff/absences/me", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            absences_data = result["data"]
+            if "data" in absences_data and len(absences_data["data"]) > 0:
+                found_vacation = any(a.get("type") == "VACATION" for a in absences_data["data"])
+                if found_vacation:
+                    self.log_test("T3: GET /api/staff/absences/me (contains new request)", True)
+                else:
+                    self.log_test("T3: GET /api/staff/absences/me (contains new request)", False, 
+                                "New vacation request not found")
+                    absences_success = False
+            else:
+                self.log_test("T3: GET /api/staff/absences/me (contains new request)", False, 
+                            "No absences returned")
+                absences_success = False
+        else:
+            self.log_test("T3: GET /api/staff/absences/me (contains new request)", False, 
+                        f"Status: {result['status_code']}")
+            absences_success = False
+        
+        # T4: POST /api/staff/absences/{id}/cancel → Cancel request
+        if "vacation_absence_id" in self.test_data:
+            result = self.make_request("POST", f"staff/absences/{self.test_data['vacation_absence_id']}/cancel", 
+                                     {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                self.log_test("T4: POST /api/staff/absences/{id}/cancel", True, "Request cancelled")
+            else:
+                self.log_test("T4: POST /api/staff/absences/{id}/cancel", False, 
+                            f"Status: {result['status_code']}")
+                absences_success = False
+        
+        return absences_success
+    
+    def test_modul30_v11_absences_admin(self):
+        """Test Modul 30 V1.1: Abwesenheiten (Admin perspective)"""
+        print("\n👑 Testing Abwesenheiten (Admin perspective)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Absences Admin Tests", False, "Admin token not available")
+            return False
+        
+        admin_success = True
+        
+        # T5: Create new vacation request for admin testing
+        vacation_data = {
+            "type": "VACATION",
+            "start_date": "2025-01-15",
+            "end_date": "2025-01-20",
+            "notes_employee": "Test vacation for admin approval"
+        }
+        
+        result = self.make_request("POST", "staff/absences", vacation_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            self.test_data["admin_test_absence_id"] = result["data"]["data"]["id"]
+            self.log_test("T5: Create test vacation request", True)
+        else:
+            self.log_test("T5: Create test vacation request", False, f"Status: {result['status_code']}")
+            admin_success = False
+            return admin_success
+        
+        # T6: GET /api/admin/absences → List all absences
+        result = self.make_request("GET", "admin/absences", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            absences_data = result["data"]
+            if "data" in absences_data and isinstance(absences_data["data"], list):
+                self.log_test("T6: GET /api/admin/absences", True, 
+                            f"Retrieved {len(absences_data['data'])} absences")
+            else:
+                self.log_test("T6: GET /api/admin/absences", False, "Invalid response format")
+                admin_success = False
+        else:
+            self.log_test("T6: GET /api/admin/absences", False, f"Status: {result['status_code']}")
+            admin_success = False
+        
+        # T7: GET /api/admin/absences/pending → Only pending requests
+        result = self.make_request("GET", "admin/absences/pending", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            pending_data = result["data"]
+            if "data" in pending_data and isinstance(pending_data["data"], list):
+                self.log_test("T7: GET /api/admin/absences/pending", True, 
+                            f"Retrieved {len(pending_data['data'])} pending absences")
+            else:
+                self.log_test("T7: GET /api/admin/absences/pending", False, "Invalid response format")
+                admin_success = False
+        else:
+            self.log_test("T7: GET /api/admin/absences/pending", False, f"Status: {result['status_code']}")
+            admin_success = False
+        
+        # T8: POST /api/admin/absences/{id}/approve → Approve request
+        if "admin_test_absence_id" in self.test_data:
+            result = self.make_request("POST", f"admin/absences/{self.test_data['admin_test_absence_id']}/approve", 
+                                     {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                self.log_test("T8: POST /api/admin/absences/{id}/approve", True, "Request approved")
+            else:
+                self.log_test("T8: POST /api/admin/absences/{id}/approve", False, 
+                            f"Status: {result['status_code']}")
+                admin_success = False
+        
+        # T9: GET /api/admin/absences/by-date/2025-01-15 → Should show approved absence
+        result = self.make_request("GET", "admin/absences/by-date/2025-01-15", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            date_absences = result["data"]
+            if "data" in date_absences and len(date_absences["data"]) > 0:
+                self.log_test("T9: GET /api/admin/absences/by-date/2025-01-15", True, 
+                            f"Found {len(date_absences['data'])} absences for date")
+            else:
+                self.log_test("T9: GET /api/admin/absences/by-date/2025-01-15", True, 
+                            "No absences for this date (expected if no approved absences)")
+        else:
+            self.log_test("T9: GET /api/admin/absences/by-date/2025-01-15", False, 
+                        f"Status: {result['status_code']}")
+            admin_success = False
+        
+        # T10: Test rejection - Create another request
+        sick_data = {
+            "type": "SICK",
+            "start_date": "2025-01-25",
+            "end_date": "2025-01-25",
+            "notes_employee": "Krank"
+        }
+        
+        result = self.make_request("POST", "staff/absences", sick_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            sick_absence_id = result["data"]["data"]["id"]
+            
+            # T11: POST /api/admin/absences/{id}/reject → Reject request
+            reject_data = {"notes_admin": "Nicht genehmigt - bitte AU einreichen"}
+            result = self.make_request("POST", f"admin/absences/{sick_absence_id}/reject", 
+                                     reject_data, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                self.log_test("T11: POST /api/admin/absences/{id}/reject", True, "Request rejected")
+            else:
+                self.log_test("T11: POST /api/admin/absences/{id}/reject", False, 
+                            f"Status: {result['status_code']}")
+                admin_success = False
+        else:
+            self.log_test("T10-11: Create and reject sick request", False, 
+                        f"Failed to create sick request: {result['status_code']}")
+            admin_success = False
+        
+        return admin_success
+    
+    def test_modul30_v11_documents(self):
+        """Test Modul 30 V1.1: Documents (Admin upload & Employee perspective)"""
+        print("\n📄 Testing Documents...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Documents Tests", False, "Admin token not available")
+            return False
+        
+        documents_success = True
+        
+        # First, get admin user's staff_member_id
+        result = self.make_request("GET", "auth/me", token=self.tokens["admin"], expected_status=200)
+        if not result["success"]:
+            self.log_test("Get admin user info", False, f"Status: {result['status_code']}")
+            return False
+        
+        admin_user = result["data"]
+        staff_member_id = admin_user.get("staff_member_id")
+        
+        if not staff_member_id:
+            # Try to get any staff member for testing
+            result = self.make_request("GET", "staff/members", token=self.tokens["admin"], expected_status=200)
+            if result["success"] and result["data"]:
+                staff_member_id = result["data"][0]["id"]
+                self.log_test("Using first staff member for document testing", True, f"ID: {staff_member_id}")
+            else:
+                self.log_test("Documents Tests", False, "No staff member available for testing")
+                return False
+        
+        # T12: POST /api/admin/staff/{staff_member_id}/documents - Upload document
+        # Create a simple test file content
+        test_file_content = "Test document content for Arbeitsvertrag 2025"
+        
+        # Use requests directly for multipart form data
+        url = f"{self.base_url}/api/admin/staff/{staff_member_id}/documents"
+        headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+        
+        files = {
+            'file': ('arbeitsvertrag.txt', test_file_content, 'text/plain')
+        }
+        data = {
+            'title': 'Arbeitsvertrag 2025',
+            'category': 'CONTRACT',
+            'requires_acknowledgement': 'true'
+        }
+        
+        try:
+            import requests
+            response = requests.post(url, headers=headers, files=files, data=data)
+            
+            if response.status_code == 200:
+                doc_response = response.json()
+                if "data" in doc_response and doc_response["data"].get("version") == 1:
+                    self.log_test("T12: POST /api/admin/staff/{id}/documents (upload)", True, 
+                                f"Document uploaded, version: {doc_response['data']['version']}")
+                    self.test_data["test_document_id"] = doc_response["data"]["id"]
+                else:
+                    self.log_test("T12: POST /api/admin/staff/{id}/documents (upload)", False, 
+                                f"Unexpected response: {doc_response}")
+                    documents_success = False
+            else:
+                self.log_test("T12: POST /api/admin/staff/{id}/documents (upload)", False, 
+                            f"Status: {response.status_code}")
+                documents_success = False
+        except Exception as e:
+            self.log_test("T12: POST /api/admin/staff/{id}/documents (upload)", False, f"Error: {str(e)}")
+            documents_success = False
+        
+        # T13: GET /api/admin/staff/{staff_member_id}/documents
+        result = self.make_request("GET", f"admin/staff/{staff_member_id}/documents", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            docs_data = result["data"]
+            if "data" in docs_data and isinstance(docs_data["data"], list):
+                self.log_test("T13: GET /api/admin/staff/{id}/documents", True, 
+                            f"Retrieved {len(docs_data['data'])} documents")
+            else:
+                self.log_test("T13: GET /api/admin/staff/{id}/documents", False, "Invalid response format")
+                documents_success = False
+        else:
+            self.log_test("T13: GET /api/admin/staff/{id}/documents", False, f"Status: {result['status_code']}")
+            documents_success = False
+        
+        # T14: GET /api/staff/documents/me → Employee's own documents
+        result = self.make_request("GET", "staff/documents/me", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            my_docs = result["data"]
+            if "data" in my_docs and isinstance(my_docs["data"], list):
+                self.log_test("T14: GET /api/staff/documents/me", True, 
+                            f"Retrieved {len(my_docs['data'])} own documents")
+            else:
+                self.log_test("T14: GET /api/staff/documents/me", False, "Invalid response format")
+                documents_success = False
+        else:
+            self.log_test("T14: GET /api/staff/documents/me", False, f"Status: {result['status_code']}")
+            documents_success = False
+        
+        # T15: GET /api/staff/documents/me/unacknowledged-count
+        result = self.make_request("GET", "staff/documents/me/unacknowledged-count", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            count_data = result["data"]
+            if "count" in count_data:
+                unack_count = count_data["count"]
+                self.log_test("T15: GET /api/staff/documents/me/unacknowledged-count", True, 
+                            f"Unacknowledged count: {unack_count}")
+                
+                # T16: POST /api/staff/documents/{document_id}/acknowledge
+                if "test_document_id" in self.test_data and unack_count > 0:
+                    result = self.make_request("POST", f"staff/documents/{self.test_data['test_document_id']}/acknowledge", 
+                                             {}, self.tokens["admin"], expected_status=200)
+                    if result["success"]:
+                        self.log_test("T16: POST /api/staff/documents/{id}/acknowledge", True, 
+                                    "Document acknowledged")
+                        
+                        # T17: Check count again - should be 0 now
+                        result = self.make_request("GET", "staff/documents/me/unacknowledged-count", 
+                                                 token=self.tokens["admin"], expected_status=200)
+                        if result["success"] and result["data"].get("count") == 0:
+                            self.log_test("T17: Unacknowledged count after acknowledgement", True, "Count is now 0")
+                        else:
+                            self.log_test("T17: Unacknowledged count after acknowledgement", False, 
+                                        f"Expected 0, got {result['data'].get('count')}")
+                            documents_success = False
+                    else:
+                        self.log_test("T16: POST /api/staff/documents/{id}/acknowledge", False, 
+                                    f"Status: {result['status_code']}")
+                        documents_success = False
+            else:
+                self.log_test("T15: GET /api/staff/documents/me/unacknowledged-count", False, 
+                            "Invalid response format")
+                documents_success = False
+        else:
+            self.log_test("T15: GET /api/staff/documents/me/unacknowledged-count", False, 
+                        f"Status: {result['status_code']}")
+            documents_success = False
+        
+        return documents_success
+    
+    def test_modul30_v11_daily_overview_with_absences(self):
+        """Test Modul 30 V1.1: Daily overview with absences integration"""
+        print("\n📊 Testing Daily Overview with Absences...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Daily Overview with Absences", False, "Admin token not available")
+            return False
+        
+        # T18: GET /api/timeclock/admin/daily-overview?day_key=2025-01-15
+        result = self.make_request("GET", "timeclock/admin/daily-overview", 
+                                 {"day_key": "2025-01-15"}, self.tokens["admin"], expected_status=200)
+        
+        if result["success"]:
+            overview_data = result["data"]
+            
+            # Check if response contains absent array and absent_count in summary
+            has_absent_array = "absent" in overview_data
+            has_absent_count = "summary" in overview_data and "absent_count" in overview_data["summary"]
+            
+            if has_absent_array and has_absent_count:
+                absent_count = overview_data["summary"]["absent_count"]
+                absent_list = overview_data["absent"]
+                self.log_test("T18: GET /api/timeclock/admin/daily-overview (with absences)", True, 
+                            f"Contains absent array ({len(absent_list)} entries) and absent_count ({absent_count})")
+                return True
+            else:
+                self.log_test("T18: GET /api/timeclock/admin/daily-overview (with absences)", False, 
+                            f"Missing absent array or absent_count. Has absent: {has_absent_array}, Has count: {has_absent_count}")
+                return False
+        else:
+            self.log_test("T18: GET /api/timeclock/admin/daily-overview (with absences)", False, 
+                        f"Status: {result['status_code']}")
+            return False
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
