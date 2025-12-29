@@ -3958,7 +3958,11 @@ async def batch_apply_suggestions(
         if not request.dry_run:
             try:
                 await db.shifts.update_one(
-                    {"id": shift_id, "staff_member_id": None},  # Nur wenn noch nicht zugewiesen
+                    {"id": shift_id, "$or": [
+                        {"staff_member_id": None},
+                        {"staff_member_id": ""},
+                        {"staff_member_id": {"$exists": False}}
+                    ]},  # Nur wenn noch nicht zugewiesen
                     {
                         "$set": {
                             "staff_member_id": best["staff_member_id"],
