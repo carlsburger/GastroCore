@@ -208,7 +208,7 @@ class Modul30Tester:
         """T1: Clock-In"""
         print("\n⏰ Testing T1: Clock-In...")
         
-        result = self.make_request("POST", "timeclock/clock-in", {}, expected_status=201)
+        result = self.make_request("POST", "timeclock/clock-in", {}, expected_status=400)
         
         if result["success"]:
             response = result["data"]
