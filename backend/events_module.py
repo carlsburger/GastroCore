@@ -394,20 +394,37 @@ DEFAULT_EVENT_CAPACITY = 95
 @events_router.get("/dashboard/kultur-summary")
 async def get_kultur_events_summary(user: dict = Depends(require_manager)):
     """
-    Get Kulturveranstaltungen (category=VERANSTALTUNG) with utilization for Dashboard.
-    Returns events in next 60 days with booked/capacity info.
-    Default capacity: 96 if not set.
+    LEGACY: Get Kulturveranstaltungen (category=VERANSTALTUNG) with utilization for Dashboard.
+    Redirects to new /dashboard/events-summary endpoint.
+    """
+    # Call the new unified endpoint and filter for VERANSTALTUNG only
+    result = await get_events_dashboard_summary(user)
+    return {
+        "events": result["kulturveranstaltungen"]["events"],
+        "default_capacity": DEFAULT_EVENT_CAPACITY,
+        "total_events": result["kulturveranstaltungen"]["total"]
+    }
+
+
+@events_router.get("/dashboard/events-summary")
+async def get_events_dashboard_summary(user: dict = Depends(require_manager)):
+    """
+    Get ALL events for Dashboard in 3 categories:
+    - kulturveranstaltungen (VA): content_category = VERANSTALTUNG
+    - aktionen (AK): content_category = AKTION
+    - menuaktionen (MA): content_category = AKTION_MENUE
+    
+    Returns events in next 90 days with booked/capacity info.
+    Default capacity: 95 if not set.
     """
     from datetime import datetime, timedelta
     
     today = datetime.now().strftime("%Y-%m-%d")
-    future = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")  # Erweitert auf 90 Tage
+    future = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
     
-    # Query: VERANSTALTUNG events
-    # Include events with future dates OR events without dates (to show them)
-    query = {
+    # Base query for active events in next 90 days
+    base_query = {
         "archived": False,
-        "content_category": "VERANSTALTUNG",  # BUGFIX: war "category", korrigiert zu "content_category"
         "$or": [
             {"start_datetime": {"$gte": today, "$lte": future + "T23:59:59"}},
             {"start_datetime": {"$exists": False}},
@@ -416,14 +433,41 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
         ]
     }
     
-    events = await db.events.find(query, {"_id": 0}).sort("start_datetime", 1).to_list(100)
+    # Fetch all events
+    all_events = await db.events.find(base_query, {"_id": 0}).sort("start_datetime", 1).to_list(200)
     
-    result = []
-    for event in events:
+    # Categorize events
+    categories = {
+        "kulturveranstaltungen": [],  # VA - VERANSTALTUNG
+        "aktionen": [],               # AK - AKTION
+        "menuaktionen": []            # MA - AKTION_MENUE
+    }
+    
+    for event in all_events:
         event_id = event.get("id")
+        content_cat = event.get("content_category", "")
         
-        # Capacity: use capacity_total if set, else DEFAULT_KULTUR_CAPACITY
-        capacity = event.get("capacity_total") or DEFAULT_KULTUR_CAPACITY
+        # Determine category and prefix
+        if content_cat == "VERANSTALTUNG":
+            category_key = "kulturveranstaltungen"
+            prefix = "VA"
+            event_type = "event"
+        elif content_cat == "AKTION":
+            category_key = "aktionen"
+            prefix = "AK"
+            event_type = "action"
+        elif content_cat == "AKTION_MENUE":
+            category_key = "menuaktionen"
+            prefix = "MA"
+            event_type = "menu_action"
+        else:
+            # Default: treat as Aktion if no category
+            category_key = "aktionen"
+            prefix = "AK"
+            event_type = "action"
+        
+        # Capacity: use capacity_total if set, else DEFAULT_EVENT_CAPACITY (95)
+        capacity = event.get("capacity_total") or DEFAULT_EVENT_CAPACITY
         
         # Booked count from event_bookings
         booked = await get_event_booked_count(event_id, include_pending=True)
@@ -444,23 +488,57 @@ async def get_kultur_events_summary(user: dict = Depends(require_manager)):
         date_str = start_dt[:10] if start_dt and len(start_dt) >= 10 else None
         time_str = start_dt[11:16] if start_dt and len(start_dt) > 11 else None
         
-        result.append({
+        # Extract artist name (stored separately or from title)
+        artist_name = event.get("artist_name", "")
+        title = event.get("title", "")
+        
+        # Generate short_name: prefer artist_name, else title (max 28 chars)
+        if artist_name:
+            short_name = artist_name[:28] + "…" if len(artist_name) > 28 else artist_name
+        else:
+            short_name = title[:28] + "…" if len(title) > 28 else title
+        
+        event_data = {
             "id": event_id,
-            "title": event.get("title", ""),
+            "type": event_type,
+            "prefix": prefix,
+            "title": title,
+            "artist_name": artist_name,
+            "short_name": short_name,
             "date": date_str,
             "start_time": time_str,
             "capacity": capacity,
             "booked": booked,
+            "sold": booked,  # Alias für Frontend
             "utilization": utilization,
             "status": status,
             "is_default_capacity": event.get("capacity_total") is None,
             "has_date": date_str is not None
-        })
+        }
+        
+        categories[category_key].append(event_data)
     
     return {
-        "events": result,
-        "default_capacity": DEFAULT_KULTUR_CAPACITY,
-        "total_events": len(result)
+        "kulturveranstaltungen": {
+            "label": "Kulturveranstaltungen",
+            "prefix": "VA",
+            "events": categories["kulturveranstaltungen"],
+            "total": len(categories["kulturveranstaltungen"])
+        },
+        "aktionen": {
+            "label": "Aktionen",
+            "prefix": "AK",
+            "events": categories["aktionen"],
+            "total": len(categories["aktionen"])
+        },
+        "menuaktionen": {
+            "label": "Menüaktionen",
+            "prefix": "MA",
+            "events": categories["menuaktionen"],
+            "total": len(categories["menuaktionen"])
+        },
+        "default_capacity": DEFAULT_EVENT_CAPACITY,
+        "total_events": len(all_events)
     }
 
 
