@@ -57,6 +57,10 @@ export const BookingWidget = () => {
   const [occasion, setOccasion] = useState("");
   const [notes, setNotes] = useState("");
   
+  // Restaurant branding
+  const [restaurantName, setRestaurantName] = useState("");
+  const [restaurantInitial, setRestaurantInitial] = useState("C");
+  
   // Translations
   const t = {
     de: {
