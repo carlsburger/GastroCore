@@ -3599,6 +3599,8 @@ async def generate_shift_suggestions_async(schedule_id: str) -> dict:
             "date": shift_date,
             "start_time": shift.get("start_time"),
             "end_time": shift.get("end_time"),
+            "role": shift_role,
+            "template_code": shift.get("template_code"),
             "work_area_id": shift_work_area,
             "work_area_name": work_areas.get(shift_work_area, "Unbekannt"),
             "suggestions": top_suggestions
