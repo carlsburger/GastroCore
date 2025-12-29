@@ -284,9 +284,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Timeclock State Machine - Clock-Out During Break BLOCKED"
-    - "Shifts V2 - Create Shift with assigned_staff_ids[]"
-    - "Shifts V2 - Atomic Shift Swap"
+    - "Abwesenheiten - Employee Perspective"
+    - "Abwesenheiten - Admin Perspective"
+    - "Documents - Admin Upload"
+    - "Documents - Employee Perspective"
+    - "Daily Overview with Absences Integration"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
