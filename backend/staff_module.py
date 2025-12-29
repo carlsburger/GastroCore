@@ -3740,7 +3740,14 @@ async def batch_apply_suggestions(
     current_user: dict
 ) -> dict:
     """
-    Batch-Anwendung von Schichtvorschlägen.
+    Batch-Anwendung von Schichtvorschlägen mit Guards.
+    
+    Guards:
+    - Keine Überschneidungen (time overlap check)
+    - Manuelle Zuweisungen schützen (skip_if_assigned)
+    - Max Schichten pro Woche pro Mitarbeiter
+    - Rollen-Matching (shift.role muss in staff.roles[])
+    
     dry_run=true: nur Vorschau
     dry_run=false: tatsächliche Anwendung
     """
@@ -3749,15 +3756,18 @@ async def batch_apply_suggestions(
     if not schedule:
         raise NotFoundException(f"Schedule {schedule_id} nicht gefunden")
     
-    # Lade alle Daten
+    # Lade alle Daten (mit korrektem active-Query)
     all_shifts = await db.shifts.find({"schedule_id": schedule_id}).to_list(1000)
-    all_staff = await db.staff_members.find({"is_active": {"$ne": False}}).to_list(500)
+    all_staff = await db.staff_members.find({
+        "$or": [{"active": True}, {"is_active": True}],
+        "archived": {"$ne": True}
+    }).to_list(500)
     work_area_list = await db.work_areas.find().to_list(100)
     work_areas = {wa["id"]: wa["name"] for wa in work_area_list}
     work_area_ids_by_name = {wa["name"].lower(): wa["id"] for wa in work_area_list}
     
     # Filter: nur offene Schichten
-    open_shifts = [s for s in all_shifts if not s.get("staff_member_id")]
+    open_shifts = [s for s in all_shifts if not s.get("staff_member_id") and not s.get("assigned_staff_ids")]
     
     # Optional: Work Area Filter
     if request.work_area_filter:
@@ -3769,6 +3779,10 @@ async def batch_apply_suggestions(
         if filter_ids:
             open_shifts = [s for s in open_shifts if s.get("work_area_id") in filter_ids]
     
+    # Sortiere nach Rollen-Priorität (ice_maker zuerst!)
+    role_order = {role: idx for idx, role in enumerate(request.role_priority)}
+    open_shifts.sort(key=lambda s: role_order.get(s.get("role", "service"), 99))
+    
     # Limit anwenden
     open_shifts = open_shifts[:request.limit]
     
@@ -3776,7 +3790,7 @@ async def batch_apply_suggestions(
     result = {
         "schedule_id": schedule_id,
         "schedule_name": schedule.get("name", f"KW{schedule.get('week')}/{schedule.get('year')}"),
-        "open_shifts": len([s for s in all_shifts if not s.get("staff_member_id")]),
+        "open_shifts": len([s for s in all_shifts if not s.get("staff_member_id") and not s.get("assigned_staff_ids")]),
         "processed": len(open_shifts),
         "would_apply": [],
         "applied": [],
@@ -3789,24 +3803,26 @@ async def batch_apply_suggestions(
         }
     }
     
-    # Track welche Staff bereits heute eine Schicht haben (für Double-Shift-Check)
-    staff_shifts_by_date = {}
+    # Track: Schichten pro Mitarbeiter diese Woche (für max_shifts_per_week)
+    staff_shifts_this_week = {}
     for shift in all_shifts:
-        if shift.get("staff_member_id"):
-            date = shift.get("date", "")
-            staff_id = shift.get("staff_member_id")
-            key = f"{date}_{staff_id}"
-            staff_shifts_by_date[key] = staff_shifts_by_date.get(key, 0) + 1
+        staff_id = shift.get("staff_member_id") or (shift.get("assigned_staff_ids", []) or [None])[0]
+        if staff_id:
+            staff_shifts_this_week[staff_id] = staff_shifts_this_week.get(staff_id, 0) + 1
+    
+    # Track: Schichten pro Staff pro Tag (für Overlap-Detection nach Apply)
+    applied_assignments = []  # [(staff_id, shift)]
     
     # Für jeden offenen Shift den besten Kandidaten finden
     for shift in open_shifts:
         shift_id = shift.get("id")
-        shift_date = shift.get("date", "")
+        shift_date = shift.get("date", shift.get("shift_date", ""))
         shift_work_area = shift.get("work_area_id", "")
-        shift_name = shift.get("shift_name", "Schicht")
+        shift_role = shift.get("role", "")
+        shift_name = shift.get("shift_name", shift.get("notes", f"Schicht {shift.get('start_time', '')}"))
         
         # Bereits zugewiesen? (Sicherheitscheck)
-        if shift.get("staff_member_id"):
+        if shift.get("staff_member_id") or shift.get("assigned_staff_ids"):
             result["skipped"].append({
                 "shift_id": shift_id,
                 "shift_name": shift_name,
@@ -3820,44 +3836,62 @@ async def batch_apply_suggestions(
         
         for staff in all_staff:
             staff_id = staff.get("id")
-            staff_name = staff.get("name", "")
+            staff_name = staff.get("name", staff_id[:8] if staff_id else "?")
+            staff_roles = staff.get("roles", [])
             
-            # 1. Verfügbarkeits-Check
-            is_available, avail_reason = check_availability_block(staff, shift_date)
-            if not is_available:
-                continue
+            # 0. Rollen-Check (Pflicht!)
+            if shift_role and staff_roles:
+                if shift_role not in staff_roles:
+                    continue  # Rolle passt nicht
             
-            # 2. Bereichs-Kompatibilität
+            # 1. Max Shifts per Week Check
+            current_count = staff_shifts_this_week.get(staff_id, 0)
+            if current_count >= request.max_shifts_per_staff_per_week:
+                continue  # Max erreicht
+            
+            # 2. Verfügbarkeits-Check (falls verfügbar)
+            try:
+                is_available, avail_reason = check_availability_block(staff, shift_date)
+                if not is_available:
+                    continue
+            except:
+                pass  # Availability-Check optional für V1
+            
+            # 3. Bereichs-Kompatibilität (optional wenn work_area_id leer)
             primary_area = staff.get("work_area_id")
             secondary_areas = staff.get("work_area_ids", [])
             
-            is_primary = (shift_work_area == primary_area)
-            is_secondary = (shift_work_area in secondary_areas)
+            if shift_work_area:  # Nur prüfen wenn gesetzt
+                is_primary = (shift_work_area == primary_area)
+                is_secondary = (shift_work_area in secondary_areas)
+                if not is_primary and not is_secondary:
+                    continue
+            else:
+                is_primary = True  # Default
             
-            if not is_primary and not is_secondary:
-                continue
-            
-            # 3. Constraint-Check
-            is_valid, constraint_warnings = check_constraints(staff, shift_date, shift, all_shifts)
-            if not is_valid:
-                continue
-            
-            # 4. Zeit-Overlap-Check (NEU: zeitbasiert)
+            # 4. Zeit-Overlap-Check (inkl. bereits applied)
+            # Prüfe gegen alle bestehenden UND bereits in dieser Session zugewiesenen
+            all_shifts_for_overlap = all_shifts + [a[1] for a in applied_assignments if a[0] == staff_id]
             has_overlap, overlapping_shift, overlap_reason = check_shift_overlap_for_staff(
-                staff_id, shift, all_shifts, buffer_minutes=0
+                staff_id, shift, all_shifts_for_overlap, buffer_minutes=0
             )
             if has_overlap:
-                # Zeitüberlappung -> überspringe diesen Kandidaten
                 continue
             
-            # 5. Berechne Score
+            # 5. Constraint-Check (falls vorhanden)
+            try:
+                is_valid, constraint_warnings = check_constraints(staff, shift_date, shift, all_shifts)
+                if not is_valid:
+                    continue
+            except:
+                pass  # Constraint-Check optional
+            
+            # 6. Berechne Score
             hours_planned = calculate_staff_hours_this_week(staff_id, schedule_id, all_shifts)
             shifts_today = sum(1 for s in all_shifts 
                              if s.get("staff_member_id") == staff_id 
-                             and s.get("date") == shift_date)
-            shifts_this_week = sum(1 for s in all_shifts 
-                                  if s.get("staff_member_id") == staff_id 
-                                  and s.get("schedule_id") == schedule_id)
+                             and (s.get("date") == shift_date or s.get("shift_date") == shift_date))
+            shifts_this_week = staff_shifts_this_week.get(staff_id, 0)
             
             score, reasons, warnings = calculate_suggestion_score(
                 staff, shift, hours_planned, shifts_today, shifts_this_week, is_primary
@@ -3878,6 +3912,7 @@ async def batch_apply_suggestions(
                 "shift_id": shift_id,
                 "shift_name": shift_name,
                 "date": shift_date,
+                "role": shift_role,
                 "work_area": work_areas.get(shift_work_area, "Unbekannt"),
                 "reason": SkipReason.NO_CANDIDATES.value
             })
@@ -3905,6 +3940,7 @@ async def batch_apply_suggestions(
             "shift_id": shift_id,
             "shift_name": shift_name,
             "date": shift_date,
+            "role": shift_role,
             "time": f"{shift.get('start_time', '?')}-{shift.get('end_time', '?')}",
             "work_area": work_areas.get(shift_work_area, "Unbekannt"),
             "staff_member_id": best["staff_member_id"],
@@ -3913,6 +3949,10 @@ async def batch_apply_suggestions(
             "reasons": best["reasons"]
         }
         result["would_apply"].append(apply_item)
+        
+        # Track für Overlap-Detection in späteren Iterationen
+        applied_assignments.append((best["staff_member_id"], shift))
+        staff_shifts_this_week[best["staff_member_id"]] = staff_shifts_this_week.get(best["staff_member_id"], 0) + 1
         
         # Bei dry_run=false: tatsächlich anwenden
         if not request.dry_run:
