@@ -319,5 +319,38 @@ event_active, event_info = await is_event_active_at("2025-12-31", "19:00")
 
 ---
 
+## Booking Widget (/book) - UI Elemente
+
+### Header (Logo)
+- Booking Widget nutzt exakt dasselbe Logo wie Login-Seite
+- Asset: `CARLSBURG_LOGO_URL` (Carlsburg Historisches Panoramarestaurant)
+- Responsive: Desktop h-20, Mobile h-16
+- Fallback: Text "Carlsburg Historisches Panoramarestaurant"
+
+### Öffnungszeiten-Anzeige
+Das Widget zeigt eine kompakte, periodenbasierte Wochenübersicht:
+
+**Endpoint:** `GET /api/public/restaurant-info`
+
+**Response-Felder:**
+```json
+{
+  "name": "Carlsburg Historisches Panoramarestaurant",
+  "opening_hours_weekly_text": "Mo/Di Ruhetag · Mi/Do 12:00-18:00 · Fr/Sa 12:00-20:00 · So 12:00-18:00",
+  "opening_hours_season_label": "Winter"
+}
+```
+
+**Darstellung im Widget:**
+`Öffnungszeiten (Winter): Mo/Di Ruhetag · Mi/Do 12:00-18:00 · Fr/Sa 12:00-20:00 · So 12:00-18:00`
+
+**Generierung:**
+- Serverseitig aus aktiver Öffnungszeiten-Periode (Winter/Sommer)
+- Gruppierung von Wochentagen mit identischen Zeiten
+- Ruhetage explizit als "Ruhetag" markiert
+- Keine Frontend-Berechnung
+
+---
+
 *Dokumentiert am 29.12.2025*
 *Implementiert von: Emergent AI*
