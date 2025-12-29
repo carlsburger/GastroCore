@@ -204,7 +204,14 @@ export default function EmployeePWA() {
         body: JSON.stringify({}),
       });
       
-      const data = await res.json();
+      // Clone response to read it safely
+      const responseText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { detail: responseText };
+      }
       
       if (!res.ok) {
         // Handle specific errors
