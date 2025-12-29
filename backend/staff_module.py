@@ -2360,6 +2360,218 @@ async def apply_templates_to_current_week(user: dict = Depends(require_manager))
     return result
 
 
+# ============== SHIFT GENERATOR V1 ==============
+class ShiftGeneratorRequest(BaseModel):
+    """Request für Template-basierten Shift-Generator"""
+    from_date: str = Field(..., description="Start-Datum (YYYY-MM-DD)")
+    to_date: str = Field(..., description="End-Datum (YYYY-MM-DD)")
+    template_codes: List[str] = Field(..., description="Template-Codes (exakt oder mit * Wildcard)")
+    skip_existing: bool = Field(default=True, description="Überspringen wenn Schicht bereits existiert")
+    event_mode: bool = Field(default=False, description="Event-Modus für generierte Schichten")
+
+
+@staff_router.post("/shifts/generate-from-templates", tags=["Shifts"])
+async def generate_shifts_from_templates(
+    request: ShiftGeneratorRequest,
+    user: dict = Depends(require_admin)
+):
+    """
+    SHIFT-GENERATOR V1
+    ==================
+    Erzeugt aus ausgewählten shift_templates konkrete shifts (Status: DRAFT)
+    für einen definierten Zeitraum.
+    
+    - Idempotent: Keine Duplikate bei skip_existing=true
+    - Eismacher: Darf auch an Ruhetagen erzeugt werden (keine Öffnungszeiten-Prüfung)
+    - Alle erzeugten Shifts haben status=draft, created_from=TEMPLATE_GENERATOR_V1
+    
+    Args:
+        from_date: Start-Datum (YYYY-MM-DD)
+        to_date: End-Datum (YYYY-MM-DD)  
+        template_codes: Liste von Template-Codes (z.B. ["SERVICE_WINTER_*", "KITCHEN_WINTER_1200_1800"])
+        skip_existing: Überspringen wenn Schicht bereits existiert (Default: true)
+        event_mode: Event-Modus für generierte Schichten (Default: false)
+    
+    Returns:
+        created: Anzahl erzeugter Shifts
+        skipped: Anzahl übersprungener Shifts (bereits vorhanden)
+        details: Liste der erzeugten Shift-IDs
+    """
+    import re
+    from datetime import datetime, timedelta
+    
+    # Validate dates
+    try:
+        start_date = datetime.strptime(request.from_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(request.to_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise ValidationException("Ungültiges Datumsformat. Erwartet: YYYY-MM-DD")
+    
+    if end_date < start_date:
+        raise ValidationException("End-Datum muss nach Start-Datum liegen")
+    
+    if (end_date - start_date).days > 90:
+        raise ValidationException("Maximaler Zeitraum: 90 Tage")
+    
+    # Build template query from codes
+    # Support wildcards: SERVICE_WINTER_* -> regex
+    code_patterns = []
+    for code in request.template_codes:
+        if "*" in code:
+            # Convert wildcard to regex
+            pattern = code.replace("*", ".*")
+            code_patterns.append({"code": {"$regex": f"^{pattern}$", "$options": "i"}})
+        else:
+            code_patterns.append({"code": code})
+    
+    # Find matching templates (only active, non-archived)
+    template_query = {
+        "$and": [
+            {"$or": code_patterns} if code_patterns else {},
+            {"active": True},
+            {"archived": {"$ne": True}}
+        ]
+    }
+    
+    templates = await db.shift_templates.find(template_query, {"_id": 0}).to_list(100)
+    
+    if not templates:
+        raise NotFoundException("Keine passenden Templates gefunden")
+    
+    logger.info(f"[SHIFT-GENERATOR] {len(templates)} Templates gefunden für Codes: {request.template_codes}")
+    
+    # Find or create a schedule for the period
+    # Use ISO week of start_date
+    iso_year, iso_week, _ = start_date.isocalendar()
+    
+    schedule = await db.schedules.find_one({
+        "year": iso_year,
+        "week": iso_week,
+        "archived": {"$ne": True}
+    })
+    
+    if not schedule:
+        # Create new schedule
+        week_start = start_date - timedelta(days=start_date.weekday())
+        week_end = week_start + timedelta(days=6)
+        
+        schedule = {
+            "id": str(uuid.uuid4()),
+            "year": iso_year,
+            "week": iso_week,
+            "week_start": week_start.isoformat(),
+            "week_end": week_end.isoformat(),
+            "status": "draft",
+            "notes": f"Auto-generiert durch Shift-Generator V1",
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+            "archived": False
+        }
+        await db.schedules.insert_one(schedule)
+        logger.info(f"[SHIFT-GENERATOR] Neuer Dienstplan erstellt: KW{iso_week}/{iso_year}")
+    
+    schedule_id = schedule["id"]
+    
+    # Generate shifts
+    created_count = 0
+    skipped_count = 0
+    created_ids = []
+    now = now_iso()
+    
+    current_date = start_date
+    while current_date <= end_date:
+        date_str = current_date.isoformat()
+        
+        for template in templates:
+            template_code = template.get("code", "")
+            
+            # Check if shift already exists (skip_existing)
+            if request.skip_existing:
+                existing = await db.shifts.find_one({
+                    "shift_date": date_str,
+                    "template_code": template_code,
+                    "archived": {"$ne": True}
+                })
+                
+                if existing:
+                    skipped_count += 1
+                    continue
+            
+            # Create shift
+            shift_id = str(uuid.uuid4())
+            
+            # Parse times from template
+            start_time = template.get("start_time", template.get("start_time_local", "09:00"))
+            end_time = template.get("end_time", template.get("end_time_local", "17:00"))
+            
+            # Calculate hours
+            try:
+                start_h, start_m = map(int, start_time.split(":"))
+                end_h, end_m = map(int, end_time.split(":"))
+                hours = ((end_h * 60 + end_m) - (start_h * 60 + start_m)) / 60
+                if hours < 0:
+                    hours += 24  # Overnight shift
+            except:
+                hours = 8.0
+            
+            shift = {
+                "id": shift_id,
+                "template_id": template.get("id"),
+                "template_code": template_code,
+                "schedule_id": schedule_id,
+                "shift_date": date_str,
+                "start_time": start_time,
+                "end_time": end_time,
+                "hours": hours,
+                "role": template.get("role", "service"),
+                "department": template.get("department", template.get("role", "service")),
+                "station": template.get("station", ""),
+                "staff_member_id": "",  # Unassigned
+                "work_area_id": "",
+                "status": "draft",
+                "event_mode": request.event_mode,
+                "notes": f"Aus Vorlage: {template.get('name', template_code)}",
+                "created_from": "TEMPLATE_GENERATOR_V1",
+                "created_at": now,
+                "updated_at": now,
+                "archived": False
+            }
+            
+            await db.shifts.insert_one(shift)
+            created_ids.append(shift_id)
+            created_count += 1
+        
+        current_date += timedelta(days=1)
+    
+    # Audit log
+    await create_audit_log(
+        user, "shifts", "bulk_generate", "generate",
+        None,
+        {
+            "from_date": request.from_date,
+            "to_date": request.to_date,
+            "template_codes": request.template_codes,
+            "created": created_count,
+            "skipped": skipped_count
+        }
+    )
+    
+    logger.info(f"[SHIFT-GENERATOR] Fertig: {created_count} erstellt, {skipped_count} übersprungen")
+    
+    return {
+        "success": True,
+        "created": created_count,
+        "skipped": skipped_count,
+        "schedule_id": schedule_id,
+        "details": {
+            "period": f"{request.from_date} bis {request.to_date}",
+            "templates_used": len(templates),
+            "template_codes": [t.get("code") for t in templates],
+            "created_shift_ids": created_ids[:20]  # Max 20 IDs zurückgeben
+        }
+    }
+
+
 @staff_router.post("/shift-templates/seed-defaults")
 async def seed_default_templates(user: dict = Depends(require_admin)):
     """Seed default Carlsburg shift templates - Normal + Kulturabend Varianten"""
