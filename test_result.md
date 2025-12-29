@@ -1,15 +1,17 @@
 #====================================================================================================
-# Modul 30: MITARBEITER & DIENSTPLAN V1.1 (29.12.2025) - IN PROGRESS
+# Modul 30: MITARBEITER & DIENSTPLAN V1.1 (29.12.2025) - FAST FERTIG
 #====================================================================================================
 #
-# STATUS: V1.1 ENTWICKLUNG
+# STATUS: V1.1 PHASE 3 (Admin-Cockpit)
 # V1.0.1: ABGENOMMEN (29.12.2025)
 # V1.1: Abwesenheit & Personalakte (LIGHT)
 #
 # V1.1 FORTSCHRITT:
 # - Backend: ✅ FERTIG (18/18 Tests bestanden)
-# - Frontend Mitarbeiter-PWA: ✅ IMPLEMENTIERT (Test ausstehend)
-# - Frontend Admin-Cockpit: ⏳ Phase 3 (noch offen)
+# - Frontend Mitarbeiter-PWA: ✅ FERTIG (Abwesenheit + Unterlagen + Badge)
+# - Frontend Admin-Cockpit: ✅ IMPLEMENTIERT (Test ausstehend)
+#   - /absences: Abwesenheiten verwalten
+#   - /staff/:id (Tab Personalakte V2): Dokumente hochladen
 #
 #====================================================================================================
 
