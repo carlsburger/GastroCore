@@ -94,30 +94,32 @@ export default function EmployeePWA() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
 
-  // API Headers
-  const headers = {
+  // API Headers - memoized to prevent unnecessary re-renders
+  const getHeaders = useCallback(() => ({
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
-  };
+  }), [token]);
 
   // ============== API CALLS ==============
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/timeclock/status`, { headers });
+      const res = await fetch(`${API_URL}/api/timeclock/status`, { headers: getHeaders() });
       if (!res.ok) {
         if (res.status === 401) {
-          throw new Error("Nicht autorisiert - bitte erneut anmelden");
+          // Don't show error for auth issues - user might need to re-login
+          console.warn("Auth expired for status endpoint");
+          return null;
         }
         throw new Error("Fehler beim Laden des Status");
       }
       const data = await res.json();
       setStatus(data);
-      setError(null);
       return data;
     } catch (err) {
       console.error("fetchStatus error:", err);
-      setError(err.message);
+      // Don't set error for status - it's not critical
+      return null;
       return null;
     }
   }, [token]);
