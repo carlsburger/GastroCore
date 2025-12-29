@@ -8094,6 +8094,179 @@ class GastroCoreAPITester:
         
         return aktionen_test_result
 
+    def test_event_dashboard_widget(self):
+        """Test Event-Dashboard Widget Backend endpoints"""
+        print("\n📊 Testing Event-Dashboard Widget Backend...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Event Dashboard Widget", False, "Admin token not available")
+            return False
+        
+        dashboard_success = True
+        
+        # Test 1: GET /api/events/dashboard/events-summary
+        print("Testing GET /api/events/dashboard/events-summary...")
+        result = self.make_request("GET", "events/dashboard/events-summary", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        
+        if result["success"]:
+            summary_data = result["data"]
+            
+            # Check response structure
+            required_keys = ["kulturveranstaltungen", "aktionen", "menuaktionen", "default_capacity"]
+            missing_keys = [key for key in required_keys if key not in summary_data]
+            
+            if not missing_keys:
+                self.log_test("Events summary structure", True, "All required keys present")
+                
+                # Check default_capacity = 95 (CRITICAL!)
+                default_capacity = summary_data.get("default_capacity")
+                if default_capacity == 95:
+                    self.log_test("Default capacity = 95", True, "✅ CRITICAL: default_capacity is 95, not 100!")
+                else:
+                    self.log_test("Default capacity = 95", False, f"❌ CRITICAL: Expected 95, got {default_capacity}")
+                    dashboard_success = False
+                
+                # Check each category structure
+                for category_name, expected_prefix in [
+                    ("kulturveranstaltungen", "VA"),
+                    ("aktionen", "AK"), 
+                    ("menuaktionen", "MA")
+                ]:
+                    category_data = summary_data.get(category_name, {})
+                    
+                    if "events" in category_data and "total" in category_data and "label" in category_data and "prefix" in category_data:
+                        prefix = category_data.get("prefix")
+                        if prefix == expected_prefix:
+                            self.log_test(f"{category_name} structure & prefix", True, 
+                                        f"Prefix: {prefix}, Events: {len(category_data.get('events', []))}, Total: {category_data.get('total')}")
+                        else:
+                            self.log_test(f"{category_name} prefix", False, 
+                                        f"Expected prefix {expected_prefix}, got {prefix}")
+                            dashboard_success = False
+                        
+                        # Check event structure if events exist
+                        events = category_data.get("events", [])
+                        if events:
+                            sample_event = events[0]
+                            required_event_fields = ["id", "type", "prefix", "title", "short_name", "capacity", "sold", "utilization", "status"]
+                            missing_event_fields = [field for field in required_event_fields if field not in sample_event]
+                            
+                            if not missing_event_fields:
+                                # Check capacity = 95 for events without explicit capacity
+                                event_capacity = sample_event.get("capacity")
+                                is_default_capacity = sample_event.get("is_default_capacity", False)
+                                
+                                if is_default_capacity and event_capacity == 95:
+                                    self.log_test(f"{category_name} event default capacity", True, 
+                                                f"Event without explicit capacity shows capacity=95")
+                                elif not is_default_capacity:
+                                    self.log_test(f"{category_name} event explicit capacity", True, 
+                                                f"Event has explicit capacity: {event_capacity}")
+                                else:
+                                    self.log_test(f"{category_name} event capacity", False, 
+                                                f"Expected capacity=95 for default, got {event_capacity}")
+                                    dashboard_success = False
+                                
+                                # Check short_name length (max 28 chars with "…" if truncated)
+                                short_name = sample_event.get("short_name", "")
+                                if len(short_name) <= 28:
+                                    if short_name.endswith("…") and len(short_name) == 28:
+                                        self.log_test(f"{category_name} short_name truncation", True, 
+                                                    f"Properly truncated: '{short_name}'")
+                                    else:
+                                        self.log_test(f"{category_name} short_name length", True, 
+                                                    f"Within limit: '{short_name}' ({len(short_name)} chars)")
+                                else:
+                                    self.log_test(f"{category_name} short_name length", False, 
+                                                f"Too long: '{short_name}' ({len(short_name)} chars)")
+                                    dashboard_success = False
+                                
+                                self.log_test(f"{category_name} event structure", True, "All required fields present")
+                            else:
+                                self.log_test(f"{category_name} event structure", False, 
+                                            f"Missing fields: {missing_event_fields}")
+                                dashboard_success = False
+                    else:
+                        self.log_test(f"{category_name} structure", False, "Missing required category fields")
+                        dashboard_success = False
+            else:
+                self.log_test("Events summary structure", False, f"Missing keys: {missing_keys}")
+                dashboard_success = False
+        else:
+            self.log_test("GET events/dashboard/events-summary", False, 
+                        f"Status: {result['status_code']}, Error: {result.get('data', {})}")
+            dashboard_success = False
+        
+        # Test 2: GET /api/events/dashboard/kultur-summary (Legacy Endpoint)
+        print("Testing GET /api/events/dashboard/kultur-summary (Legacy)...")
+        result = self.make_request("GET", "events/dashboard/kultur-summary", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        
+        if result["success"]:
+            legacy_data = result["data"]
+            
+            # Check legacy structure
+            if "events" in legacy_data and "default_capacity" in legacy_data and "total_events" in legacy_data:
+                legacy_capacity = legacy_data.get("default_capacity")
+                if legacy_capacity == 95:
+                    self.log_test("Legacy endpoint default_capacity = 95", True, 
+                                "✅ Legacy endpoint also returns default_capacity=95")
+                else:
+                    self.log_test("Legacy endpoint default_capacity = 95", False, 
+                                f"❌ Expected 95, got {legacy_capacity}")
+                    dashboard_success = False
+                
+                self.log_test("Legacy kultur-summary structure", True, 
+                            f"Events: {len(legacy_data.get('events', []))}, Total: {legacy_data.get('total_events')}")
+            else:
+                self.log_test("Legacy kultur-summary structure", False, "Missing required fields")
+                dashboard_success = False
+        else:
+            self.log_test("GET events/dashboard/kultur-summary (Legacy)", False, 
+                        f"Status: {result['status_code']}, Error: {result.get('data', {})}")
+            dashboard_success = False
+        
+        return dashboard_success
+
+    def run_event_dashboard_widget_test(self):
+        """Run Event Dashboard Widget Backend test suite"""
+        print("=" * 80)
+        print("EVENT-DASHBOARD WIDGET BACKEND TESTING")
+        print("=" * 80)
+        
+        # Step 1: Authentication
+        if not self.test_authentication():
+            print("\n❌ Authentication failed - cannot proceed")
+            return False
+        
+        # Step 2: Test Event Dashboard Widget endpoints
+        dashboard_success = self.test_event_dashboard_widget()
+        
+        # Summary
+        print("\n" + "=" * 80)
+        print("EVENT-DASHBOARD WIDGET TEST SUMMARY")
+        print("=" * 80)
+        print(f"Tests run: {self.tests_run}")
+        print(f"Tests passed: {self.tests_passed}")
+        print(f"Success rate: {(self.tests_passed/self.tests_run*100):.1f}%")
+        
+        if self.failed_tests:
+            print(f"\n❌ Failed tests ({len(self.failed_tests)}):")
+            for test in self.failed_tests:
+                print(f"  - {test['name']}: {test['details']}")
+        
+        if dashboard_success:
+            print("\n✅ EVENT-DASHBOARD WIDGET BACKEND: ALL TESTS PASSED")
+            print("✅ CRITICAL: default_capacity = 95 (not 100!)")
+            print("✅ Prefixes correct: VA for VERANSTALTUNG, AK for AKTION, MA for AKTION_MENUE")
+            print("✅ short_name max 28 characters with '…' if truncated")
+            print("✅ Legacy endpoint working for backward compatibility")
+        else:
+            print("\n❌ EVENT-DASHBOARD WIDGET BACKEND: SOME TESTS FAILED")
+        
+        return dashboard_success
+
 def main():
     """Main test execution"""
     import sys
