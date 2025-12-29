@@ -1,8 +1,24 @@
 #====================================================================================================
-# Event-Preise + Varianten + Zahlung/Anzahlung Session FINAL (26.12.2025)
+# Modul 30: MITARBEITER & DIENSTPLAN V1 (29.12.2025)
 #====================================================================================================
 
 user_problem_statement: |
+  SESSION TASK – Modul 30: Dienstplan V1 + Zeiterfassung (Timeclock)
+  
+  ZIELE:
+  1. shifts als einzige Source of Truth (assigned_staff_ids[] statt staff_member_id)
+  2. time_sessions mit strenger State-Machine (WORKING ↔ BREAK → CLOSED)
+  3. time_events als append-only Audit-Log
+  4. Clock-out während BREAK → 409 BLOCKED
+  5. Auto-Link Timeclock → Shift (bei eindeutigem Match)
+  6. Schichttausch (Swap) atomar mit Audit
+  7. Migration Legacy-Schichten
+
+#====================================================================================================
+# VORHERIGE SESSION: Event-Preise + Varianten + Zahlung/Anzahlung (26.12.2025)
+#====================================================================================================
+
+previous_session_event_pricing: |
   SESSION TASK – Event-Preise + Varianten + Anzahlung/Payment im Reservierungssystem (FINAL)
   
   ZIELE:
