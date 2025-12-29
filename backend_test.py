@@ -1694,7 +1694,7 @@ class GastroCoreAPITester:
                 link_result = self.make_request('POST', f'users/{user_id}/link-staff?staff_member_id={self.test_data["second_staff_id"]}', {}, self.tokens['admin'], expected_status=200)
                 if link_result['success']:
                     # Login as the test user
-                    login_data = {'email': 'myshifts@test.de', 'password': 'TestPass123!'}
+                    login_data = {'email': f'myshifts{timestamp2}@test.de', 'password': 'TestPass123!'}
                     login_result = self.make_request('POST', 'auth/login', login_data, expected_status=200)
                     if login_result['success']:
                         myshifts_token = login_result['data']['access_token']
