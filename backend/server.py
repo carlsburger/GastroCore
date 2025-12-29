@@ -2887,6 +2887,10 @@ app.include_router(backup_router)
 # Table Import & Seed Router
 app.include_router(import_router)
 
+# Timeclock & Shifts V2 Module (Sprint: Modul 30 Mitarbeiter & Dienstplan V1)
+app.include_router(timeclock_router)
+app.include_router(shifts_v2_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
