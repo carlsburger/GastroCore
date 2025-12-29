@@ -8036,6 +8036,34 @@ class GastroCoreAPITester:
         
         return pricing_test_result
 
+    def run_modul20_reservation_guards_test(self):
+        """Run only the Modul 20 Reservation Guards test"""
+        print("🚀 Starting Modul 20: Backend-Guards Testing...")
+        print(f"🎯 Target: {self.base_url}")
+        print("=" * 80)
+        
+        # Authenticate admin
+        admin_creds = self.credentials["admin"]
+        result = self.make_request("POST", "auth/login", admin_creds, expected_status=200)
+        
+        if result["success"] and "access_token" in result["data"]:
+            self.tokens["admin"] = result["data"]["access_token"]
+            user_data = result["data"]["user"]
+            self.log_test("Admin login for Modul 20 test", True, 
+                        f"admin@carlsburg.de authenticated successfully")
+        else:
+            self.log_test("Admin login for Modul 20 test", False, 
+                        f"Status: {result['status_code']}")
+            return False
+        
+        # Run the Modul 20 Reservation Guards test
+        guards_test_result = self.test_modul20_reservation_guards()
+        
+        # Print summary
+        self.print_summary([("Modul 20: Reservation Guards", guards_test_result)])
+        
+        return guards_test_result
+
     def run_aktionen_infrastruktur_smoke_test(self):
         """Run only the Aktionen-Infrastruktur Verification SMOKE TEST"""
         print("🚀 Starting Aktionen-Infrastruktur Verification SMOKE TEST...")
