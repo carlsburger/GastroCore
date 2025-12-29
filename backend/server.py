@@ -1670,8 +1670,16 @@ async def cancel_reservation_public(reservation_id: str, token: str, background_
         raise ValidationException("Diese Reservierung kann nicht mehr storniert werden")
     
     before = safe_dict_for_audit(existing)
+    old_status = existing.get("status")
+    
     await db.reservations.update_one({"id": reservation_id}, {"$set": {"status": "storniert", "updated_at": now_iso()}})
     await create_audit_log(SYSTEM_ACTOR, "reservation", reservation_id, "cancel_by_guest", before, {**before, "status": "storniert"})
+    
+    # B4: Wartelisten-Trigger bei Stornierung
+    if await should_trigger_waitlist(old_status, "storniert", existing):
+        waitlist_entry = await process_waitlist_on_cancellation(existing)
+        if waitlist_entry:
+            logger.info(f"Warteliste informiert nach Stornierung: {waitlist_entry.get('id')}")
     
     if existing.get("guest_email"):
         background_tasks.add_task(send_cancellation_email, existing, existing.get("language", "de"))
