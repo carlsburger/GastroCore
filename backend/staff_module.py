@@ -4027,3 +4027,234 @@ async def apply_suggestions_batch(
         logger.error(f"Batch-Apply Fehler: {e}")
         raise HTTPException(status_code=500, detail=f"Fehler: {str(e)}")
 
+
+
+# ============== BULK PUBLISH ENDPOINT ==============
+class BulkPublishRequest(BaseModel):
+    """Request Body für Bulk-Publish"""
+    from_date: str = Field(..., description="Start-Datum (YYYY-MM-DD)")
+    to_date: str = Field(..., description="End-Datum (YYYY-MM-DD)")
+    only_if_assigned: bool = Field(default=True, description="Nur Schichten mit Zuweisung publishen")
+    dry_run: bool = Field(default=True, description="Vorschau ohne DB-Write")
+
+
+@staff_router.post("/shifts/v2/bulk-publish", tags=["Shifts"])
+async def bulk_publish_shifts(
+    request: BulkPublishRequest,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Bulk-Publish von Schichten mit Guards.
+    
+    Guards:
+    - only_if_assigned=true: Publisht nur Schichten mit mindestens 1 assigned Mitarbeiter
+    - Offene Schichten bleiben DRAFT für manuelle Nacharbeit
+    - Audit-Log für alle Änderungen
+    
+    Args:
+        from_date: Start-Datum (YYYY-MM-DD)
+        to_date: End-Datum (YYYY-MM-DD)
+        only_if_assigned: Nur zugewiesene Schichten publishen (Default: true)
+        dry_run: Vorschau ohne DB-Änderung (Default: true)
+    
+    Returns:
+        published: Anzahl publizierter Schichten
+        skipped_unassigned: Anzahl übersprungener (nicht zugewiesener) Schichten
+        skipped_already_published: Bereits publizierte Schichten
+    """
+    from datetime import datetime
+    
+    # Validate dates
+    try:
+        start_date = datetime.strptime(request.from_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(request.to_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ungültiges Datumsformat. Erwartet: YYYY-MM-DD")
+    
+    if end_date < start_date:
+        raise HTTPException(status_code=400, detail="End-Datum muss nach Start-Datum liegen")
+    
+    # Query: Alle Schichten im Zeitraum
+    shifts = await db.shifts.find({
+        "$or": [
+            {"shift_date": {"$gte": request.from_date, "$lte": request.to_date}},
+            {"date": {"$gte": request.from_date, "$lte": request.to_date}}
+        ],
+        "archived": {"$ne": True}
+    }).to_list(1000)
+    
+    logger.info(f"[BULK-PUBLISH] {len(shifts)} Schichten im Zeitraum {request.from_date} - {request.to_date}")
+    
+    # Kategorisieren
+    to_publish = []
+    skipped_unassigned = []
+    skipped_already_published = []
+    
+    for shift in shifts:
+        shift_id = shift.get("id")
+        status = shift.get("status", "draft")
+        staff_id = shift.get("staff_member_id") or (shift.get("assigned_staff_ids", []) or [None])[0]
+        
+        # Bereits published?
+        if status == "published":
+            skipped_already_published.append({
+                "shift_id": shift_id,
+                "date": shift.get("shift_date", shift.get("date")),
+                "reason": "already_published"
+            })
+            continue
+        
+        # Nicht zugewiesen und only_if_assigned?
+        if request.only_if_assigned and not staff_id:
+            skipped_unassigned.append({
+                "shift_id": shift_id,
+                "date": shift.get("shift_date", shift.get("date")),
+                "role": shift.get("role"),
+                "reason": "no_assignment"
+            })
+            continue
+        
+        # Kann published werden
+        to_publish.append(shift)
+    
+    # Ergebnis-Struktur
+    result = {
+        "dry_run": request.dry_run,
+        "period": f"{request.from_date} bis {request.to_date}",
+        "total_shifts": len(shifts),
+        "would_publish": len(to_publish),
+        "published": 0,
+        "skipped_unassigned": len(skipped_unassigned),
+        "skipped_already_published": len(skipped_already_published),
+        "details": {
+            "unassigned": skipped_unassigned[:10],  # Max 10 Details
+            "already_published": skipped_already_published[:10]
+        }
+    }
+    
+    # Bei dry_run=false: Tatsächlich publishen
+    if not request.dry_run and to_publish:
+        now = now_iso()
+        shift_ids = [s.get("id") for s in to_publish]
+        
+        update_result = await db.shifts.update_many(
+            {"id": {"$in": shift_ids}},
+            {"$set": {
+                "status": "published",
+                "published_at": now,
+                "published_by": current_user.get("id"),
+                "updated_at": now
+            }}
+        )
+        
+        result["published"] = update_result.modified_count
+        
+        # Audit-Log
+        await create_audit_log(
+            current_user, "shifts", "bulk_publish", "publish",
+            None,
+            {
+                "from_date": request.from_date,
+                "to_date": request.to_date,
+                "published_count": result["published"],
+                "skipped_unassigned": result["skipped_unassigned"]
+            }
+        )
+        
+        logger.info(f"[BULK-PUBLISH] {result['published']} Schichten published")
+    
+    return result
+
+
+# ============== V2 SUGGESTIONS ENDPOINT (Read-Only) ==============
+@staff_router.get("/shifts/v2/suggestions", tags=["Shifts"])
+async def get_shifts_suggestions_v2(
+    from_date: str = Query(..., description="Start-Datum (YYYY-MM-DD)"),
+    to_date: str = Query(..., description="End-Datum (YYYY-MM-DD)"),
+    roles: Optional[str] = Query(None, description="Rollen-Filter (kommasepariert)"),
+    current_user: dict = Depends(require_manager)
+):
+    """
+    V2 Suggestions Endpoint (Read-Only).
+    
+    Liefert für jeden offenen Shift die Top-3 Kandidaten mit Score.
+    Keine DB-Änderungen.
+    """
+    from datetime import datetime
+    
+    # Validate dates
+    try:
+        start_date = datetime.strptime(from_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(to_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ungültiges Datumsformat")
+    
+    # Query shifts
+    shifts = await db.shifts.find({
+        "$or": [
+            {"shift_date": {"$gte": from_date, "$lte": to_date}},
+            {"date": {"$gte": from_date, "$lte": to_date}}
+        ],
+        "archived": {"$ne": True}
+    }).to_list(1000)
+    
+    # Filter: nur offene Schichten
+    open_shifts = [s for s in shifts if not s.get("staff_member_id") and not s.get("assigned_staff_ids")]
+    
+    # Optional: Rollen-Filter
+    if roles:
+        role_list = [r.strip().lower() for r in roles.split(",")]
+        open_shifts = [s for s in open_shifts if s.get("role", "").lower() in role_list]
+    
+    # Lade Staff
+    all_staff = await db.staff_members.find({
+        "$or": [{"active": True}, {"is_active": True}],
+        "archived": {"$ne": True}
+    }).to_list(500)
+    
+    # Generate suggestions
+    result = {
+        "period": f"{from_date} bis {to_date}",
+        "total_shifts": len(shifts),
+        "open_shifts": len(open_shifts),
+        "shifts_with_suggestions": []
+    }
+    
+    for shift in open_shifts[:100]:  # Max 100 Shifts
+        shift_role = shift.get("role", "")
+        shift_date = shift.get("shift_date", shift.get("date", ""))
+        
+        candidates = []
+        for staff in all_staff:
+            staff_roles = staff.get("roles", [])
+            
+            # Rollen-Check
+            if shift_role and staff_roles:
+                if shift_role not in staff_roles:
+                    continue
+            
+            # Einfacher Score
+            score = 75.0
+            if staff.get("employment_fraction", 1.0) >= 0.5:
+                score += 10
+            
+            candidates.append({
+                "staff_id": staff.get("id"),
+                "staff_name": staff.get("name", staff.get("id", "?")[:8]),
+                "score": score,
+                "roles": staff_roles
+            })
+        
+        candidates.sort(key=lambda x: x["score"], reverse=True)
+        
+        result["shifts_with_suggestions"].append({
+            "shift_id": shift.get("id"),
+            "date": shift_date,
+            "role": shift_role,
+            "start_time": shift.get("start_time"),
+            "end_time": shift.get("end_time"),
+            "template_code": shift.get("template_code"),
+            "candidates": candidates[:3]
+        })
+    
+    return result
