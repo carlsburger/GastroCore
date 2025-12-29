@@ -230,11 +230,16 @@ class Modul30Tester:
         """Create a test staff member and user for timeclock testing"""
         print("\n👤 Creating test staff member and user...")
         
+        # Use timestamp to make email unique
+        import time
+        timestamp = str(int(time.time()))
+        email = f"test.employee.{timestamp}@carlsburg.de"
+        
         # Create staff member
         staff_data = {
             "first_name": "Test",
             "last_name": "Employee",
-            "email": "test.employee@carlsburg.de",
+            "email": email,
             "role": "service",
             "employment_type": "teilzeit",
             "weekly_hours": 20.0,
@@ -254,7 +259,7 @@ class Modul30Tester:
         # Create user
         user_data = {
             "name": "Test Employee",
-            "email": "test.employee@carlsburg.de",
+            "email": email,
             "password": "TestPass123!",
             "role": "mitarbeiter"
         }
@@ -277,13 +282,15 @@ class Modul30Tester:
         else:
             self.log_test("Link user to staff member", False, f"Status: {link_result['status_code']}")
         
+        # Store email for authentication
+        self.test_email = email
         return staff_id, user_id
 
     def authenticate_as_staff(self):
         """Authenticate as the test staff member"""
         print("\n🔐 Authenticating as test staff member...")
         
-        staff_creds = {"email": "test.employee@carlsburg.de", "password": "TestPass123!"}
+        staff_creds = {"email": self.test_email, "password": "TestPass123!"}
         result = self.make_request("POST", "auth/login", staff_creds, expected_status=200)
         
         if result["success"] and "access_token" in result["data"]:
