@@ -226,90 +226,152 @@ class Modul30Tester:
                         f"Status: {result['status_code']}, Data: {result.get('data', {})}")
             return None
 
-    def test_timeclock_break_start(self):
-        """T2: Break-Start"""
-        print("\n☕ Testing T2: Break-Start...")
+    def create_test_staff_and_user(self):
+        """Create a test staff member and user for timeclock testing"""
+        print("\n👤 Creating test staff member and user...")
         
+        # Create staff member
+        staff_data = {
+            "first_name": "Test",
+            "last_name": "Employee",
+            "email": "test.employee@carlsburg.de",
+            "role": "service",
+            "employment_type": "teilzeit",
+            "weekly_hours": 20.0,
+            "entry_date": "2025-01-01"
+        }
+        
+        staff_result = self.make_request("POST", "staff/members", staff_data, expected_status=200)
+        
+        if not staff_result["success"]:
+            self.log_test("Create test staff member", False, f"Status: {staff_result['status_code']}")
+            return None, None
+        
+        staff_member = staff_result["data"]
+        staff_id = staff_member["id"]
+        self.log_test("Create test staff member", True, f"Staff member created: {staff_id}")
+        
+        # Create user
+        user_data = {
+            "name": "Test Employee",
+            "email": "test.employee@carlsburg.de",
+            "password": "TestPass123!",
+            "role": "mitarbeiter"
+        }
+        
+        user_result = self.make_request("POST", "users", user_data, expected_status=200)
+        
+        if not user_result["success"]:
+            self.log_test("Create test user", False, f"Status: {user_result['status_code']}")
+            return staff_id, None
+        
+        user = user_result["data"]
+        user_id = user["id"]
+        self.log_test("Create test user", True, f"User created: {user_id}")
+        
+        # Link user to staff member
+        link_result = self.make_request("POST", f"users/{user_id}/link-staff?staff_member_id={staff_id}", {}, expected_status=200)
+        
+        if link_result["success"]:
+            self.log_test("Link user to staff member", True, "User linked to staff member")
+        else:
+            self.log_test("Link user to staff member", False, f"Status: {link_result['status_code']}")
+        
+        return staff_id, user_id
+
+    def authenticate_as_staff(self):
+        """Authenticate as the test staff member"""
+        print("\n🔐 Authenticating as test staff member...")
+        
+        staff_creds = {"email": "test.employee@carlsburg.de", "password": "TestPass123!"}
+        result = self.make_request("POST", "auth/login", staff_creds, expected_status=200)
+        
+        if result["success"] and "access_token" in result["data"]:
+            self.token = result["data"]["access_token"]
+            self.log_test("Staff authentication", True, "Token received")
+            return True
+        else:
+            self.log_test("Staff authentication", False, f"Status: {result['status_code']}")
+            return False
+
+    def test_timeclock_full_workflow(self):
+        """Test the complete timeclock workflow with a real staff member"""
+        print("\n⏰ Testing complete timeclock workflow...")
+        
+        # T1: Clock-In
+        result = self.make_request("POST", "timeclock/clock-in", {}, expected_status=201)
+        
+        if not result["success"]:
+            self.log_test("T1: Clock-In", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            return False
+        
+        response = result["data"]
+        if response.get("state") != "WORKING":
+            self.log_test("T1: Clock-In", False, f"Expected state WORKING, got: {response.get('state')}")
+            return False
+        
+        session_id = response.get("session_id")
+        self.log_test("T1: Clock-In", True, f"Clock-in successful, state: {response['state']}, session_id: {session_id}")
+        
+        # T2: Break-Start
         result = self.make_request("POST", "timeclock/break-start", {}, expected_status=200)
         
-        if result["success"]:
-            response = result["data"]
-            if response.get("state") == "BREAK":
-                self.log_test("T2: Break-Start", True, 
-                            f"Break started successfully, state: {response['state']}")
-                return True
-            else:
-                self.log_test("T2: Break-Start", False, 
-                            f"Unexpected state: {response.get('state')}")
-                return False
-        else:
-            self.log_test("T2: Break-Start", False, 
-                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+        if not result["success"]:
+            self.log_test("T2: Break-Start", False, f"Status: {result['status_code']}")
             return False
-
-    def test_timeclock_clock_out_during_break_blocked(self):
-        """T3: Clock-Out during BREAK (MUST BLOCK!)"""
-        print("\n🚫 Testing T3: Clock-Out during BREAK (CRITICAL TEST)...")
         
+        response = result["data"]
+        if response.get("state") != "BREAK":
+            self.log_test("T2: Break-Start", False, f"Expected state BREAK, got: {response.get('state')}")
+            return False
+        
+        self.log_test("T2: Break-Start", True, f"Break started, state: {response['state']}")
+        
+        # T3: Clock-Out during BREAK (MUST BLOCK!)
         result = self.make_request("POST", "timeclock/clock-out", {}, expected_status=409)
         
-        if result["success"]:
-            response = result["data"]
-            detail = response.get("detail", "")
-            if "Pause" in detail or "BREAK" in detail or "break" in detail:
-                self.log_test("T3: Clock-Out during BREAK BLOCKED", True, 
-                            f"✅ CRITICAL TEST PASSED! Clock-out correctly blocked with 409 CONFLICT: {detail}")
-                return True
-            else:
-                self.log_test("T3: Clock-Out during BREAK BLOCKED", False, 
-                            f"Wrong error message: {detail}")
-                return False
-        else:
-            self.log_test("T3: Clock-Out during BREAK BLOCKED", False, 
-                        f"Expected 409 CONFLICT, got {result['status_code']}")
+        if not result["success"]:
+            self.log_test("T3: Clock-Out during BREAK BLOCKED", False, f"Expected 409, got: {result['status_code']}")
             return False
-
-    def test_timeclock_break_end(self):
-        """T4: Break-End"""
-        print("\n🔄 Testing T4: Break-End...")
         
+        response = result["data"]
+        detail = response.get("detail", "")
+        if "Pause" not in detail and "BREAK" not in detail and "break" not in detail:
+            self.log_test("T3: Clock-Out during BREAK BLOCKED", False, f"Wrong error message: {detail}")
+            return False
+        
+        self.log_test("T3: Clock-Out during BREAK BLOCKED", True, 
+                    f"✅ CRITICAL TEST PASSED! Clock-out correctly blocked: {detail}")
+        
+        # T4: Break-End
         result = self.make_request("POST", "timeclock/break-end", {}, expected_status=200)
         
-        if result["success"]:
-            response = result["data"]
-            if response.get("state") == "WORKING":
-                self.log_test("T4: Break-End", True, 
-                            f"Break ended successfully, state: {response['state']}")
-                return True
-            else:
-                self.log_test("T4: Break-End", False, 
-                            f"Unexpected state: {response.get('state')}")
-                return False
-        else:
-            self.log_test("T4: Break-End", False, 
-                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+        if not result["success"]:
+            self.log_test("T4: Break-End", False, f"Status: {result['status_code']}")
             return False
-
-    def test_timeclock_clock_out_after_break(self):
-        """T5: Clock-Out (after break ended)"""
-        print("\n🏁 Testing T5: Clock-Out (after break ended)...")
         
+        response = result["data"]
+        if response.get("state") != "WORKING":
+            self.log_test("T4: Break-End", False, f"Expected state WORKING, got: {response.get('state')}")
+            return False
+        
+        self.log_test("T4: Break-End", True, f"Break ended, state: {response['state']}")
+        
+        # T5: Clock-Out (after break ended)
         result = self.make_request("POST", "timeclock/clock-out", {}, expected_status=200)
         
-        if result["success"]:
-            response = result["data"]
-            if response.get("state") == "CLOSED":
-                self.log_test("T5: Clock-Out (after break ended)", True, 
-                            f"Clock-out successful, state: {response['state']}")
-                return True
-            else:
-                self.log_test("T5: Clock-Out (after break ended)", False, 
-                            f"Unexpected state: {response.get('state')}")
-                return False
-        else:
-            self.log_test("T5: Clock-Out (after break ended)", False, 
-                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+        if not result["success"]:
+            self.log_test("T5: Clock-Out (after break ended)", False, f"Status: {result['status_code']}")
             return False
+        
+        response = result["data"]
+        if response.get("state") != "CLOSED":
+            self.log_test("T5: Clock-Out (after break ended)", False, f"Expected state CLOSED, got: {response.get('state')}")
+            return False
+        
+        self.log_test("T5: Clock-Out (after break ended)", True, f"Clock-out successful, state: {response['state']}")
+        
+        return True
 
     def test_admin_daily_overview(self):
         """Admin Overview"""
