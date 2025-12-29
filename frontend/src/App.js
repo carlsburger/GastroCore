@@ -121,6 +121,16 @@ function App() {
             }
           />
 
+          {/* Mitarbeiter-PWA V1 - Für alle authentifizierten Benutzer */}
+          <Route
+            path="/employee"
+            element={
+              <ProtectedRoute>
+                <EmployeePWA />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Schichtmodelle/Vorlagen - Admin & Schichtleiter */}
           <Route
             path="/shift-templates"
