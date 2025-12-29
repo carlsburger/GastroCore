@@ -126,7 +126,7 @@ export default function EmployeePWA() {
 
   const fetchTodaySession = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/timeclock/today`, { headers });
+      const res = await fetch(`${API_URL}/api/timeclock/today`, { headers: getHeaders() });
       if (!res.ok) {
         if (res.status === 401) return null;
         throw new Error("Fehler beim Laden der Tagesübersicht");
@@ -138,7 +138,7 @@ export default function EmployeePWA() {
       console.error("fetchTodaySession error:", err);
       return null;
     }
-  }, [token]);
+  }, [getHeaders]);
 
   const fetchMyShifts = useCallback(async () => {
     try {
@@ -148,7 +148,7 @@ export default function EmployeePWA() {
       
       const res = await fetch(
         `${API_URL}/api/staff/shifts/v2/my?date_from=${from}&date_to=${to}`,
-        { headers }
+        { headers: getHeaders() }
       );
       
       if (!res.ok) {
@@ -161,7 +161,7 @@ export default function EmployeePWA() {
     } catch (err) {
       console.error("fetchMyShifts error:", err);
     }
-  }, [token]);
+  }, [getHeaders]);
 
   // Initial Load
   useEffect(() => {
