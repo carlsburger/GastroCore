@@ -204,25 +204,19 @@ export default function EmployeePWA() {
         body: JSON.stringify({}),
       });
       
-      // Clone response to read it safely
-      const responseText = await res.text();
       let data;
       try {
-        data = JSON.parse(responseText);
-      } catch {
-        data = { detail: responseText };
+        data = await res.json();
+      } catch (e) {
+        data = { detail: "Unbekannter Fehler" };
       }
       
       if (!res.ok) {
         // Handle specific errors
-        if (res.status === 409) {
-          // Conflict - show specific message
-          const message = data.detail || "Aktion nicht möglich";
-          setError(message);
-          toast.error(message);
-          return;
-        }
-        throw new Error(data.detail || "Aktion fehlgeschlagen");
+        const message = data.detail || "Aktion nicht möglich";
+        setError(message);
+        toast.error(message);
+        return;
       }
       
       // Success
