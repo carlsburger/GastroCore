@@ -570,7 +570,7 @@ export const StaffDetail = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="contact" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="contact">
               <Phone className="h-4 w-4 mr-2" />
               Kontakt
@@ -593,6 +593,12 @@ export const StaffDetail = () => {
               <FileText className="h-4 w-4 mr-2" />
               Dokumente ({documents.length})
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="personalakte">
+                <File className="h-4 w-4 mr-2" />
+                Personalakte V2
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Contact Tab */}
