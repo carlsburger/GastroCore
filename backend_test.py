@@ -6067,7 +6067,7 @@ class GastroCoreAPITester:
                 self.test_data["b1_reservation_id"] = reservation.get("id")
             else:
                 self.log_test("B1: Standard duration enforced (115 min)", False, 
-                            f"Expected 115, got {actual_duration}")
+                            f"CRITICAL BUG: Expected 115, got {actual_duration}. apply_reservation_guards() not called in server.py!")
                 guards_success = False
         else:
             self.log_test("B1: Standard duration test", False, f"Status: {result['status_code']}")
