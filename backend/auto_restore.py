@@ -53,7 +53,15 @@ def get_db():
     return client[db_name]
 
 def check_and_restore():
-    """Prüft ob kritische Collections leer sind und stellt ggf. wieder her"""
+    """Prüft ob kritische Collections leer sind und stellt ggf. wieder her
+    
+    GUARD: Nur ausführen wenn AUTO_RESTORE_ENABLED=true
+    """
+    # AUTO-RESTORE GUARD
+    if not is_auto_restore_enabled():
+        logger.info("ℹ️ Auto-Restore ist deaktiviert (AUTO_RESTORE_ENABLED != true)")
+        return {"status": "disabled", "restored": False, "reason": "AUTO_RESTORE_ENABLED not set to true"}
+    
     db = get_db()
     
     # Prüfe ob Restore nötig ist
