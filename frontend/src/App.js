@@ -129,6 +129,16 @@ function App() {
             }
           />
 
+          {/* Dienstplan V2 Admin-Cockpit - Admin & Schichtleiter */}
+          <Route
+            path="/shifts-admin"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <ShiftsAdmin />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Dashboard - Admin & Schichtleiter */}
           <Route
             path="/"
