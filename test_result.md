@@ -282,10 +282,10 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "13.0"
+  version: "14.0"
   session_date: "2025-12-29"
-  test_sequence: 2
-  run_ui: false
+  test_sequence: 3
+  run_ui: true
 
 test_plan:
   current_focus:
