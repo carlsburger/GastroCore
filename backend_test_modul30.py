@@ -25,6 +25,7 @@ class Modul30Tester:
             self.base_url = "http://localhost:8001"
         
         self.token = None
+        self.test_email = None
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
