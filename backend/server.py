@@ -2015,6 +2015,65 @@ async def health_check():
     return {"status": "healthy" if db_status == "connected" else "degraded", "database": db_status, "version": "3.0.0"}
 
 
+@api_router.get("/diagnostics/db", tags=["Health"])
+async def database_diagnostics():
+    """
+    Read-only Database Diagnostics - zeigt Verbindungsdetails ohne Credentials.
+    Gibt eindeutig an ob Atlas oder Lokal verbunden ist.
+    """
+    import os
+    from urllib.parse import urlparse
+    
+    mongo_url = settings.MONGO_URL
+    db_name = settings.DB_NAME
+    
+    # Parse URI ohne Credentials anzuzeigen
+    is_atlas = "mongodb+srv://" in mongo_url or ".mongodb.net" in mongo_url
+    is_localhost = "localhost" in mongo_url or "127.0.0.1" in mongo_url
+    
+    # Extrahiere Host-Domain (ohne Credentials)
+    try:
+        if "mongodb+srv://" in mongo_url:
+            # SRV Format: mongodb+srv://user:pass@cluster.mongodb.net/db
+            host_part = mongo_url.split("@")[-1].split("/")[0].split("?")[0]
+        else:
+            # Standard Format: mongodb://user:pass@host:port/db
+            host_part = mongo_url.split("@")[-1].split("/")[0].split("?")[0]
+    except:
+        host_part = "parse_error"
+    
+    # Collection Counts (read-only)
+    collection_counts = {}
+    core_collections = ["users", "staff_members", "shift_templates", "shifts", "guest_contacts", "time_sessions", "time_events"]
+    
+    try:
+        for coll in core_collections:
+            collection_counts[coll] = await db[coll].count_documents({})
+    except Exception as e:
+        collection_counts["error"] = str(e)
+    
+    # Guards Status
+    require_atlas = os.getenv("REQUIRE_ATLAS", "false").lower() == "true"
+    auto_restore_enabled = os.getenv("AUTO_RESTORE_ENABLED", "false").lower() == "true"
+    
+    return {
+        "connection": {
+            "db_name": db_name,
+            "host_domain": host_part,
+            "is_atlas": is_atlas,
+            "is_localhost": is_localhost,
+            "connection_type": "ATLAS" if is_atlas else ("LOCALHOST" if is_localhost else "OTHER")
+        },
+        "guards": {
+            "REQUIRE_ATLAS": require_atlas,
+            "fail_fast_active": require_atlas,
+            "AUTO_RESTORE_ENABLED": auto_restore_enabled
+        },
+        "collections": collection_counts,
+        "status": "🟢 ATLAS" if is_atlas else ("🔴 LOCALHOST" if is_localhost else "🟡 OTHER")
+    }
+
+
 @api_router.get("/version", tags=["Health"])
 async def get_version():
     """
