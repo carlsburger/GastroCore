@@ -808,101 +808,133 @@ export const Dashboard = () => {
           </div>
         )}
 
-        {/* Kulturveranstaltungen Kachel - Dashboard v1 */}
-        {isSchichtleiter && kulturEvents.length > 0 && (
-          <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Theater className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-purple-900">Kulturveranstaltungen (nächste 90 Tage)</h3>
-                <Badge variant="outline" className="ml-auto text-purple-600 border-purple-300">
-                  {kulturEvents.length} Events
-                </Badge>
-              </div>
+        {/* ==================== EVENTS WIDGET (3 Reihen: VA, AK, MA) ==================== */}
+        {isSchichtleiter && (
+          <div className="space-y-4">
+            {/* Event-Kategorien als separate Reihen */}
+            {[
+              { key: "kulturveranstaltungen", icon: Theater, color: "purple", gradient: "from-purple-50 to-indigo-50", borderColor: "border-purple-200" },
+              { key: "aktionen", icon: TrendingUp, color: "amber", gradient: "from-amber-50 to-orange-50", borderColor: "border-amber-200" },
+              { key: "menuaktionen", icon: Sparkles, color: "emerald", gradient: "from-emerald-50 to-teal-50", borderColor: "border-emerald-200" }
+            ].map(({ key, icon: Icon, color, gradient, borderColor }) => {
+              const category = eventsSummary[key] || { events: [], total: 0, label: key, prefix: "?" };
+              const events = category.events || [];
               
-              {kulturLoading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {kulturEvents.slice(0, 4).map((event) => (
-                    <div 
-                      key={event.id}
-                      className="bg-white rounded-lg p-3 border border-purple-100 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-gray-900 truncate">{event.title}</p>
-                          <p className="text-xs text-gray-500">
-                            {event.date 
-                              ? format(new Date(event.date), "dd.MM.yyyy", { locale: de })
-                              : "Datum offen"
-                            }
-                            {event.start_time && ` • ${event.start_time}`}
-                          </p>
-                        </div>
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs shrink-0 ${
-                            event.status === 'critical' 
-                              ? 'bg-red-100 text-red-700 border-red-300' 
-                              : event.status === 'warning'
-                                ? 'bg-amber-100 text-amber-700 border-amber-300'
-                                : 'bg-green-100 text-green-700 border-green-300'
-                          }`}
-                        >
-                          {Math.round(event.utilization)}%
-                        </Badge>
-                      </div>
-                      
-                      {/* Progress Bar */}
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                        <div 
-                          className={`h-2 rounded-full transition-all ${
-                            event.status === 'critical' 
-                              ? 'bg-red-500' 
-                              : event.status === 'warning'
-                                ? 'bg-amber-500'
-                                : 'bg-green-500'
-                          }`}
-                          style={{ width: `${Math.min(event.utilization, 100)}%` }}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {event.booked}/{event.capacity}
-                        </span>
-                        {event.is_default_capacity && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <span className="text-purple-500 text-[10px]">Standard</span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Standard-Kapazität (96 Plätze)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
+              // Nur anzeigen wenn Events vorhanden
+              if (events.length === 0) return null;
+              
+              return (
+                <Card key={key} className={`bg-gradient-to-r ${gradient} ${borderColor}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icon className={`h-5 w-5 text-${color}-600`} />
+                      <h3 className={`font-semibold text-${color}-900`}>
+                        {category.label} (nächste 90 Tage)
+                      </h3>
+                      <Badge variant="outline" className={`ml-auto text-${color}-600 border-${color}-300`}>
+                        {events.length} Events
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Link zu allen Events wenn mehr als 4 */}
-              {kulturEvents.length > 4 && (
-                <div className="mt-3 text-center">
-                  <Button variant="ghost" size="sm" className="text-purple-600" onClick={() => window.location.href='/events'}>
-                    Alle {kulturEvents.length} Veranstaltungen anzeigen →
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    
+                    {eventsLoading ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className={`h-6 w-6 animate-spin text-${color}-600`} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {events.slice(0, 4).map((event) => (
+                          <div 
+                            key={event.id}
+                            className={`bg-white rounded-lg p-3 border border-${color}-100 hover:shadow-md transition-shadow cursor-pointer`}
+                            onClick={() => window.location.href = `/events?id=${event.id}`}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex-1 min-w-0">
+                                {/* Titel mit Prefix: VA/AK/MA */}
+                                <p className="font-medium text-sm text-gray-900 truncate">
+                                  <span className={`text-${color}-600 font-bold`}>{event.prefix}</span>
+                                  {" "}
+                                  {event.short_name || event.title}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {event.date 
+                                    ? format(new Date(event.date), "dd.MM.yyyy", { locale: de })
+                                    : "Datum offen"
+                                  }
+                                  {event.start_time && ` • ${event.start_time}`}
+                                </p>
+                              </div>
+                              {/* Prozent-Badge oben rechts */}
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs shrink-0 ${
+                                  event.status === 'critical' 
+                                    ? 'bg-red-100 text-red-700 border-red-300' 
+                                    : event.status === 'warning'
+                                      ? 'bg-amber-100 text-amber-700 border-amber-300'
+                                      : 'bg-green-100 text-green-700 border-green-300'
+                                }`}
+                              >
+                                {Math.round(event.utilization)}%
+                              </Badge>
+                            </div>
+                            
+                            {/* Progress Bar */}
+                            <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                              <div 
+                                className={`h-2 rounded-full transition-all ${
+                                  event.status === 'critical' 
+                                    ? 'bg-red-500' 
+                                    : event.status === 'warning'
+                                      ? 'bg-amber-500'
+                                      : 'bg-green-500'
+                                }`}
+                                style={{ width: `${Math.min(event.utilization, 100)}%` }}
+                              />
+                            </div>
+                            
+                            {/* Kapazität: sold/capacity (z.B. "0/95") */}
+                            <div className="flex items-center justify-between text-xs text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {event.sold}/{event.capacity}
+                              </span>
+                              {event.is_default_capacity && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <span className={`text-${color}-500 text-[10px]`}>Standard</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Standard-Kapazität ({eventsSummary.default_capacity || 95} Plätze)</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* "Alle X anzeigen" Link */}
+                    {events.length > 4 && (
+                      <div className="mt-3 text-center">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`text-${color}-600 hover:text-${color}-800`}
+                          onClick={() => window.location.href = `/events?category=${key}`}
+                        >
+                          Alle {events.length} {category.label} anzeigen →
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
 
         {/* Filters - Larger inputs */}
