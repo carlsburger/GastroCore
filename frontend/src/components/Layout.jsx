@@ -200,6 +200,32 @@ const NavItem = ({ item, isActive, collapsed, onClick }) => {
     );
   }
 
+  // Externe Links (öffnen in neuem Tab)
+  if (item.external) {
+    return (
+      <a
+        href={item.path}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`
+          flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+          transition-all duration-200
+          text-[#fafbed] hover:bg-[#003d03]
+          ${collapsed ? "justify-center" : ""}
+        `}
+        title={collapsed ? item.label : (item.tooltip || undefined)}
+      >
+        <Icon size={18} />
+        {!collapsed && (
+          <>
+            <span>{item.label}</span>
+            <ExternalLink size={12} className="ml-auto opacity-60" />
+          </>
+        )}
+      </a>
+    );
+  }
+
   return (
     <Link
       to={item.path}
