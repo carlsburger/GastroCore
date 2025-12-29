@@ -1,5 +1,5 @@
 #====================================================================================================
-# Modul 30: MITARBEITER & DIENSTPLAN V1 (29.12.2025)
+# Modul 30: MITARBEITER & DIENSTPLAN V1 (29.12.2025) - BACKEND TESTING COMPLETE
 #====================================================================================================
 
 user_problem_statement: |
@@ -13,6 +13,175 @@ user_problem_statement: |
   5. Auto-Link Timeclock → Shift (bei eindeutigem Match)
   6. Schichttausch (Swap) atomar mit Audit
   7. Migration Legacy-Schichten
+
+backend:
+  - task: "Timeclock State Machine - Clock-In"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T1: Clock-In (erste Session) → 201, state=WORKING, session_id returned. State machine working correctly."
+
+  - task: "Timeclock State Machine - Duplicate Clock-In Block"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T2: Clock-In (zweiter Versuch am selben Tag) → 409 CONFLICT with message 'Du bist heute bereits eingestempelt'. Correctly blocks duplicate clock-ins."
+
+  - task: "Timeclock State Machine - Break Start"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T3: Break-Start → 200, state=BREAK. State transition WORKING → BREAK working correctly."
+
+  - task: "Timeclock State Machine - Clock-Out During Break BLOCKED"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T4: Clock-Out während BREAK → 409 CONFLICT with message 'Ausstempeln während einer Pause nicht möglich' - CRITICAL TEST PASSED! Clock-out is correctly blocked during BREAK state."
+
+  - task: "Timeclock State Machine - Break End"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T5: Break-End → 200, state=WORKING. State transition BREAK → WORKING working correctly."
+
+  - task: "Timeclock State Machine - Clock-Out After Break"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T6: Clock-Out (after break ended) → 200, state=CLOSED. State machine completes correctly. Minor: Timing too fast for meaningful totals in test environment."
+
+  - task: "Timeclock Today Session API"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T7: GET /api/timeclock/today → has_session=true, session with calculated totals. API working correctly. Minor: Test timing too fast for meaningful work/break seconds."
+
+  - task: "Shifts V2 - Create Shift with assigned_staff_ids[]"
+    implemented: true
+    working: true
+    file: "shifts_v2_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ S1: Create Shift (empty assigned_staff_ids) → 201, status=DRAFT, assigned_staff_ids=[]. V2 schema working correctly as Source of Truth."
+
+  - task: "Shifts V2 - Staff Assignment"
+    implemented: true
+    working: true
+    file: "shifts_v2_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ S3: Assign Staff to Shift → 200, assigned_staff_ids contains the staff_id. Staff assignment to shifts working correctly."
+
+  - task: "Shifts V2 - Publish Shift"
+    implemented: true
+    working: true
+    file: "shifts_v2_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ S4: Publish Shift → 200, status=PUBLISHED. Status transition DRAFT → PUBLISHED working correctly."
+
+  - task: "Shifts V2 - Atomic Shift Swap"
+    implemented: true
+    working: true
+    file: "shifts_v2_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ S5: Swap Test on PUBLISHED Shift → 200, success=true, assigned_staff_ids updated. Atomic shift swap working correctly with audit trail."
+
+  - task: "Shifts V2 - Cancel Shift"
+    implemented: true
+    working: true
+    file: "shifts_v2_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ S6: Cancel Shift → 200, status=CANCELLED. Status transition to CANCELLED working correctly."
+
+  - task: "Admin Daily Overview"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/timeclock/admin/daily-overview → Shows working, on_break, completed, missing categories. Admin overview working correctly."
+
+  - task: "Staff Members API"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ S2: GET /api/staff/members → Retrieved 18 staff members. Staff management API working correctly."
 
 #====================================================================================================
 # VORHERIGE SESSION: Event-Preise + Varianten + Zahlung/Anzahlung (26.12.2025)
