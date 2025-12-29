@@ -1542,6 +1542,34 @@ async def update_guest(guest_id: str, data: GuestUpdate, user: dict = Depends(re
     return updated
 
 
+
+# ============== PUBLIC RESTAURANT INFO ==============
+@public_router.get("/restaurant-info", tags=["Public"])
+async def get_public_restaurant_info():
+    """
+    Public endpoint for restaurant branding (widget).
+    Returns name, logo, contact info - no auth required.
+    """
+    # Try to get from settings
+    settings = await db.settings.find_one({}, {"_id": 0})
+    
+    if settings:
+        return {
+            "name": settings.get("restaurant_name", "Restaurant"),
+            "phone": settings.get("phone"),
+            "email": settings.get("email"),
+            "address": settings.get("address")
+        }
+    
+    # Fallback
+    return {
+        "name": "Restaurant",
+        "phone": None,
+        "email": None,
+        "address": None
+    }
+
+
 # ============== PUBLIC BOOKING (Widget) ==============
 @public_router.get("/availability", tags=["Public"])
 async def check_availability(
