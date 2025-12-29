@@ -1367,7 +1367,8 @@ class GastroCoreAPITester:
                             f"Expected state=WORKING, got: {clock_in_data}")
                 timeclock_success = False
         else:
-            self.log_test("T1: Clock-In (erste Session)", False, f"Status: {result['status_code']}")
+            self.log_test("T1: Clock-In (erste Session)", False, 
+                        f"Status: {result['status_code']}, Error: {result.get('data', {})}")
             timeclock_success = False
         
         # T2: Clock-In (zweiter Versuch am selben Tag) → 409 CONFLICT
