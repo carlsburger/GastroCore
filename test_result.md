@@ -528,8 +528,16 @@ abschlussreport:
 #====================================================================================================
 
 testing_protocol: |
-  BACKEND TESTING - MODUL 30 (Dienstplan + Timeclock):
+  BACKEND TESTING - MODUL 30 (Dienstplan V2 + Timeclock):
   1. Login mit admin@carlsburg.de / Carlsburg2025!
+  
+  SHIFTS V2 TESTS:
+  - S1: GET /api/staff/shifts/v2?date_from=2025-12-22&date_to=2025-12-28 → Schichten geladen
+  - S2: POST /api/staff/shifts/v2 mit date_local, start_time, end_time → 201 Schicht erstellt
+  - S3: POST /api/staff/shifts/v2/{id}/publish → Status=PUBLISHED
+  - S4: POST /api/staff/shifts/v2/{id}/cancel → Status=CANCELLED
+  - S5: POST /api/staff/shifts/v2/{id}/assign → Mitarbeiter zugewiesen
+  - S6: POST /api/staff/shifts/v2/{id}/unassign → Mitarbeiter entfernt
   
   TIMECLOCK TESTS:
   - T1: POST /api/timeclock/clock-in → 201, State=WORKING
@@ -538,27 +546,21 @@ testing_protocol: |
   - T4: POST /api/timeclock/clock-out während BREAK → 409 BLOCKED (CRITICAL!)
   - T5: POST /api/timeclock/break-end → State=WORKING
   - T6: POST /api/timeclock/clock-out → State=CLOSED
-  - T7: GET /api/timeclock/today → Arbeitszeit, Pausenzeit summiert
   
-  SHIFTS V2 TESTS:
-  - S1: POST /api/staff/shifts/v2 mit assigned_staff_ids=[] → 201
-  - S2: POST /api/staff/shifts/v2 mit assigned_staff_ids=[id1,id2] → 201
-  - S3: POST /api/staff/shifts/v2/{id}/publish → Status=PUBLISHED
-  - S4: POST /api/staff/shifts/v2/{id}/cancel → Status=CANCELLED
-  - S5: POST /api/staff/shifts/v2/{id}/assign → assigned_staff_ids aktualisiert
-  - S6: POST /api/staff/shifts/v2/{id}/unassign → staff_id entfernt
-  - S7: GET /api/staff/shifts/v2/my → Nur PUBLISHED Schichten
-  
-  MIGRATION TEST:
-  - M1: POST /api/staff/shifts/v2/migrate-legacy → Legacy-Schichten migriert
-  
-  SWAP TEST:
-  - W1: POST /api/staff/shifts/v2/{id}/swap auf DRAFT → 400 ERROR
-  - W2: POST /api/staff/shifts/v2/{id}/swap auf PUBLISHED → Success
+  ADMIN OVERVIEW:
+  - A1: GET /api/timeclock/admin/daily-overview → Tagesübersicht
   
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
   - Backend: http://localhost:8001
+  
+  FRONTEND (ShiftsAdmin.jsx):
+  - Route: /shifts-admin
+  - Wochenansicht mit Kalender
+  - Neue Schicht erstellen Dialog
+  - Mitarbeiter zuweisen Dialog
+  - Publish / Cancel Funktionen
+  - Tagesübersicht (Heute Tab)
 
 #====================================================================================================
 # AGENT COMMUNICATION
