@@ -97,6 +97,12 @@ from table_module import (
     startup_tables_check  # STARTUP-GUARD für active/is_active Prüfung
 )
 
+# Timeclock Module (Sprint: Modul 30 Mitarbeiter & Dienstplan V1)
+from timeclock_module import timeclock_router
+
+# Shifts V2 Module (Sprint: Modul 30 Mitarbeiter & Dienstplan V1)
+from shifts_v2_module import shifts_v2_router
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
