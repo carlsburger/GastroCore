@@ -1390,7 +1390,7 @@ class GastroCoreAPITester:
             return False
         
         # Login as the test user
-        login_data = {'email': 'timeclock@test.de', 'password': 'TestPass123!'}
+        login_data = {'email': f'timeclock{timestamp}@test.de', 'password': 'TestPass123!'}
         login_result = self.make_request('POST', 'auth/login', login_data, expected_status=200)
         if not login_result['success']:
             self.log_test("Login as timeclock test user", False, f"Status: {login_result['status_code']}")
