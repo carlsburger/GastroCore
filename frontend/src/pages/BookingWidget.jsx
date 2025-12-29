@@ -19,6 +19,9 @@ import { Loader2, Calendar, Clock, Users, CheckCircle, AlertCircle, CalendarCloc
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
+// Offizielles Carlsburg Logo (wie Login-Seite)
+const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-planner-4/artifacts/87kb0tcl_grafik.png";
+
 // Occasion options
 const OCCASIONS = [
   { value: "", label: "Kein besonderer Anlass" },
