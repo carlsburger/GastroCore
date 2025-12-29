@@ -5,7 +5,7 @@ Mitarbeiter- und Dienstplanverwaltung
 ADDITIV - Keine Breaking Changes
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form, BackgroundTasks, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any, Generic, TypeVar
