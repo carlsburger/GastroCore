@@ -1550,20 +1550,29 @@ async def get_public_restaurant_info():
     Public endpoint for restaurant branding (widget).
     Returns name, logo, contact info - no auth required.
     """
-    # Try to get from settings
-    settings = await db.settings.find_one({}, {"_id": 0})
-    
-    if settings:
+    # Try reservation-config first (preferred source)
+    res_config = await db.reservation_config.find_one({}, {"_id": 0})
+    if res_config and res_config.get("restaurant_name"):
         return {
-            "name": settings.get("restaurant_name", "Restaurant"),
+            "name": res_config.get("restaurant_name"),
+            "phone": res_config.get("contact_phone"),
+            "email": res_config.get("contact_email"),
+            "address": res_config.get("address")
+        }
+    
+    # Try settings collection
+    settings = await db.settings.find_one({}, {"_id": 0})
+    if settings and settings.get("restaurant_name"):
+        return {
+            "name": settings.get("restaurant_name"),
             "phone": settings.get("phone"),
             "email": settings.get("email"),
             "address": settings.get("address")
         }
     
-    # Fallback
+    # Fallback to hardcoded default for Carlsburg
     return {
-        "name": "Restaurant",
+        "name": "Carlsburg Restaurant",
         "phone": None,
         "email": None,
         "address": None
