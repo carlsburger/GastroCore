@@ -254,19 +254,19 @@ class Modul30V11Tester:
                 success = False
         
         # 10. GET /api/admin/absences/by-date/2025-01-15 → Sollte genehmigte Abwesenheit zeigen
-        result = self.make_request("GET", "admin/absences/by-date/2025-01-15", 
+        result = self.make_request("GET", "admin/absences/by-date/2025-03-15", 
                                  token=self.tokens["admin"], expected_status=200)
         if result["success"]:
             date_absences = result["data"]
             if "data" in date_absences:
-                self.log_test("10. GET /api/admin/absences/by-date/2025-01-15", True, 
+                self.log_test("10. GET /api/admin/absences/by-date/2025-03-15", True, 
                             f"Found {len(date_absences['data'])} absences for date")
             else:
-                self.log_test("10. GET /api/admin/absences/by-date/2025-01-15", False, 
+                self.log_test("10. GET /api/admin/absences/by-date/2025-03-15", False, 
                             "Invalid response format")
                 success = False
         else:
-            self.log_test("10. GET /api/admin/absences/by-date/2025-01-15", False, 
+            self.log_test("10. GET /api/admin/absences/by-date/2025-03-15", False, 
                         f"Status: {result['status_code']}")
             success = False
         
