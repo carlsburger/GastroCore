@@ -5,6 +5,7 @@ Wird beim Backend-Start ausgeführt und stellt Daten aus Backups wieder her,
 falls die kritischen Collections leer sind.
 
 WICHTIG: Nur READ + INSERT, kein DROP, kein DELETE
+GUARD: Nur ausführen wenn AUTO_RESTORE_ENABLED=true
 """
 
 import json
@@ -20,11 +21,35 @@ logger = logging.getLogger("auto_restore")
 BACKUP_DIR = Path("/app/backups")
 CRITICAL_COLLECTIONS = ["staff_members", "tables", "work_areas", "shift_templates"]
 
+
+def is_auto_restore_enabled() -> bool:
+    """Prüft ob Auto-Restore aktiviert ist (Default: false)"""
+    return os.getenv("AUTO_RESTORE_ENABLED", "false").lower() == "true"
+
+
 def get_db():
-    """MongoDB Verbindung herstellen"""
-    mongo_url = os.getenv("MONGO_URL", "mongodb://localhost:27017/gastrocore")
+    """MongoDB Verbindung herstellen - KEIN LOCALHOST FALLBACK"""
+    mongo_url = os.getenv("MONGO_URL")
+    
+    if not mongo_url:
+        logger.error("❌ MONGO_URL nicht gesetzt!")
+        raise ValueError("MONGO_URL environment variable is required")
+    
+    # ATLAS-GUARD: Wenn REQUIRE_ATLAS=true, nur Atlas-URIs erlauben
+    require_atlas = os.getenv("REQUIRE_ATLAS", "false").lower() == "true"
+    is_atlas = "mongodb+srv://" in mongo_url or ".mongodb.net" in mongo_url
+    is_localhost = "localhost" in mongo_url or "127.0.0.1" in mongo_url
+    
+    if require_atlas and not is_atlas:
+        logger.error("❌ REQUIRE_ATLAS=true aber keine Atlas-URI konfiguriert!")
+        raise ValueError("Atlas connection required but localhost URI detected")
+    
+    if require_atlas and is_localhost:
+        logger.error("❌ REQUIRE_ATLAS=true aber localhost-URI detected!")
+        raise ValueError("Atlas connection required but localhost URI detected")
+    
     client = MongoClient(mongo_url)
-    db_name = mongo_url.split("/")[-1].split("?")[0]
+    db_name = os.getenv("DB_NAME") or mongo_url.split("/")[-1].split("?")[0]
     return client[db_name]
 
 def check_and_restore():
