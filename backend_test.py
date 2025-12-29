@@ -8273,6 +8273,12 @@ def main():
     
     tester = GastroCoreAPITester()
     
+    # Check if we should run Event Dashboard Widget tests
+    if len(sys.argv) > 1 and sys.argv[1] == "--event-dashboard":
+        print("Running Event-Dashboard Widget Backend Tests...")
+        success = tester.run_event_dashboard_widget_test()
+        return 0 if success else 1
+    
     # Check if we should run Event-Pricing API tests
     if len(sys.argv) > 1 and sys.argv[1] == "--event-pricing":
         print("Running Event-Pricing API Tests...")
@@ -8309,8 +8315,8 @@ def main():
         success = tester.run_full_qa_audit()
         return 0 if success else 1
     
-    # Default: Run Modul 20 Reservation Guards test (as per current review request)
-    success = tester.run_modul20_reservation_guards_test()
+    # Default: Run Event Dashboard Widget test (as per current review request)
+    success = tester.run_event_dashboard_widget_test()
     return 0 if success else 1
 
 if __name__ == "__main__":
