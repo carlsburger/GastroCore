@@ -6325,6 +6325,208 @@ class GastroCoreAPITester:
         
         return integration_success
 
+    def test_timeclock_regression_mini_fix(self):
+        """
+        MINI-FIX REGRESSION TEST - Today Session bei CLOSED State
+        
+        Test sequence:
+        1. Create/use test user with staff_member_id
+        2. Clock-In → POST /api/timeclock/clock-in (expect 201, state=WORKING)
+        3. Break-Start → POST /api/timeclock/break-start (expect 200, state=BREAK)
+        4. Break-End → POST /api/timeclock/break-end (expect 200, state=WORKING)
+        5. Clock-Out → POST /api/timeclock/clock-out (expect 200, state=CLOSED)
+        6. CRITICAL TEST: GET /api/timeclock/today after CLOCK_OUT
+        7. GET /api/timeclock/status after CLOCK_OUT
+        """
+        print("\n⏰ Testing Timeclock Regression - Mini-Fix for CLOSED State...")
+        
+        # Use admin credentials for this test
+        if "admin" not in self.tokens:
+            self.log_test("Timeclock Regression Test", False, "Admin token not available")
+            return False
+        
+        regression_success = True
+        
+        # Step 1: Verify admin has staff_member_id
+        result = self.make_request("GET", "auth/me", token=self.tokens["admin"], expected_status=200)
+        if not result["success"]:
+            self.log_test("Get admin profile", False, f"Status: {result['status_code']}")
+            return False
+        
+        admin_user = result["data"]
+        staff_member_id = admin_user.get("staff_member_id")
+        
+        if not staff_member_id:
+            self.log_test("Admin staff link check", False, "Admin user has no staff_member_id - need to link to staff member")
+            return False
+        
+        self.log_test("Admin staff link check", True, f"Admin linked to staff_member_id: {staff_member_id}")
+        
+        # Step 2: Clock-In
+        result = self.make_request("POST", "timeclock/clock-in", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            clock_in_data = result["data"]
+            if clock_in_data.get("state") == "WORKING":
+                self.log_test("T1: Clock-In", True, f"State: {clock_in_data.get('state')}, Session ID: {clock_in_data.get('session_id')}")
+                session_id = clock_in_data.get("session_id")
+            else:
+                self.log_test("T1: Clock-In", False, f"Expected state WORKING, got: {clock_in_data.get('state')}")
+                regression_success = False
+                return regression_success
+        else:
+            # Check if already clocked in
+            if result["status_code"] == 409:
+                self.log_test("T1: Clock-In", True, "Already clocked in today (409 CONFLICT as expected)")
+                # Get current session
+                status_result = self.make_request("GET", "timeclock/status", token=self.tokens["admin"], expected_status=200)
+                if status_result["success"] and status_result["data"].get("has_session"):
+                    session_id = status_result["data"].get("session_id")
+                else:
+                    self.log_test("T1: Clock-In (get session)", False, "Could not get current session")
+                    return False
+            else:
+                self.log_test("T1: Clock-In", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+                regression_success = False
+                return regression_success
+        
+        # Step 3: Break-Start
+        result = self.make_request("POST", "timeclock/break-start", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            break_data = result["data"]
+            if break_data.get("state") == "BREAK":
+                self.log_test("T3: Break-Start", True, f"State: {break_data.get('state')}")
+            else:
+                self.log_test("T3: Break-Start", False, f"Expected state BREAK, got: {break_data.get('state')}")
+                regression_success = False
+        else:
+            # Check if already in break
+            if result["status_code"] == 409:
+                self.log_test("T3: Break-Start", True, "Already in break (409 CONFLICT as expected)")
+            else:
+                self.log_test("T3: Break-Start", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+                regression_success = False
+        
+        # Step 4: Break-End
+        result = self.make_request("POST", "timeclock/break-end", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            break_end_data = result["data"]
+            if break_end_data.get("state") == "WORKING":
+                self.log_test("T5: Break-End", True, f"State: {break_end_data.get('state')}")
+            else:
+                self.log_test("T5: Break-End", False, f"Expected state WORKING, got: {break_end_data.get('state')}")
+                regression_success = False
+        else:
+            self.log_test("T5: Break-End", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            regression_success = False
+        
+        # Step 5: Clock-Out
+        result = self.make_request("POST", "timeclock/clock-out", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            clock_out_data = result["data"]
+            if clock_out_data.get("state") == "CLOSED":
+                self.log_test("T6: Clock-Out", True, f"State: {clock_out_data.get('state')}")
+            else:
+                self.log_test("T6: Clock-Out", False, f"Expected state CLOSED, got: {clock_out_data.get('state')}")
+                regression_success = False
+        else:
+            # Check if already clocked out
+            if result["status_code"] == 409:
+                self.log_test("T6: Clock-Out", True, "Already clocked out (409 CONFLICT as expected)")
+            else:
+                self.log_test("T6: Clock-Out", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+                regression_success = False
+        
+        # CRITICAL TEST: Step 6: GET /api/timeclock/today after CLOCK_OUT
+        result = self.make_request("GET", "timeclock/today", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            today_data = result["data"]
+            
+            # Check has_session=true
+            if not today_data.get("has_session"):
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - has_session", False, 
+                            f"Expected has_session=true, got: {today_data.get('has_session')}")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - has_session", True, "has_session=true ✅")
+            
+            session = today_data.get("session", {})
+            
+            # Check state=CLOSED
+            if session.get("state") != "CLOSED":
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - state", False, 
+                            f"Expected state=CLOSED, got: {session.get('state')}")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - state", True, "state=CLOSED ✅")
+            
+            # Check total_work_seconds > 0
+            total_work_seconds = session.get("total_work_seconds", 0)
+            if total_work_seconds <= 0:
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - total_work_seconds", False, 
+                            f"Expected total_work_seconds > 0, got: {total_work_seconds}")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - total_work_seconds", True, 
+                            f"total_work_seconds={total_work_seconds} ✅")
+            
+            # Check clock_out_at is set
+            clock_out_at = session.get("clock_out_at")
+            if not clock_out_at:
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - clock_out_at", False, 
+                            "Expected clock_out_at to be set, got: None")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /today after CLOCK_OUT - clock_out_at", True, 
+                            f"clock_out_at={clock_out_at} ✅")
+        else:
+            self.log_test("CRITICAL: GET /today after CLOCK_OUT", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            regression_success = False
+        
+        # Step 7: GET /api/timeclock/status after CLOCK_OUT
+        result = self.make_request("GET", "timeclock/status", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            status_data = result["data"]
+            
+            # Check has_session=true
+            if not status_data.get("has_session"):
+                self.log_test("CRITICAL: GET /status after CLOCK_OUT - has_session", False, 
+                            f"Expected has_session=true, got: {status_data.get('has_session')}")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /status after CLOCK_OUT - has_session", True, "has_session=true ✅")
+            
+            # Check state=CLOSED
+            if status_data.get("state") != "CLOSED":
+                self.log_test("CRITICAL: GET /status after CLOCK_OUT - state", False, 
+                            f"Expected state=CLOSED, got: {status_data.get('state')}")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /status after CLOCK_OUT - state", True, "state=CLOSED ✅")
+            
+            # Check all time values are correct
+            total_work_seconds = status_data.get("total_work_seconds", 0)
+            total_break_seconds = status_data.get("total_break_seconds", 0)
+            net_work_seconds = status_data.get("net_work_seconds", 0)
+            
+            if total_work_seconds <= 0:
+                self.log_test("CRITICAL: GET /status after CLOCK_OUT - time values", False, 
+                            f"total_work_seconds={total_work_seconds} should be > 0")
+                regression_success = False
+            else:
+                self.log_test("CRITICAL: GET /status after CLOCK_OUT - time values", True, 
+                            f"total_work={total_work_seconds}s, total_break={total_break_seconds}s, net_work={net_work_seconds}s ✅")
+        else:
+            self.log_test("CRITICAL: GET /status after CLOCK_OUT", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            regression_success = False
+        
+        return regression_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
