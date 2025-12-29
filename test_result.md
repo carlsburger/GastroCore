@@ -1,10 +1,15 @@
 #====================================================================================================
-# Modul 30: MITARBEITER & DIENSTPLAN V1 (29.12.2025) - ABGENOMMEN ✅
+# Modul 30: MITARBEITER & DIENSTPLAN V1.1 (29.12.2025) - IN PROGRESS
 #====================================================================================================
 #
-# STATUS: LIVE-TESTBEREIT
-# ABNAHME: 29.12.2025
-# VERSION: V1.0.1 (Mini-Fix: Today Session bei CLOSED)
+# STATUS: V1.1 ENTWICKLUNG
+# V1.0.1: ABGENOMMEN (29.12.2025)
+# V1.1: Abwesenheit & Personalakte (LIGHT)
+#
+# V1.1 FORTSCHRITT:
+# - Backend: ✅ FERTIG (18/18 Tests bestanden)
+# - Frontend Mitarbeiter-PWA: ✅ IMPLEMENTIERT (Test ausstehend)
+# - Frontend Admin-Cockpit: ⏳ Phase 3 (noch offen)
 #
 #====================================================================================================
 
