@@ -34,6 +34,8 @@ import Staff from "./pages/Staff";
 import StaffDetail from "./pages/StaffDetail";
 import Schedule from "./pages/Schedule";
 import MyShifts from "./pages/MyShifts";
+// Modul 30: Mitarbeiter-PWA V1
+import EmployeePWA from "./pages/EmployeePWA";
 import ShiftTemplates from "./pages/ShiftTemplates";
 // Modul 30: Dienstplan V2 Admin-Cockpit
 import ShiftsAdmin from "./pages/ShiftsAdmin";
