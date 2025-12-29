@@ -277,9 +277,9 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "12.0"
+  version: "13.0"
   session_date: "2025-12-29"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: false
 
 test_plan:
