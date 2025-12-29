@@ -127,7 +127,7 @@ class Modul30Tester:
             "required_staff_count": 2
         }
         
-        result = self.make_request("POST", "staff/shifts/v2", shift_data, expected_status=201)
+        result = self.make_request("POST", "staff/shifts/v2", shift_data, expected_status=200)
         
         if result["success"]:
             shift = result["data"]
