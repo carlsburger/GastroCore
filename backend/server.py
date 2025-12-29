@@ -952,8 +952,13 @@ async def create_reservation(
                 event_pricing_data["payment_mode"] = "none"
                 event_pricing_data["payment_status"] = "not_required"
     
+    # B1: Standarddauer erzwingen - Setze explizit die duration_minutes
+    # Normale Reservierungen: 115 Min (fest)
+    # Event-Reservierungen: eigene Dauer oder 120 Min default
+    final_duration = effective_duration
+    
     reservation = create_entity(
-        data.model_dump(exclude_none=True),
+        {**data.model_dump(exclude_none=True), "duration_minutes": final_duration},
         {
             "status": initial_status,
             "reminder_sent": False,
