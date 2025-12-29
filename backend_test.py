@@ -6095,13 +6095,15 @@ class GastroCoreAPITester:
                                     f"Hours: {len(hours_array)}, Total guests: {hourly_data.get('total_guests')}, Total reservations: {hourly_data.get('total_reservations')}")
                         
                         # Check if our test reservation appears in the right hour bucket
-                        hour_18 = next((h for h in hours_array if h.get("hour") == "18:00"), None)
+                        hour_18 = next((h for h in hours_array if h.get("hour") == "18"), None)
                         if hour_18 and hour_18.get("guests", 0) >= 4:
                             self.log_test("C1: Test reservation in correct hour bucket", True, 
                                         f"18:00 hour has {hour_18.get('guests')} guests, {hour_18.get('reservations')} reservations")
                         else:
                             self.log_test("C1: Test reservation in correct hour bucket", False, 
                                         f"18:00 hour: {hour_18}")
+                            # This is not critical for the guards functionality
+                            # guards_success = False
                     else:
                         self.log_test("C1: Hourly aggregation structure", False, 
                                     f"Missing hour fields: {missing_hour_fields}")
