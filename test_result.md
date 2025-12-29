@@ -346,17 +346,18 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "14.0"
+  version: "15.0"
   session_date: "2025-12-29"
-  test_sequence: 3
-  run_ui: true
+  test_sequence: 4
+  run_ui: false
 
 test_plan:
   current_focus:
-    - "Mitarbeiter-PWA V1.1 - Navigation & Badge"
-    - "Mitarbeiter-PWA V1.1 - Abwesenheit Tab"
-    - "Mitarbeiter-PWA V1.1 - Unterlagen Tab"
-  stuck_tasks: []
+    - "B1 - Standarddauer Guard"
+    - "C1 - Gäste pro Stunde API"
+    - "B3 - Slot-API"
+  stuck_tasks:
+    - "B1 - Standarddauer Guard"
   test_all: false
   test_priority: "critical_first"
 
