@@ -876,7 +876,8 @@ async def upload_staff_document(
         {"staff_member_id": staff_member_id, "title": title, "category": category.value}
     )
     
-    del document["_id"] if "_id" in document else None
+    if "_id" in document:
+        del document["_id"]
     
     return {
         "success": True,
