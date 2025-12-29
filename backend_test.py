@@ -1352,9 +1352,11 @@ class GastroCoreAPITester:
             return False
         
         # Create a test user for timeclock testing (admin can't be linked to staff)
+        import time
+        timestamp = int(time.time())
         user_data = {
             'name': 'Test Timeclock User',
-            'email': 'timeclock@test.de',
+            'email': f'timeclock{timestamp}@test.de',
             'password': 'TestPass123!',
             'role': 'schichtleiter'
         }
