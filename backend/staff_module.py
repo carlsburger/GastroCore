@@ -3509,24 +3509,34 @@ async def generate_shift_suggestions_async(schedule_id: str) -> dict:
         
         suggestions = []
         
+        # Shift role für Matching
+        shift_role = shift.get("role", "")
+        
         # Prüfe jeden Mitarbeiter
         for staff in all_staff:
             staff_id = staff.get("id")
-            staff_name = staff.get("name", "")
+            staff_name = staff.get("name", staff_id[:8] if staff_id else "?")
+            staff_roles = staff.get("roles", [])
+            
+            # 0. Rollen-Check (V1: Pflicht)
+            if shift_role and staff_roles:
+                if shift_role not in staff_roles:
+                    continue  # Rolle passt nicht
             
             # 1. Verfügbarkeits-Check
             is_available, avail_reason = check_availability_block(staff, shift_date)
             if not is_available:
                 continue  # Nicht verfügbar, kein Vorschlag
             
-            # 2. Bereichs-Kompatibilität
+            # 2. Bereichs-Kompatibilität (optional für V1)
             primary_area = staff.get("work_area_id")
             secondary_areas = staff.get("work_area_ids", [])
             
-            is_primary = (shift_work_area == primary_area)
-            is_secondary = (shift_work_area in secondary_areas)
+            is_primary = (shift_work_area == primary_area) if shift_work_area else True
+            is_secondary = (shift_work_area in secondary_areas) if shift_work_area else True
             
-            if not is_primary and not is_secondary:
+            # Bei leerer work_area_id im Shift: ignorieren (V1)
+            if shift_work_area and not is_primary and not is_secondary:
                 continue  # Falscher Bereich
             
             # 3. Constraint-Check
