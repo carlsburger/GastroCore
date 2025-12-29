@@ -3969,10 +3969,6 @@ async def batch_apply_suggestions(
                     }
                 )
                 
-                # Track für Double-Shift
-                key = f"{shift_date}_{best['staff_member_id']}"
-                staff_shifts_by_date[key] = staff_shifts_by_date.get(key, 0) + 1
-                
                 result["applied"].append(apply_item)
                 result["stats"]["applied_count"] += 1
                 
