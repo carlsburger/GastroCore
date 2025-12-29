@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import PublicLayout from "./components/PublicLayout";
 import { Toaster } from "./components/ui/sonner";
 import Login from "./pages/Login";
 import ChangePassword from "./pages/ChangePassword";
