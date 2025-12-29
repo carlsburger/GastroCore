@@ -1655,7 +1655,8 @@ async def public_booking(data: PublicBookingCreate, background_tasks: Background
     if guest and guest.get("flag") == "blacklist":
         raise ValidationException("Reservierung nicht möglich. Bitte kontaktieren Sie uns telefonisch.")
     
-    # Create reservation
+    # B1: Standarddauer erzwingen (115 Min für normale Reservierungen)
+    # Public Booking ist immer normale Reservierung (nie Event)
     reservation = create_entity({
         "guest_name": data.guest_name,
         "guest_phone": data.guest_phone,
@@ -1663,6 +1664,7 @@ async def public_booking(data: PublicBookingCreate, background_tasks: Background
         "party_size": data.party_size,
         "date": data.date,
         "time": data.time,
+        "duration_minutes": STANDARD_RESERVATION_DURATION_MINUTES,  # B1: Immer 115 Min
         "occasion": data.occasion,
         "notes": data.notes,
         "source": "widget",
