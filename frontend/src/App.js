@@ -430,11 +430,12 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Legacy Schedule - Redirect to V2 */}
           <Route
             path="/schedule"
             element={
               <ProtectedRoute roles={["admin", "schichtleiter"]}>
-                <Schedule />
+                <Navigate to="/shifts-admin" replace />
               </ProtectedRoute>
             }
           />
