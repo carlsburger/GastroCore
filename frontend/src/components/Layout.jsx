@@ -133,9 +133,8 @@ const navigationGroups = [
     roles: ["admin", "schichtleiter"],
     children: [
       { path: "/staff", label: "Übersicht", icon: UserCog },
-      { path: "/shifts-admin", label: "Dienstplan V2", icon: CalendarClock },
+      { path: "/shifts-admin", label: "Dienstplan", icon: CalendarClock },
       { path: "/absences", label: "Abwesenheiten", icon: CalendarOff },
-      { path: "/schedule", label: "Dienstplan (Legacy)", icon: CalendarClock },
       { path: "/shift-templates", label: "Schichtmodelle", icon: FileText },
       { path: "/taxoffice", label: "Steuerbüro-Export", icon: FileSpreadsheet, roles: ["admin"] },
     ],
