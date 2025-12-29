@@ -242,13 +242,33 @@ export const BookingWidget = () => {
     <div className="min-h-screen bg-background p-4 flex items-center justify-center">
       <Card className="w-full max-w-md shadow-xl border-border">
         <CardHeader className="text-center pb-2">
-          <div className="w-12 h-12 rounded-full bg-primary mx-auto flex items-center justify-center mb-2">
-            <span className="text-primary-foreground font-serif text-xl font-bold">{restaurantInitial}</span>
+          {/* Logo wie Login-Seite */}
+          <div className="flex justify-center mb-3">
+            <img 
+              src={CARLSBURG_LOGO_URL}
+              alt="Carlsburg Historisches Panoramarestaurant"
+              className="h-16 sm:h-20 object-contain"
+              style={{ filter: 'brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(1500%) hue-rotate(90deg) brightness(0.7)' }}
+              onLoad={() => setLogoLoaded(true)}
+              onError={() => setLogoLoaded(false)}
+            />
           </div>
-          {restaurantName && (
-            <p className="text-sm text-muted-foreground font-medium mb-1">{restaurantName}</p>
+          
+          {/* Fallback wenn Logo nicht lädt */}
+          {!logoLoaded && (
+            <p className="text-sm text-muted-foreground font-medium">
+              Carlsburg Historisches Panoramarestaurant
+            </p>
           )}
-          <CardTitle className="font-serif text-2xl">{t.title}</CardTitle>
+          
+          {/* Öffnungszeiten kompakt */}
+          {openingHoursText && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Öffnungszeiten{openingHoursSeasonLabel ? ` (${openingHoursSeasonLabel})` : ''}: {openingHoursText}
+            </p>
+          )}
+          
+          <CardTitle className="font-serif text-2xl mt-3">{t.title}</CardTitle>
           
           {/* Progress indicator */}
           <div className="flex justify-center gap-2 mt-4">
