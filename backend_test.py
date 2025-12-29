@@ -1675,9 +1675,11 @@ class GastroCoreAPITester:
         
         # S7: Get My Shifts → Only PUBLISHED shifts (not DRAFT or CANCELLED)
         # Create a test user for "my shifts" testing since admin can't be linked to staff
+        import time
+        timestamp2 = int(time.time()) + 1
         user_data = {
             'name': 'Test My Shifts User',
-            'email': 'myshifts@test.de',
+            'email': f'myshifts{timestamp2}@test.de',
             'password': 'TestPass123!',
             'role': 'mitarbeiter'
         }
