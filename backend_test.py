@@ -6340,31 +6340,79 @@ class GastroCoreAPITester:
         """
         print("\n⏰ Testing Timeclock Regression - Mini-Fix for CLOSED State...")
         
-        # Use admin credentials for this test
-        if "admin" not in self.tokens:
-            self.log_test("Timeclock Regression Test", False, "Admin token not available")
+        # Use schichtleiter credentials for this test (admin can't be linked to staff)
+        if "schichtleiter" not in self.tokens:
+            self.log_test("Timeclock Regression Test", False, "Schichtleiter token not available")
             return False
         
         regression_success = True
         
-        # Step 1: Verify admin has staff_member_id
-        result = self.make_request("GET", "auth/me", token=self.tokens["admin"], expected_status=200)
+        # Step 1: Check if schichtleiter has staff_member_id, if not create and link a test user
+        result = self.make_request("GET", "auth/me", token=self.tokens["schichtleiter"], expected_status=200)
         if not result["success"]:
-            self.log_test("Get admin profile", False, f"Status: {result['status_code']}")
+            self.log_test("Get schichtleiter profile", False, f"Status: {result['status_code']}")
             return False
         
-        admin_user = result["data"]
-        staff_member_id = admin_user.get("staff_member_id")
+        schichtleiter_user = result["data"]
+        staff_member_id = schichtleiter_user.get("staff_member_id")
+        
+        test_token = self.tokens["schichtleiter"]
         
         if not staff_member_id:
-            self.log_test("Admin staff link check", False, "Admin user has no staff_member_id - need to link to staff member")
-            return False
-        
-        self.log_test("Admin staff link check", True, f"Admin linked to staff_member_id: {staff_member_id}")
+            # Create a test user and link to staff member
+            import time
+            timestamp = int(time.time())
+            user_data = {
+                'name': 'Timeclock Test User',
+                'email': f'timeclock{timestamp}@test.de',
+                'password': 'TestPass123!',
+                'role': 'schichtleiter'
+            }
+            
+            create_result = self.make_request('POST', 'users', user_data, self.tokens['admin'], expected_status=200)
+            if not create_result['success']:
+                self.log_test("Create timeclock test user", False, f"Status: {create_result['status_code']}")
+                return False
+            
+            new_user = create_result['data']
+            user_id = new_user['id']
+            
+            # Get first staff member and link
+            staff_result = self.make_request('GET', 'staff/members', {}, self.tokens['admin'], expected_status=200)
+            if not staff_result['success']:
+                self.log_test("Get staff members for linking", False, f"Status: {staff_result['status_code']}")
+                return False
+            
+            staff = staff_result['data']
+            if not staff:
+                self.log_test("Get staff members for linking", False, "No staff members found")
+                return False
+            
+            first_staff = staff[0]
+            staff_id = first_staff['id']
+            
+            # Link user to staff member
+            link_result = self.make_request('POST', f'users/{user_id}/link-staff', {"staff_member_id": staff_id}, self.tokens['admin'], expected_status=200)
+            if not link_result['success']:
+                self.log_test("Link user to staff member", False, f"Status: {link_result['status_code']}")
+                return False
+            
+            # Login as the test user
+            login_data = {'email': f'timeclock{timestamp}@test.de', 'password': 'TestPass123!'}
+            login_result = self.make_request('POST', 'auth/login', login_data, expected_status=200)
+            if not login_result['success']:
+                self.log_test("Login as timeclock test user", False, f"Status: {login_result['status_code']}")
+                return False
+            
+            test_token = login_result['data']['access_token']
+            staff_member_id = staff_id
+            self.log_test("Setup timeclock test user", True, "User created, linked to staff, and authenticated")
+        else:
+            self.log_test("Schichtleiter staff link check", True, f"Schichtleiter linked to staff_member_id: {staff_member_id}")
         
         # Step 2: Clock-In
         result = self.make_request("POST", "timeclock/clock-in", {}, 
-                                 self.tokens["admin"], expected_status=200)
+                                 test_token, expected_status=200)
         if result["success"]:
             clock_in_data = result["data"]
             if clock_in_data.get("state") == "WORKING":
@@ -6379,7 +6427,7 @@ class GastroCoreAPITester:
             if result["status_code"] == 409:
                 self.log_test("T1: Clock-In", True, "Already clocked in today (409 CONFLICT as expected)")
                 # Get current session
-                status_result = self.make_request("GET", "timeclock/status", token=self.tokens["admin"], expected_status=200)
+                status_result = self.make_request("GET", "timeclock/status", token=test_token, expected_status=200)
                 if status_result["success"] and status_result["data"].get("has_session"):
                     session_id = status_result["data"].get("session_id")
                 else:
@@ -6392,7 +6440,7 @@ class GastroCoreAPITester:
         
         # Step 3: Break-Start
         result = self.make_request("POST", "timeclock/break-start", {}, 
-                                 self.tokens["admin"], expected_status=200)
+                                 test_token, expected_status=200)
         if result["success"]:
             break_data = result["data"]
             if break_data.get("state") == "BREAK":
@@ -6410,7 +6458,7 @@ class GastroCoreAPITester:
         
         # Step 4: Break-End
         result = self.make_request("POST", "timeclock/break-end", {}, 
-                                 self.tokens["admin"], expected_status=200)
+                                 test_token, expected_status=200)
         if result["success"]:
             break_end_data = result["data"]
             if break_end_data.get("state") == "WORKING":
@@ -6424,7 +6472,7 @@ class GastroCoreAPITester:
         
         # Step 5: Clock-Out
         result = self.make_request("POST", "timeclock/clock-out", {}, 
-                                 self.tokens["admin"], expected_status=200)
+                                 test_token, expected_status=200)
         if result["success"]:
             clock_out_data = result["data"]
             if clock_out_data.get("state") == "CLOSED":
@@ -6441,7 +6489,7 @@ class GastroCoreAPITester:
                 regression_success = False
         
         # CRITICAL TEST: Step 6: GET /api/timeclock/today after CLOCK_OUT
-        result = self.make_request("GET", "timeclock/today", token=self.tokens["admin"], expected_status=200)
+        result = self.make_request("GET", "timeclock/today", token=test_token, expected_status=200)
         if result["success"]:
             today_data = result["data"]
             
@@ -6488,7 +6536,7 @@ class GastroCoreAPITester:
             regression_success = False
         
         # Step 7: GET /api/timeclock/status after CLOCK_OUT
-        result = self.make_request("GET", "timeclock/status", token=self.tokens["admin"], expected_status=200)
+        result = self.make_request("GET", "timeclock/status", token=test_token, expected_status=200)
         if result["success"]:
             status_data = result["data"]
             
