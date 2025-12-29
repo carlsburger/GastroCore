@@ -205,56 +205,93 @@ async def list_shifts_v2(
     Supports filtering by date range, schedule, status, staff member, and role.
     Supports both date_local (V2) and shift_date (legacy) fields.
     """
-    query = {"archived": {"$ne": True}}
+    # Build pipeline for aggregation (more flexible than find)
+    pipeline = []
+    
+    # Match archived != true
+    match_stage = {"archived": {"$ne": True}}
     
     # Date filter - support both date_local and shift_date (legacy)
     if date_from or date_to:
-        date_query = {}
-        if date_from:
-            date_query["$gte"] = date_from
-        if date_to:
-            date_query["$lte"] = date_to
-        # Query both date fields for compatibility
-        query["$or"] = [
-            {"date_local": date_query},
-            {"shift_date": date_query}
-        ]
+        date_conditions = []
+        if date_from and date_to:
+            date_conditions.append({
+                "$or": [
+                    {"date_local": {"$gte": date_from, "$lte": date_to}},
+                    {"shift_date": {"$gte": date_from, "$lte": date_to}}
+                ]
+            })
+        elif date_from:
+            date_conditions.append({
+                "$or": [
+                    {"date_local": {"$gte": date_from}},
+                    {"shift_date": {"$gte": date_from}}
+                ]
+            })
+        elif date_to:
+            date_conditions.append({
+                "$or": [
+                    {"date_local": {"$lte": date_to}},
+                    {"shift_date": {"$lte": date_to}}
+                ]
+            })
+        
+        if date_conditions:
+            match_stage["$and"] = date_conditions
     
     if schedule_id:
-        query["schedule_id"] = schedule_id
+        match_stage["schedule_id"] = schedule_id
     
     if status:
-        query["status"] = status.value
+        match_stage["status"] = status.value
     elif not include_cancelled:
-        # Don't filter by status if status field doesn't exist (legacy shifts)
-        query["$and"] = query.get("$and", [])
-        query["$and"].append({
+        # Include shifts without status field (legacy) or status != CANCELLED
+        if "$and" not in match_stage:
+            match_stage["$and"] = []
+        match_stage["$and"].append({
             "$or": [
                 {"status": {"$exists": False}},
                 {"status": None},
-                {"status": {"$ne": ShiftStatusV2.CANCELLED.value}}
+                {"status": {"$nin": [ShiftStatusV2.CANCELLED.value]}}
             ]
         })
     
     if staff_member_id:
-        staff_query = [
-            {"assigned_staff_ids": staff_member_id},
-            {"staff_member_id": staff_member_id}  # Legacy support
-        ]
-        if "$or" in query:
-            # Combine with existing $or using $and
-            existing_or = query.pop("$or")
-            query["$and"] = query.get("$and", [])
-            query["$and"].append({"$or": existing_or})
-            query["$and"].append({"$or": staff_query})
-        else:
-            query["$or"] = staff_query
+        if "$and" not in match_stage:
+            match_stage["$and"] = []
+        match_stage["$and"].append({
+            "$or": [
+                {"assigned_staff_ids": staff_member_id},
+                {"staff_member_id": staff_member_id}
+            ]
+        })
     
     if role:
-        query["role"] = role.value
+        match_stage["role"] = role.value
     
-    # Sort by date (prefer date_local, fallback to shift_date)
-    shifts = await db.shifts.find(query, {"_id": 0}).sort([("date_local", 1), ("shift_date", 1), ("start_at_utc", 1), ("start_time", 1)]).to_list(1000)
+    pipeline.append({"$match": match_stage})
+    
+    # Sort by date
+    pipeline.append({
+        "$sort": {
+            "date_local": 1,
+            "shift_date": 1,
+            "start_time": 1
+        }
+    })
+    
+    # Limit
+    pipeline.append({"$limit": 1000})
+    
+    # Project out _id
+    pipeline.append({"$project": {"_id": 0}})
+    
+    try:
+        shifts = await db.shifts.aggregate(pipeline).to_list(1000)
+    except Exception as e:
+        logger.error(f"Error fetching shifts: {e}")
+        # Fallback to simple query
+        shifts = await db.shifts.find({"archived": {"$ne": True}}, {"_id": 0}).sort("shift_date", 1).to_list(1000)
     
     # Enrich with staff names
     all_staff_ids = set()
