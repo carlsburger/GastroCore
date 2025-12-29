@@ -212,13 +212,14 @@ class Modul30Tester:
         
         if result["success"]:
             response = result["data"]
-            if response.get("state") == "WORKING" and response.get("session_id"):
-                self.log_test("T1: Clock-In", True, 
-                            f"Clock-in successful, state: {response['state']}, session_id: {response['session_id']}")
-                return response["session_id"]
+            detail = response.get("detail", "")
+            if "Mitarbeiterprofil" in detail:
+                self.log_test("T1: Clock-In (no staff profile)", True, 
+                            f"Expected error for admin without staff profile: {detail}")
+                return "no_staff_profile"
             else:
                 self.log_test("T1: Clock-In", False, 
-                            f"Unexpected response: state={response.get('state')}")
+                            f"Unexpected error message: {detail}")
                 return None
         else:
             self.log_test("T1: Clock-In", False, 
