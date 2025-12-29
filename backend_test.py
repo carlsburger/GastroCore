@@ -6392,7 +6392,7 @@ class GastroCoreAPITester:
             staff_id = first_staff['id']
             
             # Link user to staff member
-            link_result = self.make_request('POST', f'users/{user_id}/link-staff', {"staff_member_id": staff_id}, self.tokens['admin'], expected_status=200)
+            link_result = self.make_request('POST', f'users/{user_id}/link-staff?staff_member_id={staff_id}', {}, self.tokens['admin'], expected_status=200)
             if not link_result['success']:
                 self.log_test("Link user to staff member", False, f"Status: {link_result['status_code']}")
                 return False
