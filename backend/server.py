@@ -827,10 +827,22 @@ async def create_reservation(
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_manager)
 ):
+    # B2: Event-Guard - prüfe ob Event normale Reservierung blockiert
+    if not data.event_id:
+        await guard_event_blocks_reservation(
+            data.date, 
+            data.time, 
+            event_id=None,
+            duration_minutes=STANDARD_RESERVATION_DURATION_MINUTES
+        )
+    
     # Check guest flag
     guest = await get_guest_by_phone(data.guest_phone)
     if guest and guest.get("flag") == "blacklist":
         raise ValidationException("Gast ist auf der Blacklist")
+    
+    # B1: Standarddauer erzwingen (115 Min für normale Reservierungen)
+    effective_duration = STANDARD_RESERVATION_DURATION_MINUTES if not data.event_id else (data.duration_minutes or 120)
     
     # Check capacity
     capacity = await check_capacity(data.date, data.time, data.party_size, data.area_id)
