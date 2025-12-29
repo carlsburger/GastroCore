@@ -430,18 +430,20 @@ class Modul30Tester:
         print("⏰ TIMECLOCK TESTS (Critical State Machine)")
         print("=" * 50)
         
-        # T1: Clock-In
+        # First test with admin (should fail due to no staff profile)
         session_id = self.test_timeclock_clock_in()
         
-        if session_id:
-            # T2: Break-Start
-            if self.test_timeclock_break_start():
-                # T3: Clock-Out during BREAK (MUST BLOCK!)
-                if self.test_timeclock_clock_out_during_break_blocked():
-                    # T4: Break-End
-                    if self.test_timeclock_break_end():
-                        # T5: Clock-Out (after break ended)
-                        self.test_timeclock_clock_out_after_break()
+        # Create test staff and user for proper timeclock testing
+        staff_id, user_id = self.create_test_staff_and_user()
+        
+        if staff_id and user_id:
+            # Switch to staff authentication
+            if self.authenticate_as_staff():
+                # Run complete timeclock workflow
+                self.test_timeclock_full_workflow()
+            
+            # Switch back to admin for cleanup and remaining tests
+            self.authenticate()
         
         # Admin Overview
         print("\n" + "=" * 50)
