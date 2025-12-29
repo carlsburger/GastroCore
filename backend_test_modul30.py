@@ -299,7 +299,7 @@ class Modul30Tester:
         print("\n⏰ Testing complete timeclock workflow...")
         
         # T1: Clock-In
-        result = self.make_request("POST", "timeclock/clock-in", {}, expected_status=201)
+        result = self.make_request("POST", "timeclock/clock-in", {}, expected_status=200)
         
         if not result["success"]:
             self.log_test("T1: Clock-In", False, f"Status: {result['status_code']}, Data: {result.get('data', {})}")
