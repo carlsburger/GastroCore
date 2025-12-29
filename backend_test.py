@@ -1343,6 +1343,342 @@ class GastroCoreAPITester:
         
         return message_logs_success
 
+    def test_modul30_timeclock_state_machine(self):
+        """Test Modul 30: Timeclock State Machine - CRITICAL TESTS"""
+        print("\n⏰ Testing Timeclock State Machine (Modul 30)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Timeclock State Machine", False, "Admin token not available")
+            return False
+        
+        timeclock_success = True
+        
+        # T1: Clock-In (erste Session) → 201, state=WORKING
+        result = self.make_request("POST", "timeclock/clock-in", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            clock_in_data = result["data"]
+            if clock_in_data.get("state") == "WORKING" and clock_in_data.get("session_id"):
+                self.log_test("T1: Clock-In (erste Session)", True, 
+                            f"State: {clock_in_data.get('state')}, Session: {clock_in_data.get('session_id')}")
+                self.test_data["timeclock_session_id"] = clock_in_data.get("session_id")
+            else:
+                self.log_test("T1: Clock-In (erste Session)", False, 
+                            f"Expected state=WORKING, got: {clock_in_data}")
+                timeclock_success = False
+        else:
+            self.log_test("T1: Clock-In (erste Session)", False, f"Status: {result['status_code']}")
+            timeclock_success = False
+        
+        # T2: Clock-In (zweiter Versuch am selben Tag) → 409 CONFLICT
+        result = self.make_request("POST", "timeclock/clock-in", {}, 
+                                 self.tokens["admin"], expected_status=409)
+        if result["success"]:
+            self.log_test("T2: Clock-In (zweiter Versuch) BLOCKED", True, 
+                        "409 CONFLICT - bereits eingestempelt")
+        else:
+            self.log_test("T2: Clock-In (zweiter Versuch) BLOCKED", False, 
+                        f"Expected 409, got {result['status_code']}")
+            timeclock_success = False
+        
+        # T3: Break-Start → 200, state=BREAK
+        result = self.make_request("POST", "timeclock/break-start", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            break_data = result["data"]
+            if break_data.get("state") == "BREAK":
+                self.log_test("T3: Break-Start", True, f"State: {break_data.get('state')}")
+            else:
+                self.log_test("T3: Break-Start", False, 
+                            f"Expected state=BREAK, got: {break_data.get('state')}")
+                timeclock_success = False
+        else:
+            self.log_test("T3: Break-Start", False, f"Status: {result['status_code']}")
+            timeclock_success = False
+        
+        # T4: Clock-Out während BREAK → 409 CONFLICT (CRITICAL!)
+        result = self.make_request("POST", "timeclock/clock-out", {}, 
+                                 self.tokens["admin"], expected_status=409)
+        if result["success"]:
+            error_data = result["data"]
+            if "Pause" in str(error_data.get("detail", "")):
+                self.log_test("T4: Clock-Out während BREAK BLOCKED (CRITICAL)", True, 
+                            "409 CONFLICT - Ausstempeln während Pause blockiert")
+            else:
+                self.log_test("T4: Clock-Out während BREAK BLOCKED (CRITICAL)", False, 
+                            f"Wrong error message: {error_data.get('detail')}")
+                timeclock_success = False
+        else:
+            self.log_test("T4: Clock-Out während BREAK BLOCKED (CRITICAL)", False, 
+                        f"Expected 409, got {result['status_code']} - CRITICAL FAILURE!")
+            timeclock_success = False
+        
+        # T5: Break-End → 200, state=WORKING
+        result = self.make_request("POST", "timeclock/break-end", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            break_end_data = result["data"]
+            if break_end_data.get("state") == "WORKING":
+                self.log_test("T5: Break-End", True, f"State: {break_end_data.get('state')}")
+            else:
+                self.log_test("T5: Break-End", False, 
+                            f"Expected state=WORKING, got: {break_end_data.get('state')}")
+                timeclock_success = False
+        else:
+            self.log_test("T5: Break-End", False, f"Status: {result['status_code']}")
+            timeclock_success = False
+        
+        # T6: Clock-Out (after break ended) → 200, state=CLOSED
+        result = self.make_request("POST", "timeclock/clock-out", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            clock_out_data = result["data"]
+            if (clock_out_data.get("state") == "CLOSED" and 
+                clock_out_data.get("total_work_seconds", 0) > 0 and 
+                clock_out_data.get("total_break_seconds", 0) > 0):
+                self.log_test("T6: Clock-Out (after break ended)", True, 
+                            f"State: {clock_out_data.get('state')}, Work: {clock_out_data.get('total_work_seconds')}s, Break: {clock_out_data.get('total_break_seconds')}s")
+            else:
+                self.log_test("T6: Clock-Out (after break ended)", False, 
+                            f"Expected state=CLOSED with totals, got: {clock_out_data}")
+                timeclock_success = False
+        else:
+            self.log_test("T6: Clock-Out (after break ended)", False, f"Status: {result['status_code']}")
+            timeclock_success = False
+        
+        # T7: Get Today's Session → has_session=true
+        result = self.make_request("GET", "timeclock/today", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            today_data = result["data"]
+            if (today_data.get("has_session") and 
+                today_data.get("session", {}).get("total_work_seconds", 0) > 0 and
+                today_data.get("session", {}).get("total_break_seconds", 0) > 0):
+                self.log_test("T7: Get Today's Session", True, 
+                            f"has_session: {today_data.get('has_session')}, totals calculated")
+            else:
+                self.log_test("T7: Get Today's Session", False, 
+                            f"Expected has_session=true with totals, got: {today_data}")
+                timeclock_success = False
+        else:
+            self.log_test("T7: Get Today's Session", False, f"Status: {result['status_code']}")
+            timeclock_success = False
+        
+        return timeclock_success
+
+    def test_modul30_shifts_v2(self):
+        """Test Modul 30: Shifts V2 - assigned_staff_ids[] as Source of Truth"""
+        print("\n📋 Testing Shifts V2 (Modul 30)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Shifts V2", False, "Admin token not available")
+            return False
+        
+        shifts_success = True
+        
+        # S1: Create Shift (empty assigned_staff_ids) → 201, status=DRAFT
+        shift_data = {
+            "date_local": "2025-12-30",
+            "start_time": "09:00",
+            "end_time": "17:00",
+            "role": "service",
+            "required_staff_count": 2
+        }
+        
+        result = self.make_request("POST", "staff/shifts/v2", shift_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            shift = result["data"]
+            if (shift.get("status") == "DRAFT" and 
+                shift.get("assigned_staff_ids") == [] and
+                shift.get("id")):
+                self.log_test("S1: Create Shift (empty assigned_staff_ids)", True, 
+                            f"Status: {shift.get('status')}, ID: {shift.get('id')}")
+                self.test_data["test_shift_id"] = shift.get("id")
+            else:
+                self.log_test("S1: Create Shift (empty assigned_staff_ids)", False, 
+                            f"Expected status=DRAFT, assigned_staff_ids=[], got: {shift}")
+                shifts_success = False
+        else:
+            self.log_test("S1: Create Shift (empty assigned_staff_ids)", False, f"Status: {result['status_code']}")
+            shifts_success = False
+        
+        # S2: Get Staff Members (for assignment)
+        result = self.make_request("GET", "staff/members", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            staff_members = result["data"]
+            if isinstance(staff_members, list) and len(staff_members) > 0:
+                self.log_test("S2: Get Staff Members", True, f"Retrieved {len(staff_members)} staff members")
+                # Store first two staff IDs for testing
+                if len(staff_members) >= 2:
+                    self.test_data["first_staff_id"] = staff_members[0].get("id")
+                    self.test_data["second_staff_id"] = staff_members[1].get("id")
+                elif len(staff_members) >= 1:
+                    self.test_data["first_staff_id"] = staff_members[0].get("id")
+            else:
+                self.log_test("S2: Get Staff Members", False, "No staff members found")
+                shifts_success = False
+        else:
+            self.log_test("S2: Get Staff Members", False, f"Status: {result['status_code']}")
+            shifts_success = False
+        
+        # S3: Assign Staff to Shift → 200, assigned_staff_ids contains the staff_id
+        if "test_shift_id" in self.test_data and "first_staff_id" in self.test_data:
+            assign_data = {"staff_member_id": self.test_data["first_staff_id"]}
+            result = self.make_request("POST", f"staff/shifts/v2/{self.test_data['test_shift_id']}/assign", 
+                                     assign_data, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                assign_response = result["data"]
+                assigned_ids = assign_response.get("assigned_staff_ids", [])
+                if self.test_data["first_staff_id"] in assigned_ids:
+                    self.log_test("S3: Assign Staff to Shift", True, 
+                                f"Staff assigned, assigned_staff_ids: {assigned_ids}")
+                else:
+                    self.log_test("S3: Assign Staff to Shift", False, 
+                                f"Staff not in assigned_staff_ids: {assigned_ids}")
+                    shifts_success = False
+            else:
+                self.log_test("S3: Assign Staff to Shift", False, f"Status: {result['status_code']}")
+                shifts_success = False
+        else:
+            self.log_test("S3: Assign Staff to Shift", False, "Prerequisites not met")
+            shifts_success = False
+        
+        # S4: Publish Shift → 200, status=PUBLISHED
+        if "test_shift_id" in self.test_data:
+            result = self.make_request("POST", f"staff/shifts/v2/{self.test_data['test_shift_id']}/publish", 
+                                     {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                publish_response = result["data"]
+                if publish_response.get("status") == "PUBLISHED":
+                    self.log_test("S4: Publish Shift", True, f"Status: {publish_response.get('status')}")
+                else:
+                    self.log_test("S4: Publish Shift", False, 
+                                f"Expected status=PUBLISHED, got: {publish_response.get('status')}")
+                    shifts_success = False
+            else:
+                self.log_test("S4: Publish Shift", False, f"Status: {result['status_code']}")
+                shifts_success = False
+        
+        # S5: Swap Test on PUBLISHED Shift → 200, success=true
+        if ("test_shift_id" in self.test_data and 
+            "first_staff_id" in self.test_data and 
+            "second_staff_id" in self.test_data):
+            
+            swap_data = {
+                "from_staff_id": self.test_data["first_staff_id"],
+                "to_staff_id": self.test_data["second_staff_id"]
+            }
+            result = self.make_request("POST", f"staff/shifts/v2/{self.test_data['test_shift_id']}/swap", 
+                                     swap_data, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                swap_response = result["data"]
+                assigned_ids = swap_response.get("assigned_staff_ids", [])
+                if (swap_response.get("success") and 
+                    self.test_data["second_staff_id"] in assigned_ids and
+                    self.test_data["first_staff_id"] not in assigned_ids):
+                    self.log_test("S5: Swap Test on PUBLISHED Shift", True, 
+                                f"Swap successful, new assigned_staff_ids: {assigned_ids}")
+                else:
+                    self.log_test("S5: Swap Test on PUBLISHED Shift", False, 
+                                f"Swap failed or incorrect assignment: {swap_response}")
+                    shifts_success = False
+            else:
+                self.log_test("S5: Swap Test on PUBLISHED Shift", False, f"Status: {result['status_code']}")
+                shifts_success = False
+        else:
+            self.log_test("S5: Swap Test on PUBLISHED Shift", False, "Prerequisites not met")
+            shifts_success = False
+        
+        # S6: Cancel Shift (create new shift first)
+        cancel_shift_data = {
+            "date_local": "2025-12-31",
+            "start_time": "10:00",
+            "end_time": "18:00",
+            "role": "kitchen",
+            "required_staff_count": 1
+        }
+        
+        result = self.make_request("POST", "staff/shifts/v2", cancel_shift_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            cancel_shift = result["data"]
+            cancel_shift_id = cancel_shift.get("id")
+            
+            # Now cancel it
+            result = self.make_request("POST", f"staff/shifts/v2/{cancel_shift_id}/cancel", 
+                                     {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                cancel_response = result["data"]
+                if cancel_response.get("status") == "CANCELLED":
+                    self.log_test("S6: Cancel Shift", True, f"Status: {cancel_response.get('status')}")
+                else:
+                    self.log_test("S6: Cancel Shift", False, 
+                                f"Expected status=CANCELLED, got: {cancel_response.get('status')}")
+                    shifts_success = False
+            else:
+                self.log_test("S6: Cancel Shift", False, f"Status: {result['status_code']}")
+                shifts_success = False
+        else:
+            self.log_test("S6: Cancel Shift (create test shift)", False, f"Status: {result['status_code']}")
+            shifts_success = False
+        
+        # S7: Get My Shifts → Only PUBLISHED shifts (not DRAFT or CANCELLED)
+        result = self.make_request("GET", "staff/shifts/v2/my", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            my_shifts_response = result["data"]
+            my_shifts = my_shifts_response.get("data", [])
+            
+            # Check that all returned shifts are PUBLISHED
+            all_published = all(shift.get("status") == "PUBLISHED" for shift in my_shifts)
+            if all_published:
+                self.log_test("S7: Get My Shifts", True, 
+                            f"Retrieved {len(my_shifts)} PUBLISHED shifts only")
+            else:
+                non_published = [s for s in my_shifts if s.get("status") != "PUBLISHED"]
+                self.log_test("S7: Get My Shifts", False, 
+                            f"Found non-PUBLISHED shifts: {[s.get('status') for s in non_published]}")
+                shifts_success = False
+        else:
+            self.log_test("S7: Get My Shifts", False, f"Status: {result['status_code']}")
+            shifts_success = False
+        
+        return shifts_success
+
+    def test_modul30_admin_overview(self):
+        """Test Modul 30: Admin Daily Overview"""
+        print("\n📊 Testing Admin Daily Overview (Modul 30)...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Admin Daily Overview", False, "Admin token not available")
+            return False
+        
+        # Get daily overview
+        result = self.make_request("GET", "timeclock/admin/daily-overview", {}, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            overview = result["data"]
+            required_categories = ["working", "on_break", "completed", "missing"]
+            
+            if all(category in overview for category in required_categories):
+                summary = overview.get("summary", {})
+                self.log_test("Admin Daily Overview", True, 
+                            f"Categories: working={summary.get('working_count', 0)}, "
+                            f"on_break={summary.get('on_break_count', 0)}, "
+                            f"completed={summary.get('completed_count', 0)}, "
+                            f"missing={summary.get('missing_count', 0)}")
+                return True
+            else:
+                missing_cats = [cat for cat in required_categories if cat not in overview]
+                self.log_test("Admin Daily Overview", False, 
+                            f"Missing categories: {missing_cats}")
+                return False
+        else:
+            self.log_test("Admin Daily Overview", False, f"Status: {result['status_code']}")
+            return False
+
     def test_sprint3_settings(self):
         """Test Sprint 3: Settings endpoints"""
         print("\n⚙️ Testing Settings...")
