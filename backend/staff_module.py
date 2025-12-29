@@ -3985,11 +3985,12 @@ async def batch_apply_suggestions(
     # Audit Log bei tatsächlicher Anwendung
     if not request.dry_run and result["stats"]["applied_count"] > 0:
         await create_audit_log(
-            action="batch_shift_assignment",
-            entity_type="schedule",
-            entity_id=schedule_id,
-            actor_id=current_user.get("id"),
-            changes={
+            current_user,  # actor
+            "schedule",    # entity
+            schedule_id,   # entity_id
+            "batch_assignment",  # action
+            None,          # before
+            {              # after
                 "applied_count": result["stats"]["applied_count"],
                 "skipped_count": result["stats"]["skipped_count"],
                 "strategy": request.strategy,
