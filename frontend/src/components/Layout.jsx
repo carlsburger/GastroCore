@@ -138,6 +138,13 @@ const navigationGroups = [
     roles: ["admin", "schichtleiter", "service", "mitarbeiter"], // Für alle authentifizierten Benutzer
   },
   {
+    id: "employee-pwa",
+    label: "Stempeln",
+    icon: Clock,
+    path: "/employee",
+    roles: ["admin", "schichtleiter", "service", "mitarbeiter"], // Für alle authentifizierten Benutzer
+  },
+  {
     id: "marketing",
     label: "Marketing",
     icon: Megaphone,
