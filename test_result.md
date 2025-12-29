@@ -289,11 +289,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Abwesenheiten - Employee Perspective"
-    - "Abwesenheiten - Admin Perspective"
-    - "Documents - Admin Upload"
-    - "Documents - Employee Perspective"
-    - "Daily Overview with Absences Integration"
+    - "Mitarbeiter-PWA V1.1 - Navigation & Badge"
+    - "Mitarbeiter-PWA V1.1 - Abwesenheit Tab"
+    - "Mitarbeiter-PWA V1.1 - Unterlagen Tab"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
