@@ -6373,6 +6373,10 @@ class GastroCoreAPITester:
         test_results.append(self.test_modul30_shifts_v2())
         test_results.append(self.test_modul30_admin_overview())
         
+        # TIMECLOCK REGRESSION TEST - Mini-Fix for CLOSED State
+        print("\n⏰ TIMECLOCK REGRESSION TEST - MINI-FIX:")
+        test_results.append(self.test_timeclock_regression_mini_fix())
+        
         # Summary
         print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
