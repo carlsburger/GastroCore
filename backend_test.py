@@ -8104,6 +8104,12 @@ def main():
         success = tester.run_event_pricing_tests()
         return 0 if success else 1
     
+    # Check if we should run Modul 20 Reservation Guards test
+    if len(sys.argv) > 1 and sys.argv[1] == "--modul20-guards":
+        print("Running Modul 20: Backend-Guards Tests...")
+        success = tester.run_modul20_reservation_guards_test()
+        return 0 if success else 1
+    
     # Check if we should run Aktionen-Infrastruktur smoke test
     if len(sys.argv) > 1 and sys.argv[1] == "--aktionen-infrastruktur":
         print("Running Aktionen-Infrastruktur Verification SMOKE TEST...")
