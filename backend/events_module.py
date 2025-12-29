@@ -387,7 +387,9 @@ public_events_router = APIRouter(prefix="/api/public/events", tags=["Public Even
 
 
 # ============== DASHBOARD SUMMARY ENDPOINT ==============
-DEFAULT_KULTUR_CAPACITY = 96
+# WICHTIG: Default-Kapazität für Events ohne explizit gesetzte Kapazität
+# Aktualisiert von 96 auf 95 gemäß Anforderung (keine hardcoded 100!)
+DEFAULT_EVENT_CAPACITY = 95
 
 @events_router.get("/dashboard/kultur-summary")
 async def get_kultur_events_summary(user: dict = Depends(require_manager)):
