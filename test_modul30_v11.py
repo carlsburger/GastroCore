@@ -344,7 +344,7 @@ class Modul30V11Tester:
         headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
         
         files = {
-            'file': ('arbeitsvertrag.txt', test_file_content, 'text/plain')
+            'file': ('arbeitsvertrag.pdf', test_file_content, 'application/pdf')  # Changed to PDF
         }
         data = {
             'title': 'Arbeitsvertrag 2025',
