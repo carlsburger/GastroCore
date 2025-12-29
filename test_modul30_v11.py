@@ -198,8 +198,8 @@ class Modul30V11Tester:
         # 6. POST /api/staff/absences mit neuem Urlaubsantrag
         vacation_data = {
             "type": "VACATION",
-            "start_date": "2025-01-15",
-            "end_date": "2025-01-20",
+            "start_date": "2025-03-15",  # Changed to avoid conflicts
+            "end_date": "2025-03-20",
             "notes_employee": "Test vacation for admin approval"
         }
         
