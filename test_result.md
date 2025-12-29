@@ -1,4 +1,68 @@
 #====================================================================================================
+# Modul 20: BACKEND-GUARDS (29.12.2025) - CRITICAL BUG FOUND ❌
+#====================================================================================================
+#
+# STATUS: IMPLEMENTATION BUG - GUARDS NOT APPLIED
+# VERSION: Backend-Guards implementiert aber nicht aktiviert
+# ABNAHME: BLOCKED - Kritischer Bug gefunden
+#
+# MODUL 20 BACKEND-GUARDS STATUS:
+# - Backend Guards Module: ✅ IMPLEMENTIERT (reservation_guards.py)
+# - Guards Integration: ❌ CRITICAL BUG (apply_reservation_guards() nicht aufgerufen)
+# - API Endpoints: ✅ WORKING (C1 Hourly, B3 Slots)
+#
+#====================================================================================================
+
+user_problem_statement: |
+  MODUL 20 BACKEND-GUARDS TESTING
+  
+  ZIELE:
+  1. B1: Standarddauer erzwingen (115 Min für normale Reservierungen)
+  2. C1: Gäste pro Stunde aggregieren
+  3. B3: Slot-API mit time, available, disabled Feldern
+  
+  CREDENTIALS:
+  - Admin: admin@carlsburg.de / Carlsburg2025!
+  - Backend: https://mongodb-watchdog.preview.emergentagent.com
+
+backend:
+  - task: "B1 - Standarddauer Guard"
+    implemented: true
+    working: false
+    file: "server.py, reservation_guards.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL BUG: apply_reservation_guards() function exists in reservation_guards.py but is NOT called in server.py reservation creation endpoint. duration_minutes=180 passed through unchanged instead of being enforced to 115. Guards module is imported but not used."
+
+  - task: "C1 - Gäste pro Stunde API"
+    implemented: true
+    working: true
+    file: "reservation_guards.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/reservations/hourly?date=2025-01-15 → Returns proper structure with date, hours array, total_guests, total_reservations. Hours array contains hour, hour_display, guests, reservations fields. Test reservation correctly aggregated in 18:00 hour bucket."
+
+  - task: "B3 - Slot-API"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /public/availability?date=2025-01-15&party_size=4 → Returns proper structure with available, slots fields. Slots array contains time, available, disabled fields as required. 14 slots returned, all available, none disabled."
+
+#====================================================================================================
 # Modul 30: MITARBEITER & DIENSTPLAN V1.1 (29.12.2025) - ABGESCHLOSSEN ✅
 #====================================================================================================
 #
