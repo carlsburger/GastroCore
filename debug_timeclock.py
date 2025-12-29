@@ -61,8 +61,7 @@ def main():
     
     # Link user to staff member
     print(f"\n🔗 Linking user to staff member...")
-    link_data = {"staff_member_id": staff_id}
-    link_result = tester.make_request('POST', f'users/{user_id}/link-staff', link_data, tester.tokens['admin'], expected_status=200)
+    link_result = tester.make_request('POST', f'users/{user_id}/link-staff?staff_member_id={staff_id}', {}, tester.tokens['admin'], expected_status=200)
     if not link_result['success']:
         print(f"❌ Failed to link user to staff member: {link_result['status_code']}")
         print(f"Response: {link_result.get('data', {})}")
