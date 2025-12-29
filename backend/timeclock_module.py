@@ -1085,6 +1085,7 @@ async def get_daily_overview(
 ):
     """
     Get daily overview: who's working, on break, missing despite shift assignment.
+    V1.1: Now includes absences (Urlaub, Krank, etc.)
     """
     if not day_key:
         day_key = get_berlin_date()
@@ -1103,6 +1104,15 @@ async def get_daily_overview(
         "archived": {"$ne": True}
     }, {"_id": 0}).to_list(500)
     
+    # V1.1: Get approved absences for this day
+    absences = await db.staff_absences.find({
+        "status": "APPROVED",
+        "start_date": {"$lte": day_key},
+        "end_date": {"$gte": day_key}
+    }, {"_id": 0}).to_list(500)
+    absent_staff_ids = {a["staff_member_id"] for a in absences}
+    absence_map = {a["staff_member_id"]: a for a in absences}
+    
     # Collect all staff IDs
     session_staff_ids = {s["staff_member_id"] for s in sessions}
     shift_staff_ids = set()
@@ -1111,7 +1121,7 @@ async def get_daily_overview(
         if shift.get("staff_member_id"):
             shift_staff_ids.add(shift["staff_member_id"])
     
-    all_staff_ids = session_staff_ids | shift_staff_ids
+    all_staff_ids = session_staff_ids | shift_staff_ids | absent_staff_ids
     
     # Get staff info
     staff_members = await db.staff_members.find({"id": {"$in": list(all_staff_ids)}}, {"_id": 0}).to_list(len(all_staff_ids))
@@ -1123,6 +1133,7 @@ async def get_daily_overview(
     completed = []
     missing = []
     unplanned = []
+    absent = []  # V1.1: New category for absences
     
     session_map = {s["staff_member_id"]: s for s in sessions}
     
@@ -1152,9 +1163,26 @@ async def get_daily_overview(
         if session["staff_member_id"] not in shift_staff_ids:
             unplanned.append(entry)
     
-    # Find missing (shift assigned but no session)
+    # V1.1: Process absences
+    for absence in absences:
+        staff = staff_map.get(absence["staff_member_id"], {})
+        staff_name = staff.get("full_name") or f"{staff.get('first_name', '')} {staff.get('last_name', '')}".strip()
+        
+        # Check if staff member has a shift assigned (conflict warning)
+        has_shift_conflict = absence["staff_member_id"] in shift_staff_ids
+        
+        absent.append({
+            "staff_id": absence["staff_member_id"],
+            "staff_name": staff_name,
+            "absence_type": absence["type"],
+            "start_date": absence["start_date"],
+            "end_date": absence["end_date"],
+            "has_shift_conflict": has_shift_conflict  # Warning flag
+        })
+    
+    # Find missing (shift assigned but no session AND not absent)
     for staff_id in shift_staff_ids:
-        if staff_id not in session_staff_ids:
+        if staff_id not in session_staff_ids and staff_id not in absent_staff_ids:
             staff = staff_map.get(staff_id, {})
             staff_name = staff.get("full_name") or f"{staff.get('first_name', '')} {staff.get('last_name', '')}".strip()
             
@@ -1182,11 +1210,14 @@ async def get_daily_overview(
             "on_break_count": len(on_break),
             "completed_count": len(completed),
             "missing_count": len(missing),
-            "unplanned_count": len(unplanned)
+            "unplanned_count": len(unplanned),
+            "absent_count": len(absent)  # V1.1
         },
         "working": working,
         "on_break": on_break,
         "completed": completed,
         "missing": missing,
-        "unplanned": unplanned
+        "unplanned": unplanned,
+        "absent": absent  # V1.1
     }
+
