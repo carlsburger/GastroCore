@@ -203,17 +203,22 @@ async def list_shifts_v2(
     """
     List shifts (V2).
     Supports filtering by date range, schedule, status, staff member, and role.
+    Supports both date_local (V2) and shift_date (legacy) fields.
     """
     query = {"archived": {"$ne": True}}
     
-    # Date filter
+    # Date filter - support both date_local and shift_date (legacy)
     if date_from or date_to:
         date_query = {}
         if date_from:
             date_query["$gte"] = date_from
         if date_to:
             date_query["$lte"] = date_to
-        query["date_local"] = date_query
+        # Query both date fields for compatibility
+        query["$or"] = [
+            {"date_local": date_query},
+            {"shift_date": date_query}
+        ]
     
     if schedule_id:
         query["schedule_id"] = schedule_id
@@ -221,18 +226,35 @@ async def list_shifts_v2(
     if status:
         query["status"] = status.value
     elif not include_cancelled:
-        query["status"] = {"$ne": ShiftStatusV2.CANCELLED.value}
+        # Don't filter by status if status field doesn't exist (legacy shifts)
+        query["$and"] = query.get("$and", [])
+        query["$and"].append({
+            "$or": [
+                {"status": {"$exists": False}},
+                {"status": None},
+                {"status": {"$ne": ShiftStatusV2.CANCELLED.value}}
+            ]
+        })
     
     if staff_member_id:
-        query["$or"] = [
+        staff_query = [
             {"assigned_staff_ids": staff_member_id},
             {"staff_member_id": staff_member_id}  # Legacy support
         ]
+        if "$or" in query:
+            # Combine with existing $or using $and
+            existing_or = query.pop("$or")
+            query["$and"] = query.get("$and", [])
+            query["$and"].append({"$or": existing_or})
+            query["$and"].append({"$or": staff_query})
+        else:
+            query["$or"] = staff_query
     
     if role:
         query["role"] = role.value
     
-    shifts = await db.shifts.find(query, {"_id": 0}).sort([("date_local", 1), ("start_at_utc", 1)]).to_list(1000)
+    # Sort by date (prefer date_local, fallback to shift_date)
+    shifts = await db.shifts.find(query, {"_id": 0}).sort([("date_local", 1), ("shift_date", 1), ("start_at_utc", 1), ("start_time", 1)]).to_list(1000)
     
     # Enrich with staff names
     all_staff_ids = set()
