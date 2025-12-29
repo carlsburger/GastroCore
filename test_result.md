@@ -201,6 +201,80 @@ backend:
         agent: "testing"
         comment: "✅ S2: GET /api/staff/members → Retrieved 18 staff members. Staff management API working correctly."
 
+  # ============== MODUL 30 V1.1: ABWESENHEITEN & PERSONALAKTE ==============
+  
+  - task: "Abwesenheiten - Employee Perspective"
+    implemented: true
+    working: true
+    file: "absences_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T1-T5: Employee absence workflow complete. GET /api/staff/absences/me ✅, POST /api/staff/absences (VACATION, 6 days, status=REQUESTED) ✅, Cancel absence ✅. All employee absence APIs working correctly."
+
+  - task: "Abwesenheiten - Admin Perspective"
+    implemented: true
+    working: true
+    file: "absences_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T6-T10: Admin absence management complete. GET /api/admin/absences ✅, GET /api/admin/absences/pending ✅, POST /api/admin/absences/{id}/approve (status=APPROVED) ✅, GET /api/admin/absences/by-date ✅. All admin absence APIs working correctly."
+
+  - task: "Abwesenheiten - Rejection Workflow"
+    implemented: true
+    working: true
+    file: "absences_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T11-T12: Absence rejection workflow complete. POST /api/staff/absences (SICK) ✅, POST /api/admin/absences/{id}/reject with notes_admin (status=REJECTED) ✅. Rejection workflow working correctly."
+
+  - task: "Documents - Admin Upload"
+    implemented: true
+    working: true
+    file: "absences_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T13-T14: Document upload workflow complete. POST /api/admin/staff/{id}/documents (multipart upload, version=1, requires_acknowledgement=true) ✅, GET /api/admin/staff/{id}/documents ✅. Admin document management working correctly."
+
+  - task: "Documents - Employee Perspective"
+    implemented: true
+    working: true
+    file: "absences_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T15-T18: Employee document workflow complete. GET /api/staff/documents/me ✅, GET /api/staff/documents/me/unacknowledged-count ✅, POST /api/staff/documents/{id}/acknowledge ✅, Unacknowledged count updated correctly ✅. Employee document access and acknowledgement working correctly."
+
+  - task: "Daily Overview with Absences Integration"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ T19: Daily overview with absences integration complete. GET /api/timeclock/admin/daily-overview contains absent array and absent_count in summary ✅. Absences properly integrated into daily overview."
+
 metadata:
   created_by: "testing_agent"
   version: "12.0"
