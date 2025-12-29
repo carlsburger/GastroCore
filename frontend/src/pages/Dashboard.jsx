@@ -380,10 +380,10 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-    fetchKulturEvents();
+    fetchEventsSummary();
     fetchWeekSummary();
     fetchWpSyncStatus();
-  }, [fetchData, fetchKulturEvents, fetchWeekSummary, fetchWpSyncStatus]);
+  }, [fetchData, fetchEventsSummary, fetchWeekSummary, fetchWpSyncStatus]);
 
   // Polling every 30 seconds
   useEffect(() => {
