@@ -171,6 +171,18 @@ backend:
         agent: "testing"
         comment: "✅ GET /api/timeclock/admin/daily-overview → Shows working, on_break, completed, missing categories. Admin overview working correctly."
 
+  - task: "Timeclock Mini-Fix Regression - CLOSED State Session Persistence"
+    implemented: true
+    working: true
+    file: "timeclock_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ MINI-FIX REGRESSION TEST PASSED: Complete timeclock flow tested (Clock-In → Break-Start → Break-End → Clock-Out). CRITICAL: After CLOCK_OUT, both GET /api/timeclock/today and GET /api/timeclock/status correctly return has_session=true, state=CLOSED, with all calculated time values (total_work_seconds=21s, total_break_seconds=0s, net_work_seconds=21s) and clock_out_at timestamp preserved. Session persistence after CLOSED state working correctly."
+
   - task: "Staff Members API"
     implemented: true
     working: true
