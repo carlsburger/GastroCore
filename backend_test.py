@@ -8134,8 +8134,8 @@ def main():
         success = tester.run_full_qa_audit()
         return 0 if success else 1
     
-    # Default: Run Aktionen-Infrastruktur smoke test (as per current review request)
-    success = tester.run_aktionen_infrastruktur_smoke_test()
+    # Default: Run Modul 20 Reservation Guards test (as per current review request)
+    success = tester.run_modul20_reservation_guards_test()
     return 0 if success else 1
 
 if __name__ == "__main__":
