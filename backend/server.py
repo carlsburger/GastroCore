@@ -1036,6 +1036,13 @@ async def update_reservation_status(
     updated = await db.reservations.find_one({"id": reservation_id}, {"_id": 0})
     await create_audit_log(user, "reservation", reservation_id, "status_change", before, safe_dict_for_audit(updated))
     
+    # B4: Wartelisten-Trigger bei Admin-Stornierung
+    # Gleiche Logik wie Public-Cancel: nur bei STORNIERT, nicht bei NO_SHOW etc.
+    if await should_trigger_waitlist(current_status, new_status, existing):
+        waitlist_entry = await process_waitlist_on_cancellation(existing)
+        if waitlist_entry:
+            logger.info(f"[ADMIN-STORNO] Warteliste informiert: {waitlist_entry.get('id')} für Reservierung {reservation_id}")
+    
     # Send confirmation email when confirmed
     if new_status == "bestaetigt" and current_status != "bestaetigt":
         if updated.get("guest_email"):
