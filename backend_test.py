@@ -6033,6 +6033,144 @@ class GastroCoreAPITester:
         
         return aktionen_success
 
+    def test_modul20_reservation_guards(self):
+        """Test Modul 20: Reservation Guards - B1, C1, B3"""
+        print("\n🛡️ Testing Modul 20: Reservation Guards...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Modul 20 Reservation Guards", False, "Admin token not available")
+            return False
+        
+        guards_success = True
+        test_date = "2025-01-15"
+        
+        # TEST 1: B1 - Standarddauer (duration_minutes should be ignored and set to 115)
+        print("\n  TEST 1: B1 - Standarddauer")
+        reservation_data = {
+            "guest_name": "Test B1",
+            "guest_phone": "+491234567890",
+            "date": test_date,
+            "time": "18:00",
+            "party_size": 4,
+            "duration_minutes": 180  # Should be ignored!
+        }
+        
+        result = self.make_request("POST", "reservations", reservation_data, 
+                                 self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            reservation = result["data"]
+            # Check if duration_minutes is set to 115 (standard duration)
+            actual_duration = reservation.get("duration_minutes")
+            if actual_duration == 115:
+                self.log_test("B1: Standard duration enforced (115 min)", True, 
+                            f"duration_minutes = {actual_duration} (ignored input 180)")
+                self.test_data["b1_reservation_id"] = reservation.get("id")
+            else:
+                self.log_test("B1: Standard duration enforced (115 min)", False, 
+                            f"Expected 115, got {actual_duration}")
+                guards_success = False
+        else:
+            self.log_test("B1: Standard duration test", False, f"Status: {result['status_code']}")
+            guards_success = False
+        
+        # TEST 2: C1 - Gäste pro Stunde
+        print("\n  TEST 2: C1 - Gäste pro Stunde")
+        result = self.make_request("GET", f"reservations/hourly?date={test_date}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            hourly_data = result["data"]
+            required_fields = ["date", "hours", "total_guests", "total_reservations"]
+            missing_fields = [field for field in required_fields if field not in hourly_data]
+            
+            if not missing_fields:
+                hours_array = hourly_data.get("hours", [])
+                if isinstance(hours_array, list) and len(hours_array) > 0:
+                    # Check structure of hours array
+                    sample_hour = hours_array[0] if hours_array else {}
+                    hour_fields = ["hour", "guests", "reservations"]
+                    missing_hour_fields = [field for field in hour_fields if field not in sample_hour]
+                    
+                    if not missing_hour_fields:
+                        self.log_test("C1: Hourly aggregation structure", True, 
+                                    f"Hours: {len(hours_array)}, Total guests: {hourly_data.get('total_guests')}, Total reservations: {hourly_data.get('total_reservations')}")
+                        
+                        # Check if our test reservation appears in the right hour bucket
+                        hour_18 = next((h for h in hours_array if h.get("hour") == "18:00"), None)
+                        if hour_18 and hour_18.get("guests", 0) >= 4:
+                            self.log_test("C1: Test reservation in correct hour bucket", True, 
+                                        f"18:00 hour has {hour_18.get('guests')} guests, {hour_18.get('reservations')} reservations")
+                        else:
+                            self.log_test("C1: Test reservation in correct hour bucket", False, 
+                                        f"18:00 hour: {hour_18}")
+                    else:
+                        self.log_test("C1: Hourly aggregation structure", False, 
+                                    f"Missing hour fields: {missing_hour_fields}")
+                        guards_success = False
+                else:
+                    self.log_test("C1: Hourly aggregation structure", False, 
+                                f"Hours array is empty or invalid: {hours_array}")
+                    guards_success = False
+            else:
+                self.log_test("C1: Hourly aggregation structure", False, 
+                            f"Missing fields: {missing_fields}")
+                guards_success = False
+        else:
+            self.log_test("C1: Hourly aggregation", False, f"Status: {result['status_code']}")
+            guards_success = False
+        
+        # TEST 3: B3 - Slot-API (Public availability)
+        print("\n  TEST 3: B3 - Slot-API")
+        # Use public endpoint (no auth required)
+        url = f"{self.base_url}/api/public/availability"
+        params = {"date": test_date, "party_size": 4}
+        
+        try:
+            response = requests.get(url, params=params)
+            
+            if response.status_code == 200:
+                availability_data = response.json()
+                required_fields = ["available", "slots"]
+                missing_fields = [field for field in required_fields if field not in availability_data]
+                
+                if not missing_fields:
+                    slots = availability_data.get("slots", [])
+                    if isinstance(slots, list) and len(slots) > 0:
+                        # Check structure of slots array
+                        sample_slot = slots[0] if slots else {}
+                        slot_fields = ["time", "available", "disabled"]
+                        missing_slot_fields = [field for field in slot_fields if field not in sample_slot]
+                        
+                        if not missing_slot_fields:
+                            available_slots = [s for s in slots if s.get("available")]
+                            disabled_slots = [s for s in slots if s.get("disabled")]
+                            
+                            self.log_test("B3: Slot-API structure", True, 
+                                        f"Total slots: {len(slots)}, Available: {len(available_slots)}, Disabled: {len(disabled_slots)}")
+                            
+                            # Document response structure
+                            self.log_test("B3: Response structure documented", True, 
+                                        f"Fields: time, available, disabled present. Sample slot: {sample_slot}")
+                        else:
+                            self.log_test("B3: Slot-API structure", False, 
+                                        f"Missing slot fields: {missing_slot_fields}")
+                            guards_success = False
+                    else:
+                        self.log_test("B3: Slot-API structure", False, 
+                                    f"Slots array is empty or invalid: {slots}")
+                        guards_success = False
+                else:
+                    self.log_test("B3: Slot-API structure", False, 
+                                f"Missing fields: {missing_fields}")
+                    guards_success = False
+            else:
+                self.log_test("B3: Slot-API", False, f"Status: {response.status_code}")
+                guards_success = False
+        except Exception as e:
+            self.log_test("B3: Slot-API", False, f"Error: {str(e)}")
+            guards_success = False
+        
+        return guards_success
+
     def test_shift_templates_smoke_test(self):
         """Test Shift Templates - Specific requirements from review request"""
         print("\n🔄 Testing Shift Templates (Carlsburg Cockpit)...")
