@@ -2215,10 +2215,23 @@ async def list_shift_templates(
     department: Optional[DepartmentType] = None,
     season: Optional[SeasonType] = None,
     active_only: bool = True,
+    include_archived: bool = False,
     user: dict = Depends(require_manager)
 ):
-    """List all shift templates"""
-    query = {"archived": False}
+    """List all shift templates
+    
+    Args:
+        department: Filter by department
+        season: Filter by season (WINTER/SOMMER)
+        active_only: Only return active templates (default: True)
+        include_archived: Include archived/legacy templates (default: False, admin only)
+    """
+    query = {}
+    
+    # Archived filter (default: exclude archived)
+    if not include_archived:
+        query["archived"] = {"$ne": True}
+    
     if department:
         query["department"] = department.value
     if season:
