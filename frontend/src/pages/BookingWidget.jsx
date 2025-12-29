@@ -240,8 +240,11 @@ export const BookingWidget = () => {
       <Card className="w-full max-w-md shadow-xl border-border">
         <CardHeader className="text-center pb-2">
           <div className="w-12 h-12 rounded-full bg-primary mx-auto flex items-center justify-center mb-2">
-            <span className="text-primary-foreground font-serif text-xl font-bold">C</span>
+            <span className="text-primary-foreground font-serif text-xl font-bold">{restaurantInitial}</span>
           </div>
+          {restaurantName && (
+            <p className="text-sm text-muted-foreground font-medium mb-1">{restaurantName}</p>
+          )}
           <CardTitle className="font-serif text-2xl">{t.title}</CardTitle>
           
           {/* Progress indicator */}
