@@ -200,7 +200,7 @@ export default function EmployeePWA() {
       
       const res = await fetch(`${API_URL}/api/${endpoint}`, {
         method: "POST",
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({}),
       });
       
