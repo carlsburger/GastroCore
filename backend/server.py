@@ -789,6 +789,27 @@ async def get_reservations_summary(
     return result
 
 
+# C1: Gäste pro Stunde - Vorbereitung Modul 30
+@api_router.get("/reservations/hourly", tags=["Reservations"])
+async def get_reservations_hourly(
+    date: str = Query(..., description="Datum YYYY-MM-DD"),
+    user: dict = Depends(require_manager)
+):
+    """
+    C1) Gäste pro Stunde aggregieren.
+    Für Modul 30 (Schichtbelegung) und Dashboard.
+    """
+    hourly_data = await get_hourly_overview(date)
+    
+    return {
+        "date": date,
+        "hours": hourly_data,
+        "total_guests": sum(h["guests"] for h in hourly_data),
+        "total_reservations": sum(h["reservations"] for h in hourly_data)
+    }
+
+
+
 # WICHTIG: Spezifische Routen MÜSSEN vor /{reservation_id} kommen
 @api_router.get("/reservations/slots", tags=["Reservations"])
 async def get_reservation_slots_api(
