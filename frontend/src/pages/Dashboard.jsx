@@ -254,9 +254,14 @@ export const Dashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [guestCache, setGuestCache] = useState({}); // Cache for guest flags
   
-  // Kulturveranstaltungen State
-  const [kulturEvents, setKulturEvents] = useState([]);
-  const [kulturLoading, setKulturLoading] = useState(false);
+  // Events Dashboard State (3 Kategorien: VA, AK, MA)
+  const [eventsSummary, setEventsSummary] = useState({
+    kulturveranstaltungen: { events: [], total: 0, label: "Kulturveranstaltungen", prefix: "VA" },
+    aktionen: { events: [], total: 0, label: "Aktionen", prefix: "AK" },
+    menuaktionen: { events: [], total: 0, label: "Menüaktionen", prefix: "MA" },
+    default_capacity: 95
+  });
+  const [eventsLoading, setEventsLoading] = useState(false);
   
   // Dashboard v1.1: 7-Tage Übersicht + WordPress Sync Status
   const [weekSummary, setWeekSummary] = useState({ days: [] });
@@ -287,17 +292,23 @@ export const Dashboard = () => {
     return { icon: "🔴", label: "Kritisch" };
   };
 
-  // Fetch Kulturveranstaltungen
-  const fetchKulturEvents = useCallback(async () => {
-    setKulturLoading(true);
+  // Fetch Events Summary (alle 3 Kategorien: VA, AK, MA)
+  const fetchEventsSummary = useCallback(async () => {
+    setEventsLoading(true);
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/events/dashboard/kultur-summary`, { headers });
-      setKulturEvents(res.data.events || []);
+      const res = await axios.get(`${BACKEND_URL}/api/events/dashboard/events-summary`, { headers });
+      setEventsSummary(res.data);
     } catch (err) {
-      console.error("Fehler beim Laden der Kulturveranstaltungen:", err);
-      setKulturEvents([]);
+      console.error("Fehler beim Laden der Events:", err);
+      // Fallback: leere Kategorien
+      setEventsSummary({
+        kulturveranstaltungen: { events: [], total: 0, label: "Kulturveranstaltungen", prefix: "VA" },
+        aktionen: { events: [], total: 0, label: "Aktionen", prefix: "AK" },
+        menuaktionen: { events: [], total: 0, label: "Menüaktionen", prefix: "MA" },
+        default_capacity: 95
+      });
     } finally {
-      setKulturLoading(false);
+      setEventsLoading(false);
     }
   }, []);
   
