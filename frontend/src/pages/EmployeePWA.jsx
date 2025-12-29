@@ -1,11 +1,15 @@
 /**
- * EmployeePWA.jsx - Mitarbeiter-PWA V1
- * Modul 30: MITARBEITER & DIENSTPLAN
+ * EmployeePWA.jsx - Mitarbeiter-PWA V1.1
+ * Modul 30: MITARBEITER & DIENSTPLAN + ABWESENHEIT & PERSONALAKTE
  * 
- * Funktionen:
+ * V1.0 Funktionen:
  * - Home/Status mit Quick Actions
  * - Meine Schichten (read-only, nur PUBLISHED)
  * - Timeclock mit Pause strict
+ * 
+ * V1.1 Erweiterungen:
+ * - Abwesenheit: Antrag stellen, Liste, Stornieren
+ * - Unterlagen: Dokumentenliste, Bestätigung, Badge
  * 
  * REGEL: Clock-out bei aktiver Pause = BLOCKIERT + Hinweis
  */
@@ -18,8 +22,18 @@ import { de } from "date-fns/locale";
 
 // UI Components
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import {
   Tabs,
   TabsContent,
@@ -31,6 +45,14 @@ import {
   AlertDescription,
   AlertTitle,
 } from "../components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 
 // Icons
 import {
@@ -50,6 +72,18 @@ import {
   Pause,
   ChevronRight,
   MapPin,
+  CalendarOff,
+  FileText,
+  Download,
+  Eye,
+  Plus,
+  Trash2,
+  Check,
+  X,
+  Palmtree,
+  Thermometer,
+  Star,
+  HelpCircle,
 } from "lucide-react";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || "";
@@ -82,10 +116,34 @@ const STATUS_CONFIG = {
   },
 };
 
+// V1.1: Absence Type Config
+const ABSENCE_TYPE_CONFIG = {
+  VACATION: { label: "Urlaub", icon: Palmtree, color: "bg-green-100 text-green-700" },
+  SICK: { label: "Krank", icon: Thermometer, color: "bg-red-100 text-red-700" },
+  SPECIAL: { label: "Sonderfrei", icon: Star, color: "bg-purple-100 text-purple-700" },
+  OTHER: { label: "Sonstiges", icon: HelpCircle, color: "bg-gray-100 text-gray-700" },
+};
+
+// V1.1: Absence Status Config
+const ABSENCE_STATUS_CONFIG = {
+  REQUESTED: { label: "Beantragt", color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+  APPROVED: { label: "Genehmigt", color: "bg-green-100 text-green-700 border-green-300" },
+  REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-700 border-red-300" },
+  CANCELLED: { label: "Storniert", color: "bg-gray-100 text-gray-500 border-gray-300" },
+};
+
+// V1.1: Document Category Config
+const DOC_CATEGORY_CONFIG = {
+  CONTRACT: { label: "Arbeitsvertrag", color: "bg-blue-100 text-blue-700" },
+  POLICY: { label: "Belehrung", color: "bg-yellow-100 text-yellow-700" },
+  CERTIFICATE: { label: "Bescheinigung", color: "bg-green-100 text-green-700" },
+  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-700" },
+};
+
 export default function EmployeePWA() {
   const { token, user } = useAuth();
   
-  // State
+  // State - V1.0
   const [status, setStatus] = useState(null);
   const [todaySession, setTodaySession] = useState(null);
   const [myShifts, setMyShifts] = useState([]);
@@ -94,20 +152,37 @@ export default function EmployeePWA() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
 
+  // State - V1.1 Absences
+  const [absences, setAbsences] = useState([]);
+  const [absencesLoading, setAbsencesLoading] = useState(false);
+  const [showAbsenceForm, setShowAbsenceForm] = useState(false);
+  const [newAbsence, setNewAbsence] = useState({
+    type: "VACATION",
+    start_date: "",
+    end_date: "",
+    notes_employee: "",
+  });
+  const [cancelAbsenceId, setCancelAbsenceId] = useState(null);
+
+  // State - V1.1 Documents
+  const [documents, setDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [unacknowledgedCount, setUnacknowledgedCount] = useState(0);
+  const [acknowledgeDocId, setAcknowledgeDocId] = useState(null);
+
   // API Headers - memoized to prevent unnecessary re-renders
   const getHeaders = useCallback(() => ({
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
   }), [token]);
 
-  // ============== API CALLS ==============
+  // ============== API CALLS - V1.0 ==============
 
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/timeclock/status`, { headers: getHeaders() });
       if (!res.ok) {
         if (res.status === 401) {
-          // Don't show error for auth issues - user might need to re-login
           console.warn("Auth expired for status endpoint");
           return null;
         }
@@ -118,8 +193,6 @@ export default function EmployeePWA() {
       return data;
     } catch (err) {
       console.error("fetchStatus error:", err);
-      // Don't set error for status - it's not critical
-      return null;
       return null;
     }
   }, [token]);
@@ -142,7 +215,6 @@ export default function EmployeePWA() {
 
   const fetchMyShifts = useCallback(async () => {
     try {
-      // Get shifts for next 14 days
       const from = format(new Date(), "yyyy-MM-dd");
       const to = format(addDays(new Date(), 14), "yyyy-MM-dd");
       
@@ -163,15 +235,159 @@ export default function EmployeePWA() {
     }
   }, [getHeaders]);
 
-  // Initial Load
+  // ============== API CALLS - V1.1 ABSENCES ==============
+
+  const fetchAbsences = useCallback(async () => {
+    try {
+      setAbsencesLoading(true);
+      const res = await fetch(`${API_URL}/api/staff/absences/me`, { headers: getHeaders() });
+      if (!res.ok) {
+        if (res.status === 401) return;
+        throw new Error("Fehler beim Laden der Abwesenheiten");
+      }
+      const data = await res.json();
+      setAbsences(data.data || []);
+    } catch (err) {
+      console.error("fetchAbsences error:", err);
+      toast.error("Fehler beim Laden der Abwesenheiten");
+    } finally {
+      setAbsencesLoading(false);
+    }
+  }, [getHeaders]);
+
+  const createAbsence = async () => {
+    if (!newAbsence.start_date || !newAbsence.end_date) {
+      toast.error("Bitte Start- und Enddatum angeben");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const res = await fetch(`${API_URL}/api/staff/absences`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(newAbsence),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Fehler beim Erstellen des Antrags");
+      }
+
+      toast.success("Abwesenheitsantrag eingereicht");
+      setShowAbsenceForm(false);
+      setNewAbsence({ type: "VACATION", start_date: "", end_date: "", notes_employee: "" });
+      fetchAbsences();
+    } catch (err) {
+      console.error("createAbsence error:", err);
+      toast.error(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const cancelAbsence = async (absenceId) => {
+    try {
+      setActionLoading(true);
+      const res = await fetch(`${API_URL}/api/staff/absences/${absenceId}/cancel`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Fehler beim Stornieren");
+      }
+
+      toast.success("Abwesenheit storniert");
+      setCancelAbsenceId(null);
+      fetchAbsences();
+    } catch (err) {
+      console.error("cancelAbsence error:", err);
+      toast.error(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // ============== API CALLS - V1.1 DOCUMENTS ==============
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setDocumentsLoading(true);
+      const res = await fetch(`${API_URL}/api/staff/documents/me`, { headers: getHeaders() });
+      if (!res.ok) {
+        if (res.status === 401) return;
+        throw new Error("Fehler beim Laden der Dokumente");
+      }
+      const data = await res.json();
+      setDocuments(data.data || []);
+      setUnacknowledgedCount(data.unacknowledged_count || 0);
+    } catch (err) {
+      console.error("fetchDocuments error:", err);
+      toast.error("Fehler beim Laden der Dokumente");
+    } finally {
+      setDocumentsLoading(false);
+    }
+  }, [getHeaders]);
+
+  const fetchUnacknowledgedCount = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/staff/documents/me/unacknowledged-count`, { 
+        headers: getHeaders() 
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUnacknowledgedCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("fetchUnacknowledgedCount error:", err);
+    }
+  }, [getHeaders]);
+
+  const acknowledgeDocument = async (documentId) => {
+    try {
+      setActionLoading(true);
+      const res = await fetch(`${API_URL}/api/staff/documents/${documentId}/acknowledge`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Fehler beim Bestätigen");
+      }
+
+      toast.success("Dokument als gelesen bestätigt");
+      setAcknowledgeDocId(null);
+      fetchDocuments();
+    } catch (err) {
+      console.error("acknowledgeDocument error:", err);
+      toast.error(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // ============== INITIAL LOAD ==============
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchStatus(), fetchTodaySession(), fetchMyShifts()]);
+      await Promise.all([
+        fetchStatus(), 
+        fetchTodaySession(), 
+        fetchMyShifts(),
+        fetchUnacknowledgedCount() // V1.1: Badge count
+      ]);
       setLoading(false);
     };
     loadData();
-  }, [fetchStatus, fetchTodaySession, fetchMyShifts]);
+  }, [fetchStatus, fetchTodaySession, fetchMyShifts, fetchUnacknowledgedCount]);
 
   // Auto-refresh status every 30 seconds
   useEffect(() => {
@@ -181,6 +397,16 @@ export default function EmployeePWA() {
     }, 30000);
     return () => clearInterval(interval);
   }, [fetchStatus, fetchTodaySession]);
+
+  // V1.1: Load absences when tab changes
+  useEffect(() => {
+    if (activeTab === "absence" && absences.length === 0) {
+      fetchAbsences();
+    }
+    if (activeTab === "documents" && documents.length === 0) {
+      fetchDocuments();
+    }
+  }, [activeTab, absences.length, documents.length, fetchAbsences, fetchDocuments]);
 
   // ============== TIMECLOCK ACTIONS ==============
 
@@ -204,26 +430,18 @@ export default function EmployeePWA() {
         body: JSON.stringify({}),
       });
       
-      let data = {};
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          data = await res.json();
-        } catch (jsonErr) {
-          console.error("JSON parse error:", jsonErr);
-        }
-      }
+      const data = await res.json();
       
       if (!res.ok) {
-        // Handle errors - show the detail message from backend
-        const message = data.detail || `Fehler: ${res.status}`;
-        setError(message);
-        toast.error(message);
-        setActionLoading(false);
+        if (res.status === 409) {
+          toast.error(data.detail || "Aktion nicht möglich");
+          setError(data.detail);
+        } else {
+          throw new Error(data.detail || "Fehler bei der Aktion");
+        }
         return;
       }
       
-      // Success
       const messages = {
         "clock-in": "Erfolgreich eingestempelt",
         "clock-out": "Erfolgreich ausgestempelt",
@@ -232,16 +450,12 @@ export default function EmployeePWA() {
       };
       
       toast.success(messages[action]);
-      setError(null);
-      
-      // Refresh status
-      await fetchStatus();
-      await fetchTodaySession();
+      await Promise.all([fetchStatus(), fetchTodaySession()]);
       
     } catch (err) {
-      const message = err.message || "Netzwerkfehler";
-      setError(message);
-      toast.error(message);
+      console.error("Timeclock action error:", err);
+      toast.error(err.message);
+      setError(err.message);
     } finally {
       setActionLoading(false);
     }
@@ -250,10 +464,10 @@ export default function EmployeePWA() {
   // ============== HELPERS ==============
 
   const formatTime = (seconds) => {
-    if (!seconds || seconds < 0) return "0h 0m";
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
+    if (!seconds || seconds < 0) return "0:00";
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return `${hrs}:${mins.toString().padStart(2, "0")}`;
   };
 
   const formatTimeString = (isoString) => {
@@ -262,6 +476,16 @@ export default function EmployeePWA() {
       return format(parseISO(isoString), "HH:mm", { locale: de });
     } catch {
       return "--:--";
+    }
+  };
+
+  const formatDateRange = (start, end) => {
+    try {
+      const startDate = parseISO(start);
+      const endDate = parseISO(end);
+      return `${format(startDate, "dd.MM.yyyy", { locale: de })} – ${format(endDate, "dd.MM.yyyy", { locale: de })}`;
+    } catch {
+      return `${start} – ${end}`;
     }
   };
 
@@ -333,6 +557,7 @@ export default function EmployeePWA() {
               fetchStatus();
               fetchTodaySession();
               fetchMyShifts();
+              fetchUnacknowledgedCount();
             }}
           >
             <RefreshCw className="h-5 w-5" />
@@ -357,20 +582,28 @@ export default function EmployeePWA() {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - V1.1: 5 Tabs now */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="grid w-full grid-cols-3 mx-4 max-w-[calc(100%-2rem)] bg-white shadow-sm">
-          <TabsTrigger value="home" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white">
-            <Clock className="h-4 w-4 mr-1" />
-            Status
+        <TabsList className="grid w-full grid-cols-5 mx-4 max-w-[calc(100%-2rem)] bg-white shadow-sm">
+          <TabsTrigger value="home" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white text-xs px-1">
+            <Clock className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="shifts" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white">
-            <Calendar className="h-4 w-4 mr-1" />
-            Schichten
+          <TabsTrigger value="shifts" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white text-xs px-1">
+            <Calendar className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="time" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white">
-            <Timer className="h-4 w-4 mr-1" />
-            Zeiten
+          <TabsTrigger value="time" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white text-xs px-1">
+            <Timer className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="absence" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white text-xs px-1">
+            <CalendarOff className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-[#005500] data-[state=active]:text-white text-xs px-1 relative">
+            <FileText className="h-4 w-4" />
+            {unacknowledgedCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {unacknowledgedCount}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -418,108 +651,101 @@ export default function EmployeePWA() {
               </CardTitle>
               {status?.clock_in_at && (
                 <CardDescription>
-                  Eingestempelt seit {formatTimeString(status.clock_in_at)}
+                  Eingestempelt um {formatTimeString(status.clock_in_at)}
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Action Buttons based on state */}
-              {currentState === "OFF" && (
-                <Button
-                  className="w-full h-14 text-lg bg-[#005500] hover:bg-[#004400]"
-                  onClick={() => handleTimeclockAction("clock-in")}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                  ) : (
-                    <LogIn className="h-5 w-5 mr-2" />
-                  )}
-                  Arbeitsstart
-                </Button>
-              )}
-
-              {currentState === "WORKING" && (
-                <>
-                  <Button
-                    className="w-full h-12 bg-yellow-500 hover:bg-yellow-600 text-white"
-                    onClick={() => handleTimeclockAction("break-start")}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? (
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                    ) : (
-                      <Coffee className="h-5 w-5 mr-2" />
-                    )}
-                    Pause starten
-                  </Button>
-                  <Button
-                    className="w-full h-12 bg-red-500 hover:bg-red-600 text-white"
-                    onClick={() => handleTimeclockAction("clock-out")}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? (
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                    ) : (
-                      <LogOut className="h-5 w-5 mr-2" />
-                    )}
-                    Arbeitsende
-                  </Button>
-                </>
-              )}
-
-              {currentState === "BREAK" && (
-                <>
-                  {/* CRITICAL: Block clock-out during break */}
-                  <Alert className="bg-yellow-100 border-yellow-400">
-                    <Coffee className="h-4 w-4 text-yellow-700" />
-                    <AlertTitle className="text-yellow-800">Pause aktiv</AlertTitle>
-                    <AlertDescription className="text-yellow-700">
-                      Bitte erst die Pause beenden, bevor du ausstempeln kannst.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <Button
-                    className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handleTimeclockAction("break-end")}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? (
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                    ) : (
-                      <Play className="h-5 w-5 mr-2" />
-                    )}
-                    Pause beenden
-                  </Button>
-                  
-                  {/* Disabled clock-out button with explanation */}
-                  <Button
-                    className="w-full h-12 bg-gray-300 text-gray-500 cursor-not-allowed"
-                    disabled
-                  >
-                    <XCircle className="h-5 w-5 mr-2" />
-                    Arbeitsende (Pause erst beenden!)
-                  </Button>
-                </>
-              )}
-
-              {currentState === "CLOSED" && (
-                <div className="text-center py-4">
-                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
-                  <p className="text-lg font-medium text-green-700">
-                    Feierabend! Schönen Tag noch.
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Ausgestempelt um {formatTimeString(status?.clock_out_at)}
-                  </p>
+              {/* Current Time Stats */}
+              {status?.has_session && (
+                <div className="grid grid-cols-3 gap-2 text-center text-sm mb-4">
+                  <div className="bg-white/50 rounded p-2">
+                    <div className="font-bold">{formatTime(status.total_work_seconds)}</div>
+                    <div className="text-xs text-gray-600">Brutto</div>
+                  </div>
+                  <div className="bg-white/50 rounded p-2">
+                    <div className="font-bold">{formatTime(status.total_break_seconds)}</div>
+                    <div className="text-xs text-gray-600">Pause</div>
+                  </div>
+                  <div className="bg-white/50 rounded p-2">
+                    <div className="font-bold">{formatTime(status.net_work_seconds)}</div>
+                    <div className="text-xs text-gray-600">Netto</div>
+                  </div>
                 </div>
               )}
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                {currentState === "OFF" && (
+                  <Button
+                    onClick={() => handleTimeclockAction("clock-in")}
+                    disabled={actionLoading}
+                    className="col-span-2 bg-[#005500] hover:bg-[#004400] text-white"
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Einstempeln
+                  </Button>
+                )}
+
+                {currentState === "WORKING" && (
+                  <>
+                    <Button
+                      onClick={() => handleTimeclockAction("break-start")}
+                      disabled={actionLoading}
+                      variant="outline"
+                      className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                    >
+                      <Coffee className="h-4 w-4 mr-2" />
+                      Pause
+                    </Button>
+                    <Button
+                      onClick={() => handleTimeclockAction("clock-out")}
+                      disabled={actionLoading}
+                      variant="outline"
+                      className="border-red-500 text-red-700 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Ausstempeln
+                    </Button>
+                  </>
+                )}
+
+                {currentState === "BREAK" && (
+                  <>
+                    <Button
+                      onClick={() => handleTimeclockAction("break-end")}
+                      disabled={actionLoading}
+                      className="col-span-2 bg-[#005500] hover:bg-[#004400] text-white"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Pause beenden
+                    </Button>
+                    <Alert className="col-span-2 border-yellow-400 bg-yellow-50">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 text-sm">
+                        Ausstempeln während der Pause nicht möglich!
+                        Bitte erst Pause beenden.
+                      </AlertDescription>
+                    </Alert>
+                  </>
+                )}
+
+                {currentState === "CLOSED" && (
+                  <div className="col-span-2 text-center py-4 text-gray-600">
+                    <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                    <p>Arbeitstag beendet</p>
+                    <p className="text-sm text-gray-500">
+                      Arbeitszeit: {formatTime(status?.net_work_seconds || 0)}
+                    </p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Next Shift (if not today) */}
-          {!todayShift && nextShift && (
-            <Card className="border-[#005500]/20 bg-white">
+          {/* Next Shift Preview */}
+          {nextShift && !isToday(parseISO(nextShift.date_local || nextShift.shift_date)) && (
+            <Card className="border-[#005500]/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500">
                   Nächste Schicht
@@ -528,10 +754,10 @@ export default function EmployeePWA() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-lg font-bold text-[#005500]">
-                      {format(parseISO(nextShift.date_local || nextShift.shift_date), "EEEE, d. MMM", { locale: de })}
+                    <div className="font-medium">
+                      {format(parseISO(nextShift.date_local || nextShift.shift_date), "EEEE, d. MMMM", { locale: de })}
                     </div>
-                    <div className="text-xl font-medium">
+                    <div className="text-[#005500] font-bold">
                       {nextShift.start_time} – {nextShift.end_time}
                     </div>
                   </div>
@@ -543,89 +769,54 @@ export default function EmployeePWA() {
         </TabsContent>
 
         {/* SHIFTS TAB */}
-        <TabsContent value="shifts" className="px-4 mt-4">
-          <Card className="border-[#005500]/20">
-            <CardHeader>
-              <CardTitle className="text-lg text-[#005500]">
-                Meine Schichten
-              </CardTitle>
-              <CardDescription>
-                Nächste 14 Tage
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {myShifts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>Keine geplanten Schichten</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {myShifts.map((shift) => {
-                    const shiftDate = shift.date_local || shift.shift_date;
-                    const date = parseISO(shiftDate);
-                    const isShiftToday = isToday(date);
-                    const isShiftTomorrow = isTomorrow(date);
-                    const isShiftPast = isPast(date) && !isShiftToday;
-                    
-                    return (
-                      <div
-                        key={shift.id}
-                        className={`p-4 rounded-lg border ${
-                          isShiftToday
-                            ? "bg-green-50 border-green-300"
-                            : isShiftPast
-                            ? "bg-gray-50 border-gray-200 opacity-60"
-                            : "bg-white border-gray-200"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className={`font-medium ${isShiftToday ? "text-green-700" : ""}`}>
-                                {isShiftToday
-                                  ? "Heute"
-                                  : isShiftTomorrow
-                                  ? "Morgen"
-                                  : format(date, "EEE, d. MMM", { locale: de })}
-                              </span>
-                              {isShiftToday && (
-                                <Badge className="bg-green-600 text-white text-xs">
-                                  Heute
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-xl font-bold mt-1">
-                              {shift.start_time} – {shift.end_time}
-                            </div>
-                            <div className="text-sm text-gray-600 mt-1 flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {shift.role || "Service"}
-                              {shift.station && (
-                                <>
-                                  <span className="mx-1">•</span>
-                                  <MapPin className="h-3 w-3" />
-                                  {shift.station}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right text-sm text-gray-500">
-                            {shift.hours && `${shift.hours}h`}
-                          </div>
+        <TabsContent value="shifts" className="px-4 mt-4 space-y-3">
+          <h2 className="text-lg font-semibold text-[#005500]">Meine Schichten</h2>
+          
+          {myShifts.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>Keine Schichten in den nächsten 14 Tagen</p>
+              </CardContent>
+            </Card>
+          ) : (
+            myShifts.map((shift) => {
+              const shiftDate = shift.date_local || shift.shift_date;
+              const isShiftToday = isToday(parseISO(shiftDate));
+              const isShiftTomorrow = isTomorrow(parseISO(shiftDate));
+              
+              return (
+                <Card 
+                  key={shift.id} 
+                  className={`border-l-4 ${isShiftToday ? "border-l-green-500 bg-green-50/50" : "border-l-[#005500]"}`}
+                >
+                  <CardContent className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-700">
+                          {isShiftToday && <Badge className="mr-2 bg-green-500">Heute</Badge>}
+                          {isShiftTomorrow && <Badge className="mr-2 bg-blue-500">Morgen</Badge>}
+                          {format(parseISO(shiftDate), "EEE, d. MMM", { locale: de })}
                         </div>
-                        {shift.notes_staff && (
-                          <div className="mt-2 p-2 bg-yellow-50 rounded text-sm text-yellow-800">
-                            📝 {shift.notes_staff}
-                          </div>
-                        )}
+                        <div className="text-lg font-bold text-[#005500]">
+                          {shift.start_time} – {shift.end_time}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {shift.role || "Service"}
+                          {shift.station && ` • ${shift.station}`}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      {shift.notes_staff && (
+                        <div className="text-sm bg-yellow-50 p-2 rounded text-yellow-800 max-w-[150px]">
+                          📝 {shift.notes_staff}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </TabsContent>
 
         {/* TIME TAB */}
@@ -745,7 +936,316 @@ export default function EmployeePWA() {
             </Card>
           )}
         </TabsContent>
+
+        {/* V1.1: ABSENCE TAB */}
+        <TabsContent value="absence" className="px-4 mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#005500]">Abwesenheiten</h2>
+            <Button 
+              onClick={() => setShowAbsenceForm(true)}
+              size="sm"
+              className="bg-[#005500] hover:bg-[#004400]"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Antrag
+            </Button>
+          </div>
+
+          {absencesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-[#005500]" />
+            </div>
+          ) : absences.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center text-gray-500">
+                <CalendarOff className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>Keine Abwesenheiten eingetragen</p>
+                <Button 
+                  onClick={() => setShowAbsenceForm(true)}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Abwesenheit beantragen
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {absences.map((absence) => {
+                const typeConfig = ABSENCE_TYPE_CONFIG[absence.type] || ABSENCE_TYPE_CONFIG.OTHER;
+                const statusConfig = ABSENCE_STATUS_CONFIG[absence.status] || ABSENCE_STATUS_CONFIG.REQUESTED;
+                const TypeIcon = typeConfig.icon;
+                const canCancel = absence.status === "REQUESTED";
+
+                return (
+                  <Card key={absence.id} className="border-l-4 border-l-[#005500]">
+                    <CardContent className="py-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-full ${typeConfig.color}`}>
+                            <TypeIcon className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{typeConfig.label}</div>
+                            <div className="text-sm text-gray-600">
+                              {formatDateRange(absence.start_date, absence.end_date)}
+                            </div>
+                            {absence.days_count && (
+                              <div className="text-xs text-gray-500">
+                                {absence.days_count} {absence.days_count === 1 ? "Tag" : "Tage"}
+                              </div>
+                            )}
+                            {absence.notes_employee && (
+                              <div className="text-xs text-gray-500 mt-1 italic">
+                                "{absence.notes_employee}"
+                              </div>
+                            )}
+                            {absence.notes_admin && (
+                              <div className="text-xs text-red-600 mt-1">
+                                Admin: {absence.notes_admin}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge className={statusConfig.color}>
+                            {statusConfig.label}
+                          </Badge>
+                          {canCancel && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2"
+                              onClick={() => setCancelAbsenceId(absence.id)}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Stornieren
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* V1.1: DOCUMENTS TAB */}
+        <TabsContent value="documents" className="px-4 mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#005500]">Unterlagen</h2>
+            {unacknowledgedCount > 0 && (
+              <Badge className="bg-red-500">
+                {unacknowledgedCount} offen
+              </Badge>
+            )}
+          </div>
+
+          {documentsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-[#005500]" />
+            </div>
+          ) : documents.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center text-gray-500">
+                <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>Keine Dokumente vorhanden</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {documents.map((doc) => {
+                const catConfig = DOC_CATEGORY_CONFIG[doc.category] || DOC_CATEGORY_CONFIG.OTHER;
+                const needsAck = doc.requires_acknowledgement && !doc.acknowledged;
+
+                return (
+                  <Card 
+                    key={doc.id} 
+                    className={`border-l-4 ${needsAck ? "border-l-red-500 bg-red-50/30" : "border-l-[#005500]"}`}
+                  >
+                    <CardContent className="py-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-full ${catConfig.color}`}>
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{doc.title}</div>
+                            <div className="text-sm text-gray-600">
+                              {catConfig.label} • Version {doc.version}
+                            </div>
+                            {doc.requires_acknowledgement && (
+                              <div className="mt-1">
+                                {doc.acknowledged ? (
+                                  <span className="text-xs text-green-600 flex items-center gap-1">
+                                    <Check className="h-3 w-3" />
+                                    Bestätigt am {formatTimeString(doc.acknowledged_at)}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-red-600 flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Bestätigung erforderlich
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => window.open(`${API_URL}${doc.file_url}`, '_blank')}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Öffnen
+                          </Button>
+                          {needsAck && (
+                            <Button
+                              size="sm"
+                              className="bg-[#005500] hover:bg-[#004400] h-8"
+                              onClick={() => setAcknowledgeDocId(doc.id)}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Bestätigen
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* V1.1: Absence Form Dialog */}
+      <Dialog open={showAbsenceForm} onOpenChange={setShowAbsenceForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Abwesenheit beantragen</DialogTitle>
+            <DialogDescription>
+              Reichen Sie einen Antrag für Urlaub, Krankheit oder Sonderfrei ein.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Art der Abwesenheit</Label>
+              <Select 
+                value={newAbsence.type} 
+                onValueChange={(v) => setNewAbsence({...newAbsence, type: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VACATION">🏖️ Urlaub</SelectItem>
+                  <SelectItem value="SICK">🤒 Krank</SelectItem>
+                  <SelectItem value="SPECIAL">⭐ Sonderfrei</SelectItem>
+                  <SelectItem value="OTHER">📋 Sonstiges</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Von</Label>
+                <Input 
+                  type="date" 
+                  value={newAbsence.start_date}
+                  onChange={(e) => setNewAbsence({...newAbsence, start_date: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Bis</Label>
+                <Input 
+                  type="date" 
+                  value={newAbsence.end_date}
+                  onChange={(e) => setNewAbsence({...newAbsence, end_date: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Notiz (optional)</Label>
+              <Textarea 
+                placeholder="z.B. Grund oder besondere Hinweise..."
+                value={newAbsence.notes_employee}
+                onChange={(e) => setNewAbsence({...newAbsence, notes_employee: e.target.value})}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAbsenceForm(false)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={createAbsence}
+              disabled={actionLoading || !newAbsence.start_date || !newAbsence.end_date}
+              className="bg-[#005500] hover:bg-[#004400]"
+            >
+              {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
+              Antrag einreichen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* V1.1: Cancel Absence Confirmation Dialog */}
+      <Dialog open={!!cancelAbsenceId} onOpenChange={() => setCancelAbsenceId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Abwesenheit stornieren?</DialogTitle>
+            <DialogDescription>
+              Möchten Sie diesen Antrag wirklich stornieren? Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelAbsenceId(null)}>
+              Nein, behalten
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => cancelAbsence(cancelAbsenceId)}
+              disabled={actionLoading}
+            >
+              {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
+              Ja, stornieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* V1.1: Acknowledge Document Confirmation Dialog */}
+      <Dialog open={!!acknowledgeDocId} onOpenChange={() => setAcknowledgeDocId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dokument bestätigen</DialogTitle>
+            <DialogDescription>
+              Hiermit bestätigen Sie, dass Sie das Dokument gelesen und verstanden haben.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAcknowledgeDocId(null)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={() => acknowledgeDocument(acknowledgeDocId)}
+              disabled={actionLoading}
+              className="bg-[#005500] hover:bg-[#004400]"
+            >
+              {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
+              <Check className="h-4 w-4 mr-2" />
+              Gelesen & Verstanden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
