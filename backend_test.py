@@ -6281,6 +6281,12 @@ class GastroCoreAPITester:
         print("\n🎯 EVENT-PRICING + RESERVIERUNG INTEGRATION TEST:")
         test_results.append(self.test_event_pricing_integration())
         
+        # MODUL 30: TIMECLOCK + SHIFTS V2 TESTS - as per review request
+        print("\n⏰ MODUL 30: TIMECLOCK + SHIFTS V2 TESTING:")
+        test_results.append(self.test_modul30_timeclock_state_machine())
+        test_results.append(self.test_modul30_shifts_v2())
+        test_results.append(self.test_modul30_admin_overview())
+        
         # Summary
         print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
