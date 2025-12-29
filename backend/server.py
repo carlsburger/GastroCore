@@ -1574,6 +1574,14 @@ async def check_availability(
 @public_router.post("/book", tags=["Public"])
 async def public_booking(data: PublicBookingCreate, background_tasks: BackgroundTasks):
     """Public endpoint for online reservations (widget)"""
+    # B2: Event-Guard - prüfe ob Event normale Reservierung blockiert
+    await guard_event_blocks_reservation(
+        data.date, 
+        data.time, 
+        event_id=None,  # Public booking ist nie Event-Buchung
+        duration_minutes=STANDARD_RESERVATION_DURATION_MINUTES
+    )
+    
     # Check opening hours
     hours = await check_opening_hours(data.date, data.time)
     if not hours.get("open"):
