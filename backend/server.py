@@ -113,6 +113,22 @@ from absences_module import (
     check_absence_shift_conflict
 )
 
+# Reservation Guards Module (Modul 20 Backend-Guards)
+from reservation_guards import (
+    enforce_standard_duration,
+    calculate_end_time,
+    guard_event_blocks_reservation,
+    get_event_blocked_slots,
+    should_trigger_waitlist,
+    process_waitlist_on_cancellation,
+    check_expired_waitlist_offers,
+    is_waitlist_offer_valid,
+    get_guests_per_hour,
+    get_hourly_overview,
+    apply_reservation_guards,
+    STANDARD_RESERVATION_DURATION_MINUTES
+)
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
