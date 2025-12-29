@@ -2036,9 +2036,12 @@ async def database_diagnostics():
         if "mongodb+srv://" in mongo_url:
             # SRV Format: mongodb+srv://user:pass@cluster.mongodb.net/db
             host_part = mongo_url.split("@")[-1].split("/")[0].split("?")[0]
-        else:
-            # Standard Format: mongodb://user:pass@host:port/db
+        elif "@" in mongo_url:
+            # Standard Format mit Auth: mongodb://user:pass@host:port/db
             host_part = mongo_url.split("@")[-1].split("/")[0].split("?")[0]
+        else:
+            # Standard Format ohne Auth: mongodb://host:port/db
+            host_part = mongo_url.replace("mongodb://", "").split("/")[0].split("?")[0]
     except:
         host_part = "parse_error"
     
