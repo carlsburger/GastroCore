@@ -104,6 +104,13 @@ const navigationGroups = [
       { path: "/reservations", label: "Übersicht", icon: ClipboardList },
       { path: "/reservation-calendar", label: "Kalender", icon: CalendarRange },
       { path: "/table-plan", label: "Tischplan", icon: MapPin },
+      { 
+        path: "/book?preview=1", 
+        label: "Widget Preview", 
+        icon: ExternalLink,
+        external: true,  // Öffnet in neuem Tab
+        tooltip: "Buchungswidget als Gastansicht prüfen"
+      },
     ],
   },
   {
