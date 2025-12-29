@@ -53,6 +53,7 @@ import {
   PanelLeft,
   HardDrive,
   Upload,
+  Clock,
 } from "lucide-react";
 
 // Offizielles Carlsburg Logo URL - aus zentraler Konstante
