@@ -3724,12 +3724,14 @@ class SkipReason(str, Enum):
 class ApplySuggestionsRequest(BaseModel):
     """Request Body für Batch-Apply"""
     strategy: str = "top1"  # nur bester Kandidat je Shift
-    limit: int = 20  # max Schichten pro Run
+    limit: int = 500  # max Schichten pro Run (erhöht für Bulk)
     dry_run: bool = True  # Vorschau oder ausführen
     min_score: float = 0  # Mindest-Score
     respect_constraints: bool = True  # immer true
     skip_if_assigned: bool = True  # immer true
     work_area_filter: Optional[List[str]] = None  # Optional: nur bestimmte Bereiche
+    max_shifts_per_staff_per_week: int = 7  # Max Schichten pro Woche pro Mitarbeiter
+    role_priority: List[str] = ["ice_maker", "cleaning", "kitchen_help", "kitchen", "service"]  # Sortierung
 
 
 async def batch_apply_suggestions(
