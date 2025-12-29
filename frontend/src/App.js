@@ -39,6 +39,8 @@ import EmployeePWA from "./pages/EmployeePWA";
 import ShiftTemplates from "./pages/ShiftTemplates";
 // Modul 30: Dienstplan V2 Admin-Cockpit
 import ShiftsAdmin from "./pages/ShiftsAdmin";
+// Modul 30 V1.1: Abwesenheiten Admin
+import AbsencesAdmin from "./pages/AbsencesAdmin";
 // Tax Office Module (Sprint 6)
 import TaxOfficeExports from "./pages/TaxOfficeExports";
 // Marketing Module (Sprint 8)
