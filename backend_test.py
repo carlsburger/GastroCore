@@ -1672,24 +1672,59 @@ class GastroCoreAPITester:
             shifts_success = False
         
         # S7: Get My Shifts → Only PUBLISHED shifts (not DRAFT or CANCELLED)
-        result = self.make_request("GET", "staff/shifts/v2/my", {}, 
-                                 self.tokens["admin"], expected_status=200)
-        if result["success"]:
-            my_shifts_response = result["data"]
-            my_shifts = my_shifts_response.get("data", [])
+        # Create a test user for "my shifts" testing since admin can't be linked to staff
+        user_data = {
+            'name': 'Test My Shifts User',
+            'email': 'myshifts@test.de',
+            'password': 'TestPass123!',
+            'role': 'mitarbeiter'
+        }
+        
+        create_result = self.make_request('POST', 'users', user_data, self.tokens['admin'], expected_status=200)
+        if create_result['success']:
+            new_user = create_result['data']
+            user_id = new_user['id']
             
-            # Check that all returned shifts are PUBLISHED
-            all_published = all(shift.get("status") == "PUBLISHED" for shift in my_shifts)
-            if all_published:
-                self.log_test("S7: Get My Shifts", True, 
-                            f"Retrieved {len(my_shifts)} PUBLISHED shifts only")
+            # Link to the second staff member (first one might be used by timeclock test)
+            if "second_staff_id" in self.test_data:
+                link_result = self.make_request('POST', f'users/{user_id}/link-staff?staff_member_id={self.test_data["second_staff_id"]}', {}, self.tokens['admin'], expected_status=200)
+                if link_result['success']:
+                    # Login as the test user
+                    login_data = {'email': 'myshifts@test.de', 'password': 'TestPass123!'}
+                    login_result = self.make_request('POST', 'auth/login', login_data, expected_status=200)
+                    if login_result['success']:
+                        myshifts_token = login_result['data']['access_token']
+                        
+                        result = self.make_request("GET", "staff/shifts/v2/my", {}, 
+                                                 myshifts_token, expected_status=200)
+                        if result["success"]:
+                            my_shifts_response = result["data"]
+                            my_shifts = my_shifts_response.get("data", [])
+                            
+                            # Check that all returned shifts are PUBLISHED
+                            all_published = all(shift.get("status") == "PUBLISHED" for shift in my_shifts)
+                            if all_published:
+                                self.log_test("S7: Get My Shifts", True, 
+                                            f"Retrieved {len(my_shifts)} PUBLISHED shifts only")
+                            else:
+                                non_published = [s for s in my_shifts if s.get("status") != "PUBLISHED"]
+                                self.log_test("S7: Get My Shifts", False, 
+                                            f"Found non-PUBLISHED shifts: {[s.get('status') for s in non_published]}")
+                                shifts_success = False
+                        else:
+                            self.log_test("S7: Get My Shifts", False, f"Status: {result['status_code']}")
+                            shifts_success = False
+                    else:
+                        self.log_test("S7: Get My Shifts (login)", False, f"Status: {login_result['status_code']}")
+                        shifts_success = False
+                else:
+                    self.log_test("S7: Get My Shifts (link user)", False, f"Status: {link_result['status_code']}")
+                    shifts_success = False
             else:
-                non_published = [s for s in my_shifts if s.get("status") != "PUBLISHED"]
-                self.log_test("S7: Get My Shifts", False, 
-                            f"Found non-PUBLISHED shifts: {[s.get('status') for s in non_published]}")
+                self.log_test("S7: Get My Shifts", False, "No second staff member available")
                 shifts_success = False
         else:
-            self.log_test("S7: Get My Shifts", False, f"Status: {result['status_code']}")
+            self.log_test("S7: Get My Shifts (create user)", False, f"Status: {create_result['status_code']}")
             shifts_success = False
         
         return shifts_success
