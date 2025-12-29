@@ -1,4 +1,107 @@
 #====================================================================================================
+# Event-Dashboard Widget Backend (29.12.2025) - TESTING COMPLETE ✅
+#====================================================================================================
+#
+# STATUS: ALL TESTS PASSED
+# VERSION: Event-Dashboard Widget Backend v1.0
+# ABNAHME: READY FOR PRODUCTION
+#
+# EVENT-DASHBOARD WIDGET STATUS:
+# - GET /api/events/dashboard/events-summary: ✅ WORKING
+# - GET /api/events/dashboard/kultur-summary (Legacy): ✅ WORKING
+# - default_capacity = 95: ✅ VERIFIED (not 100!)
+# - Prefixes: ✅ CORRECT (VA/AK/MA)
+# - short_name truncation: ✅ WORKING (max 28 chars)
+#
+#====================================================================================================
+
+user_problem_statement: |
+  EVENT-DASHBOARD WIDGET BACKEND TESTING
+  
+  ENDPOINTS ZU TESTEN:
+  1. GET /api/events/dashboard/events-summary
+     - Authentifizierung erforderlich (admin@carlsburg.de / Carlsburg2025!)
+     - Prüfe Response-Struktur:
+       - kulturveranstaltungen: { events: [], total: number, label: "Kulturveranstaltungen", prefix: "VA" }
+       - aktionen: { events: [], total: number, label: "Aktionen", prefix: "AK" }
+       - menuaktionen: { events: [], total: number, label: "Menüaktionen", prefix: "MA" }
+       - default_capacity: 95 (WICHTIG: muss 95 sein, nicht 100!)
+     - Jedes Event muss haben: id, type, prefix, title, short_name, date, start_time, capacity, sold, utilization, status
+
+  2. GET /api/events/dashboard/kultur-summary (Legacy Endpoint)
+     - Muss noch funktionieren für Abwärtskompatibilität
+     - default_capacity muss auch 95 sein
+
+  AKZEPTANZKRITERIEN:
+  - default_capacity = 95 (NICHT 100!)
+  - Events ohne explizite Kapazität zeigen capacity=95
+  - Prefix korrekt: VA für VERANSTALTUNG, AK für AKTION, MA für AKTION_MENUE
+  - short_name max 28 Zeichen mit "…" wenn gekürzt
+
+  BACKEND URL: https://system-healthcheck.preview.emergentagent.com
+
+backend:
+  - task: "Event Dashboard Summary API"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/events/dashboard/events-summary → Returns proper structure with kulturveranstaltungen (VA, 12 events), aktionen (AK, 21 events), menuaktionen (MA, 0 events). default_capacity=95 ✅ CRITICAL VERIFIED. All required fields present in event objects."
+
+  - task: "Event Dashboard Legacy API"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/events/dashboard/kultur-summary → Legacy endpoint working correctly. Returns events array, default_capacity=95, total_events count. Backward compatibility maintained."
+
+  - task: "Default Capacity Verification"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ CRITICAL VERIFICATION: DEFAULT_EVENT_CAPACITY = 95 (not 100!). Events without explicit capacity show capacity=95. Both main and legacy endpoints return default_capacity=95."
+
+  - task: "Event Prefix Verification"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Prefix verification complete: kulturveranstaltungen → VA (VERANSTALTUNG), aktionen → AK (AKTION), menuaktionen → MA (AKTION_MENUE). All prefixes correct as per specification."
+
+  - task: "Short Name Truncation"
+    implemented: true
+    working: true
+    file: "events_module.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ short_name field working correctly. Max 28 characters with '…' suffix when truncated. Tested events show proper length handling (e.g., 'Spareribs Sattessen' = 19 chars)."
+
+#====================================================================================================
 # Modul 20: BACKEND-GUARDS (29.12.2025) - CRITICAL BUG FOUND ❌
 #====================================================================================================
 #
