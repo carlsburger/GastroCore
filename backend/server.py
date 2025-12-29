@@ -1548,35 +1548,109 @@ async def update_guest(guest_id: str, data: GuestUpdate, user: dict = Depends(re
 async def get_public_restaurant_info():
     """
     Public endpoint for restaurant branding (widget).
-    Returns name, logo, contact info - no auth required.
+    Returns name, logo, contact info, and weekly opening hours - no auth required.
+    
+    Response includes:
+    - name: Restaurant name
+    - phone, email, address: Contact info
+    - opening_hours_weekly_text: Compact weekly schedule (e.g. "Mo/Di Ruhetag · Mi-So 12:00-18:00")
+    - opening_hours_season_label: Current season (e.g. "Winter", "Sommer")
     """
+    from datetime import date
+    from opening_hours_module import get_active_period_for_date, weekday_name_de
+    
+    # Base info
+    result = {
+        "name": "Carlsburg Historisches Panoramarestaurant",
+        "phone": None,
+        "email": None,
+        "address": None,
+        "opening_hours_weekly_text": None,
+        "opening_hours_season_label": None
+    }
+    
     # Try reservation-config first (preferred source)
     res_config = await db.reservation_config.find_one({}, {"_id": 0})
     if res_config and res_config.get("restaurant_name"):
-        return {
-            "name": res_config.get("restaurant_name"),
-            "phone": res_config.get("contact_phone"),
-            "email": res_config.get("contact_email"),
-            "address": res_config.get("address")
-        }
+        result["name"] = res_config.get("restaurant_name")
+        result["phone"] = res_config.get("contact_phone")
+        result["email"] = res_config.get("contact_email")
+        result["address"] = res_config.get("address")
+    else:
+        # Try settings collection
+        settings = await db.settings.find_one({}, {"_id": 0})
+        if settings and settings.get("restaurant_name"):
+            result["name"] = settings.get("restaurant_name")
+            result["phone"] = settings.get("phone")
+            result["email"] = settings.get("email")
+            result["address"] = settings.get("address")
     
-    # Try settings collection
-    settings = await db.settings.find_one({}, {"_id": 0})
-    if settings and settings.get("restaurant_name"):
-        return {
-            "name": settings.get("restaurant_name"),
-            "phone": settings.get("phone"),
-            "email": settings.get("email"),
-            "address": settings.get("address")
-        }
+    # Generate weekly opening hours from active period
+    try:
+        today = date.today()
+        period = await get_active_period_for_date(today)
+        
+        if period:
+            result["opening_hours_season_label"] = period.get("name", "")
+            
+            rules = period.get("rules_by_weekday", {})
+            weekday_order = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+            weekday_abbrev = {"monday": "Mo", "tuesday": "Di", "wednesday": "Mi", "thursday": "Do", 
+                            "friday": "Fr", "saturday": "Sa", "sunday": "So"}
+            
+            # Group days by their schedule
+            groups = []
+            current_group = {"days": [], "schedule": None, "is_closed": False}
+            
+            for wd in weekday_order:
+                day_rules = rules.get(wd, {})
+                is_closed = day_rules.get("is_closed", False)
+                blocks = day_rules.get("blocks", [])
+                
+                # Determine schedule string
+                if is_closed:
+                    schedule_key = "CLOSED"
+                elif blocks:
+                    # Use first and last block times
+                    start = blocks[0].get("start", "")
+                    end = blocks[-1].get("end", "")
+                    schedule_key = f"{start}-{end}"
+                else:
+                    schedule_key = "UNKNOWN"
+                
+                # Check if same as current group
+                if current_group["schedule"] == schedule_key:
+                    current_group["days"].append(weekday_abbrev[wd])
+                else:
+                    # Save current group if not empty
+                    if current_group["days"]:
+                        groups.append(current_group)
+                    # Start new group
+                    current_group = {
+                        "days": [weekday_abbrev[wd]],
+                        "schedule": schedule_key,
+                        "is_closed": is_closed
+                    }
+            
+            # Don't forget last group
+            if current_group["days"]:
+                groups.append(current_group)
+            
+            # Build text
+            parts = []
+            for g in groups:
+                days_str = "/".join(g["days"]) if len(g["days"]) <= 2 else f"{g['days'][0]}-{g['days'][-1]}"
+                if g["is_closed"]:
+                    parts.append(f"{days_str} Ruhetag")
+                elif g["schedule"] != "UNKNOWN":
+                    parts.append(f"{days_str} {g['schedule']}")
+            
+            result["opening_hours_weekly_text"] = " · ".join(parts) if parts else None
+            
+    except Exception as e:
+        logger.warning(f"Could not generate opening hours text: {e}")
     
-    # Fallback to hardcoded default for Carlsburg
-    return {
-        "name": "Carlsburg Restaurant",
-        "phone": None,
-        "email": None,
-        "address": None
-    }
+    return result
 
 
 # ============== PUBLIC BOOKING (Widget) ==============
