@@ -1085,6 +1085,17 @@ export const StaffDetail = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* Personalakte V2 Tab (Modul 30 V1.1) */}
+          {isAdmin && (
+            <TabsContent value="personalakte" className="space-y-4">
+              <PersonalakteTab 
+                memberId={memberId} 
+                staffName={member?.full_name || `${member?.first_name} ${member?.last_name}`}
+                isAdmin={isAdmin}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
