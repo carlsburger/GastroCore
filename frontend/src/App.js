@@ -95,7 +95,17 @@ function App() {
         <Routes>
           {/* Public Routes - No Authentication Required */}
           <Route path="/login" element={<Login />} />
-          <Route path="/book" element={<BookingWidget />} />
+          
+          {/* Buchungswidget - Public View ohne Cockpit-Layout */}
+          <Route 
+            path="/book" 
+            element={
+              <PublicLayout>
+                <BookingWidget />
+              </PublicLayout>
+            } 
+          />
+          
           <Route path="/cancel/:reservationId" element={<CancelReservation />} />
           <Route path="/confirm/:reservationId" element={<ConfirmReservation />} />
           <Route path="/unsubscribe/:customerId" element={<Unsubscribe />} />
