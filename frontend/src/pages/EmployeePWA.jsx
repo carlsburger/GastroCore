@@ -204,18 +204,22 @@ export default function EmployeePWA() {
         body: JSON.stringify({}),
       });
       
-      let data;
-      try {
-        data = await res.json();
-      } catch (e) {
-        data = { detail: "Unbekannter Fehler" };
+      let data = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          console.error("JSON parse error:", jsonErr);
+        }
       }
       
       if (!res.ok) {
-        // Handle specific errors
-        const message = data.detail || "Aktion nicht möglich";
+        // Handle errors - show the detail message from backend
+        const message = data.detail || `Fehler: ${res.status}`;
         setError(message);
         toast.error(message);
+        setActionLoading(false);
         return;
       }
       
@@ -228,14 +232,16 @@ export default function EmployeePWA() {
       };
       
       toast.success(messages[action]);
+      setError(null);
       
       // Refresh status
       await fetchStatus();
       await fetchTodaySession();
       
     } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
+      const message = err.message || "Netzwerkfehler";
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
