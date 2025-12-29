@@ -1518,6 +1518,7 @@ async def check_availability(
     """
     Public endpoint to check availability for widget.
     Nutzt die neue Kapazitätslogik mit Durchgängen.
+    B3: Event-blocked slots werden als disabled markiert.
     """
     from reservation_capacity import calculate_slot_capacity
     
@@ -1525,6 +1526,9 @@ async def check_availability(
         target_date = datetime.strptime(date, "%Y-%m-%d").date()
     except ValueError:
         return {"available": False, "message": "Ungültiges Datumsformat", "slots": []}
+    
+    # B3: Hole Event-blockierte Slots
+    event_blocked_slots = await get_event_blocked_slots(date)
     
     # Neue Kapazitätslogik
     capacity_data = await calculate_slot_capacity(target_date)
@@ -1540,18 +1544,25 @@ async def check_availability(
     # Transformiere Slots für Widget
     slots = []
     for slot in capacity_data.get("slots", []):
+        slot_time = slot["time"]
+        
+        # B3: Prüfe ob Slot durch Event blockiert ist
+        is_event_blocked = slot_time in event_blocked_slots
+        
         # Prüfe ob genug Kapazität für party_size
-        available = slot["capacity_available"] >= party_size
+        available = slot["capacity_available"] >= party_size and not is_event_blocked
         
         slots.append({
-            "time": slot["time"],
+            "time": slot_time,
             "available": available,
             "available_seats": slot["capacity_available"],
             "seating": slot.get("seating"),
             "seating_name": slot.get("seating_name", ""),
-            "disabled": slot.get("disabled", False) or not available,
-            "reason": slot.get("reason") if slot.get("disabled") else (
-                f"Nur noch {slot['capacity_available']} Plätze" if not available else None
+            "disabled": slot.get("disabled", False) or not available or is_event_blocked,
+            "reason": "Event zu dieser Zeit" if is_event_blocked else (
+                slot.get("reason") if slot.get("disabled") else (
+                    f"Nur noch {slot['capacity_available']} Plätze" if not available else None
+                )
             )
         })
     
