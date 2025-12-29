@@ -276,7 +276,8 @@ async def create_absence_request(
     )
     
     absence["days_count"] = calculate_days(data.start_date, data.end_date)
-    del absence["_id"] if "_id" in absence else None
+    if "_id" in absence:
+        del absence["_id"]
     
     return {
         "success": True,
