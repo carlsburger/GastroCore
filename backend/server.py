@@ -103,6 +103,16 @@ from timeclock_module import timeclock_router
 # Shifts V2 Module (Sprint: Modul 30 Mitarbeiter & Dienstplan V1)
 from shifts_v2_module import shifts_v2_router
 
+# Absences & Documents Module (Sprint: Modul 30 V1.1 - Abwesenheit & Personalakte)
+from absences_module import (
+    absences_router,
+    documents_router,
+    admin_absences_router,
+    admin_documents_router,
+    get_absences_for_daily_overview,
+    check_absence_shift_conflict
+)
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
