@@ -548,7 +548,7 @@ async def find_staff_matches(
         if phone_normalized:
             # Get all staff and compare normalized phones
             all_staff = await db.staff_members.find({
-                "phone": {"$exists": True, "$ne": None, "$ne": ""},
+                "phone": {"$exists": True, "$nin": [None, ""]},
                 "archived": {"$ne": True}
             }, {"_id": 0}).to_list(1000)
             
