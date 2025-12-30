@@ -9105,6 +9105,125 @@ class GastroCoreAPITester:
         
         return dashboard_success
 
+    def test_staff_import_api(self):
+        """Test Staff Import API endpoints - Review Request"""
+        print("\n👥 Testing Staff Import API...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Staff Import API", False, "Admin token not available")
+            return False
+        
+        staff_import_success = True
+        
+        # 1. Test GET /api/admin/staff/import/template - should return column mapping info
+        result = self.make_request("GET", "admin/staff/import/template", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            template_data = result["data"]
+            # Check for expected fields in template response
+            expected_fields = ["required_columns", "identifier_columns", "optional_columns", "role_values"]
+            missing_fields = [field for field in expected_fields if field not in template_data]
+            
+            if not missing_fields:
+                self.log_test("GET /api/admin/staff/import/template", True, 
+                            f"Template returned with all expected fields: {list(template_data.keys())}")
+            else:
+                self.log_test("GET /api/admin/staff/import/template", False, 
+                            f"Missing expected fields: {missing_fields}")
+                staff_import_success = False
+        else:
+            self.log_test("GET /api/admin/staff/import/template", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            staff_import_success = False
+        
+        # 2. Test GET /api/admin/staff/import/history - should return import history (may be empty)
+        result = self.make_request("GET", "admin/staff/import/history", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            history_data = result["data"]
+            # History should be a list (empty array is fine)
+            if isinstance(history_data, list):
+                self.log_test("GET /api/admin/staff/import/history", True, 
+                            f"Import history returned: {len(history_data)} entries")
+            else:
+                self.log_test("GET /api/admin/staff/import/history", False, 
+                            f"Expected list, got: {type(history_data)}")
+                staff_import_success = False
+        else:
+            self.log_test("GET /api/admin/staff/import/history", False, 
+                        f"Status: {result['status_code']}, Data: {result.get('data', {})}")
+            staff_import_success = False
+        
+        # 3. Test authorization - both endpoints should require admin authentication
+        # Test without token (should get 401 or 403)
+        result = self.make_request("GET", "admin/staff/import/template", 
+                                 expected_status=401)
+        if result["success"]:
+            self.log_test("Staff Import Template - Authorization (no token)", True, 
+                        "401 Unauthorized as expected")
+        else:
+            # Try 403 as alternative
+            result = self.make_request("GET", "admin/staff/import/template", 
+                                     expected_status=403)
+            if result["success"]:
+                self.log_test("Staff Import Template - Authorization (no token)", True, 
+                            "403 Forbidden as expected")
+            else:
+                self.log_test("Staff Import Template - Authorization (no token)", False, 
+                            f"Expected 401/403, got {result['status_code']}")
+                staff_import_success = False
+        
+        result = self.make_request("GET", "admin/staff/import/history", 
+                                 expected_status=401)
+        if result["success"]:
+            self.log_test("Staff Import History - Authorization (no token)", True, 
+                        "401 Unauthorized as expected")
+        else:
+            # Try 403 as alternative
+            result = self.make_request("GET", "admin/staff/import/history", 
+                                     expected_status=403)
+            if result["success"]:
+                self.log_test("Staff Import History - Authorization (no token)", True, 
+                            "403 Forbidden as expected")
+            else:
+                self.log_test("Staff Import History - Authorization (no token)", False, 
+                            f"Expected 401/403, got {result['status_code']}")
+                staff_import_success = False
+        
+        return staff_import_success
+
+    def run_staff_import_api_test(self):
+        """Run Staff Import API test specifically"""
+        print(f"🚀 Starting Staff Import API Test")
+        print(f"📡 Backend URL: {self.base_url}")
+        print("=" * 80)
+        
+        # Login as admin first
+        auth_success = self.test_authentication()
+        if not auth_success:
+            print("❌ Authentication failed - cannot proceed with Staff Import API tests")
+            return False
+        
+        # Run the Staff Import API test
+        staff_import_success = self.test_staff_import_api()
+        
+        # Print summary
+        print("\n" + "=" * 80)
+        print("📊 STAFF IMPORT API TEST SUMMARY")
+        print("=" * 80)
+        
+        status = "✅ PASS" if staff_import_success else "❌ FAIL"
+        print(f"{status} - Staff Import API")
+        
+        print(f"\n📈 Results: {self.tests_passed}/{self.tests_run} tests passed ({(self.tests_passed/self.tests_run*100):.1f}%)")
+        
+        if self.failed_tests:
+            print("\n❌ Failed Tests:")
+            for failed in self.failed_tests:
+                print(f"  - {failed['name']}: {failed['details']}")
+        
+        return staff_import_success
+
 def main():
     """Main test execution"""
     import sys
