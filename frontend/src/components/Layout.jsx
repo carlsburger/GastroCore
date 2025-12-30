@@ -336,6 +336,22 @@ const navigationGroups = [
 
 // Einzelner Menüpunkt
 const NavItem = ({ item, isActive, collapsed, onClick }) => {
+  // Divider (Trennlinie mit Label)
+  if (item.divider) {
+    if (collapsed) return null; // Keine Divider im collapsed State
+    return (
+      <div className="px-3 py-2 mt-2">
+        <div className="flex items-center gap-2">
+          <div className="h-px flex-1 bg-[#fafbed]/20" />
+          <span className="text-[10px] text-[#fafbed]/50 uppercase tracking-wider">
+            {item.label}
+          </span>
+          <div className="h-px flex-1 bg-[#fafbed]/20" />
+        </div>
+      </div>
+    );
+  }
+
   const Icon = item.icon;
   
   if (item.disabled) {
@@ -391,9 +407,10 @@ const NavItem = ({ item, isActive, collapsed, onClick }) => {
           ? "bg-[#ffed00] text-[#002f02] shadow-md" 
           : "text-[#fafbed] hover:bg-[#003d03]"
         }
+        ${item.highlight ? "border border-[#ffed00]/30" : ""}
         ${collapsed ? "justify-center" : ""}
       `}
-      title={collapsed ? item.label : undefined}
+      title={collapsed ? item.label : (item.description || undefined)}
       data-testid={`nav-item-${item.path.replace("/", "") || "home"}`}
     >
       <Icon size={18} className={isActive ? "text-[#002f02]" : ""} />
