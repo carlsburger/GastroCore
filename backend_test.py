@@ -7684,6 +7684,55 @@ class GastroCoreAPITester:
         
         return seeds_success
 
+    def test_pos_mail_import_status(self):
+        """Test POS Mail Import status and configuration - Review Request"""
+        print("\n📧 Testing POS Mail Import Status...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("POS Mail Import Status", False, "Admin token not available")
+            return False
+        
+        pos_success = True
+        
+        # Test GET /api/admin/pos/status
+        result = self.make_request("GET", "admin/pos/status", token=self.tokens["admin"], expected_status=200)
+        
+        if result["success"]:
+            status_data = result["data"]
+            
+            # Verify imap_configured is false (password not set yet)
+            if status_data.get("imap_configured") == False:
+                self.log_test("POS Status - imap_configured", True, "imap_configured: false (password not set)")
+            else:
+                self.log_test("POS Status - imap_configured", False, f"Expected false, got: {status_data.get('imap_configured')}")
+                pos_success = False
+            
+            # Verify imap_host is "imap.ionos.de"
+            if status_data.get("imap_host") == "imap.ionos.de":
+                self.log_test("POS Status - imap_host", True, f"imap_host: {status_data.get('imap_host')}")
+            else:
+                self.log_test("POS Status - imap_host", False, f"Expected 'imap.ionos.de', got: {status_data.get('imap_host')}")
+                pos_success = False
+            
+            # Verify imap_user is "berichte@carlsburg.de"
+            if status_data.get("imap_user") == "berichte@carlsburg.de":
+                self.log_test("POS Status - imap_user", True, f"imap_user: {status_data.get('imap_user')}")
+            else:
+                self.log_test("POS Status - imap_user", False, f"Expected 'berichte@carlsburg.de', got: {status_data.get('imap_user')}")
+                pos_success = False
+            
+            # Log additional status information
+            additional_fields = ["scheduler_running", "documents_total", "metrics_total", "imap_folder"]
+            for field in additional_fields:
+                if field in status_data:
+                    self.log_test(f"POS Status - {field}", True, f"{field}: {status_data.get(field)}")
+            
+        else:
+            self.log_test("POS Status - API Call", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        return pos_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
