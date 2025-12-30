@@ -33,6 +33,7 @@ import { PaymentSuccess, PaymentCancel } from "./pages/PaymentPages";
 // Staff Module (Sprint 5)
 import Staff from "./pages/Staff";
 import StaffDetail from "./pages/StaffDetail";
+import StaffImport from "./pages/StaffImport";
 import Schedule from "./pages/Schedule";
 import MyShifts from "./pages/MyShifts";
 // Modul 30: Mitarbeiter-PWA V1
