@@ -786,11 +786,29 @@ async def delete_time_slot_config(
     return {"message": "Zeitslot-Konfiguration gelöscht (Standard wird verwendet)"}
 
 
-# --- Zeitraum-basierte Öffnungszeiten ---
+# ============================================================================
+# DEPRECATED: Legacy Opening-Periods CRUD
+# ============================================================================
+# Diese Endpoints bedienen die Collection 'opening_hours_periods', die LEER ist.
+# SOURCE OF TRUTH ist 'opening_hours_master' (verwaltet in opening_hours_module.py)
+# 
+# Diese Endpoints bleiben aus Kompatibilitätsgründen erhalten, aber:
+# - Reads liefern leere Listen
+# - Writes gehen in eine nicht verwendete Collection
+#
+# Für aktive Öffnungszeiten verwenden Sie:
+# - GET /api/opening-hours/periods (aus opening_hours_module.py)
+# - POST/PATCH/DELETE /api/opening-hours/periods/* (aus opening_hours_module.py)
+# ============================================================================
 
-@reservation_config_router.get("/opening-periods")
+@reservation_config_router.get("/opening-periods", deprecated=True)
 async def list_opening_periods(current_user: dict = Depends(get_current_user)):
-    """Liste alle Öffnungszeiten-Perioden"""
+    """
+    [DEPRECATED] Liste alle Öffnungszeiten-Perioden aus opening_hours_periods.
+    
+    HINWEIS: Diese Collection ist LEER. Verwenden Sie stattdessen:
+    GET /api/opening-hours/periods (SOURCE OF TRUTH: opening_hours_master)
+    """
     periods = await db.opening_hours_periods.find(
         {"archived": False},
         {"_id": 0}
@@ -799,12 +817,17 @@ async def list_opening_periods(current_user: dict = Depends(get_current_user)):
     return periods
 
 
-@reservation_config_router.get("/opening-periods/{period_id}")
+@reservation_config_router.get("/opening-periods/{period_id}", deprecated=True)
 async def get_opening_period(
     period_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Hole eine Öffnungszeiten-Periode"""
+    """
+    [DEPRECATED] Hole eine Öffnungszeiten-Periode aus opening_hours_periods.
+    
+    HINWEIS: Diese Collection ist LEER. Verwenden Sie stattdessen:
+    GET /api/opening-hours/periods/{id} (SOURCE OF TRUTH: opening_hours_master)
+    """
     period = await db.opening_hours_periods.find_one(
         {"id": period_id, "archived": False},
         {"_id": 0}
@@ -816,12 +839,17 @@ async def get_opening_period(
     return period
 
 
-@reservation_config_router.post("/opening-periods")
+@reservation_config_router.post("/opening-periods", deprecated=True)
 async def create_opening_period(
     data: OpeningHoursPeriodCreate,
     current_user: dict = Depends(require_admin)
 ):
-    """Erstelle eine neue Öffnungszeiten-Periode"""
+    """
+    [DEPRECATED] Erstelle eine neue Öffnungszeiten-Periode in opening_hours_periods.
+    
+    HINWEIS: Diese Collection wird NICHT VERWENDET. Verwenden Sie stattdessen:
+    POST /api/opening-hours/periods (SOURCE OF TRUTH: opening_hours_master)
+    """
     # Wenn Default, alle anderen Default-Flags entfernen
     if data.is_default:
         await db.opening_hours_periods.update_many(
@@ -840,16 +868,21 @@ async def create_opening_period(
     await db.opening_hours_periods.insert_one(doc)
     await create_audit_log(current_user, "opening_period", doc["id"], "create")
     
-    return {"message": f"Periode '{data.name}' erstellt", "id": doc["id"]}
+    return {"message": f"[DEPRECATED] Periode '{data.name}' erstellt in opening_hours_periods", "id": doc["id"]}
 
 
-@reservation_config_router.patch("/opening-periods/{period_id}")
+@reservation_config_router.patch("/opening-periods/{period_id}", deprecated=True)
 async def update_opening_period(
     period_id: str,
     data: OpeningHoursPeriodUpdate,
     current_user: dict = Depends(require_admin)
 ):
-    """Aktualisiere eine Öffnungszeiten-Periode"""
+    """
+    [DEPRECATED] Aktualisiere eine Öffnungszeiten-Periode in opening_hours_periods.
+    
+    HINWEIS: Diese Collection wird NICHT VERWENDET. Verwenden Sie stattdessen:
+    PATCH /api/opening-hours/periods/{id} (SOURCE OF TRUTH: opening_hours_master)
+    """
     period = await db.opening_hours_periods.find_one(
         {"id": period_id, "archived": False}
     )
@@ -881,15 +914,20 @@ async def update_opening_period(
     )
     await create_audit_log(current_user, "opening_period", period_id, "update")
     
-    return {"message": "Periode aktualisiert", "id": period_id}
+    return {"message": "[DEPRECATED] Periode aktualisiert in opening_hours_periods", "id": period_id}
 
 
-@reservation_config_router.delete("/opening-periods/{period_id}")
+@reservation_config_router.delete("/opening-periods/{period_id}", deprecated=True)
 async def delete_opening_period(
     period_id: str,
     current_user: dict = Depends(require_admin)
 ):
-    """Lösche (archiviere) eine Öffnungszeiten-Periode"""
+    """
+    [DEPRECATED] Lösche (archiviere) eine Öffnungszeiten-Periode aus opening_hours_periods.
+    
+    HINWEIS: Diese Collection wird NICHT VERWENDET. Verwenden Sie stattdessen:
+    DELETE /api/opening-hours/periods/{id} (SOURCE OF TRUTH: opening_hours_master)
+    """
     result = await db.opening_hours_periods.update_one(
         {"id": period_id, "archived": False},
         {"$set": {"archived": True, "updated_at": now_iso()}}
@@ -900,7 +938,7 @@ async def delete_opening_period(
     
     await create_audit_log(current_user, "opening_period", period_id, "archive")
     
-    return {"message": "Periode gelöscht"}
+    return {"message": "[DEPRECATED] Periode gelöscht aus opening_hours_periods"}
 
 
 # --- Verfügbarkeits-Endpoints ---
