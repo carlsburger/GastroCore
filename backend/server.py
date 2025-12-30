@@ -3194,6 +3194,9 @@ async def startup():
     # Set DB reference for POS Mail Module
     set_pos_mail_db(db)
     
+    # Set DB reference for Shift Template Migration Module
+    set_migration_db(db)
+    
     # AUTO-RESTORE: Prüfe ob kritische Collections leer sind und stelle ggf. wieder her
     try:
         from auto_restore import check_and_restore
