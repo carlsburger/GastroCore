@@ -1226,12 +1226,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "POS Extended Status API"
-    - "POS Monthly Crosscheck API"
-    - "POS Monthly Status API"
-    - "POS Monthly Confirm API"
-    - "POS Existing Endpoints Compatibility"
-    - "POS Authorization Security"
+    - "Seeds Status API"
+    - "Seeds Verify API"
+    - "Seeds Export API"
+    - "Seeds Import API (Dry Run)"
+    - "Seeds Authorization Security"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
