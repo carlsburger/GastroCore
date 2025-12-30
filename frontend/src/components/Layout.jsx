@@ -161,6 +161,16 @@ const navigationGroups = [
     path: "/marketing", // Direktlink
   },
   {
+    id: "pos",
+    label: "POS / Kasse",
+    icon: BarChart3,
+    roles: ["admin"],
+    children: [
+      { path: "/pos-crosscheck", label: "Monatsabschluss", icon: TrendingUp },
+      { path: "/pos-import", label: "Import Monitor", icon: Mail },
+    ],
+  },
+  {
     id: "settings",
     label: "Einstellungen",
     icon: Settings,
