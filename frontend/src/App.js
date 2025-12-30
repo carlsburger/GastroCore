@@ -475,6 +475,16 @@ function App() {
             }
           />
 
+          {/* Seeds Backup & Restore (Modul 10_COCKPIT) - Admin only */}
+          <Route
+            path="/seeds-backup"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <SeedsBackupRestore />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Marketing Module (Sprint 8) - Admin & Schichtleiter */}
           <Route
             path="/marketing"
