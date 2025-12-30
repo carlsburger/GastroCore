@@ -86,113 +86,250 @@ const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
   </div>
 );
 
-// Navigation Struktur - Hierarchisch gruppiert (Standard eingeklappt)
+// ============================================================
+// NAVIGATION MODEL A - Clean Separation
+// ============================================================
+// 1. CB | Dashboard    → Entrepreneur KPI Overview (Landing)
+// 2. Auswertungen      → Read-only Domain Analytics
+// 3. Operativ          → Daily Work Screens
+// 4. System            → Configuration & Admin
+// ============================================================
+
 const navigationGroups = [
+  // ─────────────────────────────────────────────────────────────
+  // 1. CB | DASHBOARD - Entrepreneur KPI Overview (Landing Page)
+  // ─────────────────────────────────────────────────────────────
   {
     id: "dashboard",
-    label: "Dashboard",
+    label: "CB | Dashboard",
     icon: LayoutDashboard,
     roles: ["admin", "schichtleiter"],
-    path: "/dashboard", // Explizite Route
+    path: "/dashboard",
+    isLanding: true, // Markierung als Startseite
   },
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. AUSWERTUNGEN - Read-only Analytics
+  // ─────────────────────────────────────────────────────────────
   {
-    id: "service",
-    label: "Service-Terminal",
-    icon: Utensils,
-    roles: ["admin", "schichtleiter"],
-    path: "/service-terminal", // Direktlink
-  },
-  {
-    id: "reservations",
-    label: "Reservierungen",
-    icon: BookOpen,
+    id: "analytics",
+    label: "Auswertungen",
+    icon: PieChart,
     roles: ["admin", "schichtleiter"],
     children: [
-      { path: "/reservations", label: "Übersicht", icon: ClipboardList },
-      { path: "/reservation-calendar", label: "Kalender", icon: CalendarRange },
-      { path: "/table-plan", label: "Tischplan", icon: MapPin },
       { 
-        path: "/book?preview=1", 
-        label: "Widget Preview", 
-        icon: ExternalLink,
-        external: true,  // Öffnet in neuem Tab
-        tooltip: "Buchungswidget als Gastansicht prüfen"
+        path: "/analytics/reservations", 
+        label: "Reservierung", 
+        icon: BookOpen,
+        description: "Auslastung, Gäste, Trends"
+      },
+      { 
+        path: "/analytics/staff", 
+        label: "Mitarbeiter", 
+        icon: UsersRound,
+        description: "Stunden, Produktivität, Kosten"
+      },
+      { 
+        path: "/analytics/marketing", 
+        label: "Marketing", 
+        icon: Megaphone,
+        description: "Kampagnen, Reichweite, Opt-ins"
+      },
+      { 
+        path: "/pos-crosscheck", 
+        label: "POS / Umsatz", 
+        icon: TrendingUp,
+        description: "Z-Berichte, Monatsabschluss"
       },
     ],
   },
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. OPERATIV - Daily Work Screens
+  // ─────────────────────────────────────────────────────────────
   {
-    id: "events",
-    label: "VA / Aktion",
-    fullLabel: "Veranstaltungen & Aktionen",
-    icon: PartyPopper,
+    id: "operativ",
+    label: "Operativ",
+    icon: Briefcase,
     roles: ["admin", "schichtleiter"],
     children: [
-      { path: "/events", label: "Veranstaltungen", icon: Calendar },
-      { path: "/aktionen", label: "Aktionen", icon: Gift },
-      { path: "/menue-aktionen", label: "Menü-Aktionen", icon: UtensilsCrossed },
+      // Service-Terminal Gruppe
+      { 
+        path: "/service-terminal", 
+        label: "Service-Terminal", 
+        icon: Utensils,
+        highlight: true,
+        description: "Tagesgeschäft, Walk-Ins"
+      },
+      // Reservierungen Gruppe
+      { 
+        path: "/reservations", 
+        label: "Reservierungen", 
+        icon: ClipboardList,
+      },
+      { 
+        path: "/reservation-calendar", 
+        label: "Reserv.-Kalender", 
+        icon: CalendarRange,
+      },
+      { 
+        path: "/table-plan", 
+        label: "Tischplan", 
+        icon: MapPin,
+      },
+      { 
+        path: "/guests", 
+        label: "Gästekartei", 
+        icon: Contact,
+      },
+      { divider: true, label: "Mitarbeiter" },
+      // Mitarbeiter & Dienstplan
+      { 
+        path: "/staff", 
+        label: "Team-Übersicht", 
+        icon: UsersRound,
+      },
+      { 
+        path: "/shifts-admin", 
+        label: "Dienstplan", 
+        icon: CalendarClock,
+      },
+      { 
+        path: "/absences", 
+        label: "Abwesenheiten", 
+        icon: CalendarOff,
+      },
+      { divider: true, label: "Events" },
+      // Events & Aktionen
+      { 
+        path: "/events", 
+        label: "Veranstaltungen", 
+        icon: PartyPopper,
+      },
+      { 
+        path: "/aktionen", 
+        label: "Aktionen", 
+        icon: Gift,
+      },
+      { 
+        path: "/menue-aktionen", 
+        label: "Menü-Aktionen", 
+        icon: UtensilsCrossed,
+      },
     ],
   },
-  {
-    id: "staff",
-    label: "Mitarbeiter",
-    icon: UsersRound,
-    roles: ["admin", "schichtleiter"],
-    children: [
-      { path: "/staff", label: "Übersicht", icon: UserCog },
-      { path: "/staff-import", label: "Import", icon: Upload, roles: ["admin"] },
-      { path: "/shifts-admin", label: "Dienstplan", icon: CalendarClock },
-      { path: "/absences", label: "Abwesenheiten", icon: CalendarOff },
-      { path: "/shift-templates", label: "Schichtmodelle", icon: FileText },
-      { path: "/taxoffice", label: "Steuerbüro-Export", icon: FileSpreadsheet, roles: ["admin"] },
-    ],
-  },
+
+  // ─────────────────────────────────────────────────────────────
+  // PERSÖNLICH - Für alle authentifizierten Benutzer
+  // ─────────────────────────────────────────────────────────────
   {
     id: "my-shifts",
     label: "Meine Schichten",
     icon: CalendarCheck,
     path: "/my-shifts",
-    roles: ["admin", "schichtleiter", "service", "mitarbeiter"], // Für alle authentifizierten Benutzer
+    roles: ["admin", "schichtleiter", "service", "mitarbeiter"],
   },
   {
     id: "employee-pwa",
     label: "Stempeln",
     icon: Clock,
     path: "/employee",
-    roles: ["admin", "schichtleiter", "service", "mitarbeiter"], // Für alle authentifizierten Benutzer
+    roles: ["admin", "schichtleiter", "service", "mitarbeiter"],
   },
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. SYSTEM - Configuration & Admin (Admin-only)
+  // ─────────────────────────────────────────────────────────────
   {
-    id: "marketing",
-    label: "Marketing",
-    icon: Megaphone,
-    roles: ["admin"],
-    path: "/marketing", // Direktlink
-  },
-  {
-    id: "pos",
-    label: "POS / Kasse",
-    icon: BarChart3,
-    roles: ["admin"],
-    children: [
-      { path: "/pos-crosscheck", label: "Monatsabschluss", icon: TrendingUp },
-      { path: "/pos-import", label: "Import Monitor", icon: Mail },
-    ],
-  },
-  {
-    id: "settings",
-    label: "Einstellungen",
+    id: "system",
+    label: "System",
     icon: Settings,
     roles: ["admin"],
     children: [
-      { path: "/admin/settings/system", label: "System", icon: Cog },
-      { path: "/admin/settings/opening-hours", label: "Öffnungszeiten", icon: Clock },
-      { path: "/reservation-config", label: "Reservierung", icon: BookOpen },
-      { path: "/settings", label: "E-Mail / SMTP", icon: Mail },
-      { path: "/areas", label: "Bereiche", icon: MapPin },
-      { path: "/users", label: "Benutzer", icon: Users },
-      { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties },
-      { path: "/admin/settings/backup", label: "Backup / Export", icon: HardDrive },
-      { path: "/seeds-backup", label: "System-Seeds", icon: Database },
-      { path: "/admin/reservations/import", label: "Tisch-Import", icon: Upload, hidden: true },
+      // Öffnungszeiten & Perioden
+      { 
+        path: "/admin/settings/opening-hours", 
+        label: "Öffnungszeiten", 
+        icon: Clock,
+        description: "Perioden, Saisonzeiten"
+      },
+      { 
+        path: "/reservation-config", 
+        label: "Reservierung-Config", 
+        icon: BookOpen,
+      },
+      { divider: true, label: "Stammdaten" },
+      // Stammdaten
+      { 
+        path: "/areas", 
+        label: "Bereiche", 
+        icon: MapPin,
+      },
+      { 
+        path: "/table-admin", 
+        label: "Tische", 
+        icon: TableProperties,
+      },
+      { 
+        path: "/shift-templates", 
+        label: "Schichtmodelle", 
+        icon: FileText,
+      },
+      { 
+        path: "/staff-import", 
+        label: "Mitarbeiter-Import", 
+        icon: Upload,
+      },
+      { divider: true, label: "Administration" },
+      // Rollen & Benutzer
+      { 
+        path: "/users", 
+        label: "Benutzer & Rollen", 
+        icon: ShieldCheck,
+      },
+      { 
+        path: "/settings", 
+        label: "E-Mail / SMTP", 
+        icon: Mail,
+      },
+      { 
+        path: "/marketing", 
+        label: "Marketing-Center", 
+        icon: Megaphone,
+      },
+      { divider: true, label: "Technik" },
+      // POS & Import
+      { 
+        path: "/pos-import", 
+        label: "POS Import", 
+        icon: Mail,
+        description: "IMAP Monitoring"
+      },
+      { 
+        path: "/taxoffice", 
+        label: "Steuerbüro-Export", 
+        icon: FileSpreadsheet,
+      },
+      { divider: true, label: "Backup & Restore" },
+      // Seeds & Backup
+      { 
+        path: "/seeds-backup", 
+        label: "System-Seeds", 
+        icon: Database,
+        description: "Config Packs"
+      },
+      { 
+        path: "/admin/settings/backup", 
+        label: "Backup / Export", 
+        icon: HardDrive,
+      },
+      { divider: true, label: "System" },
+      // Systemstatus
+      { 
+        path: "/admin/settings/system", 
+        label: "Systemstatus", 
+        icon: Activity,
+      },
     ],
   },
 ];
