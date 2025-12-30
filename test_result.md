@@ -1236,6 +1236,68 @@ test_plan:
   test_all: false
   test_priority: "critical_first"
 
+# ============== MODUL 10_COCKPIT: SEEDS BACKUP & RESTORE ==============
+  
+  - task: "Seeds Status API"
+    implemented: true
+    working: "NA"
+    file: "seeds_backup_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Seeds Backup & Restore module implemented. Needs testing for status endpoint with counts per collection and verification."
+
+  - task: "Seeds Verify API"
+    implemented: true
+    working: "NA"
+    file: "seeds_backup_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Seeds verification endpoint implemented. Needs testing for status (READY/WARNINGS/STOP) and checks per collection."
+
+  - task: "Seeds Export API"
+    implemented: true
+    working: "NA"
+    file: "seeds_backup_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Seeds export endpoint implemented. Needs testing for ZIP file generation with proper Content-Type and seed/ structure."
+
+  - task: "Seeds Import API (Dry Run)"
+    implemented: true
+    working: "NA"
+    file: "seeds_backup_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Seeds import endpoint implemented. Needs testing for dry_run=true preview functionality without DB changes."
+
+  - task: "Seeds Authorization Security"
+    implemented: true
+    working: "NA"
+    file: "seeds_backup_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Seeds endpoints require admin authorization. Needs testing for 401 Unauthorized when accessed without token."
+
 agent_communication:
   - agent: "testing"
     message: "✅ MODUL 10_COCKPIT: POS IMPORT MONITORING & MONATSABSCHLUSS BACKEND TESTING COMPLETE (30.12.2025): All 6 POS Cockpit backend tasks tested successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) GET /api/pos/ingest/status-extended: Extended status with all required fields (scheduler_running, imap_configured, documents_total, metrics_total, extended{docs_today, docs_week, failed_today, failed_week, current_month_crosscheck}) ✅ 2) GET /api/pos/monthly-crosscheck?month=2025-12: Crosscheck calculations working (daily_count=5, has_monthly_pdf=False, warning=False) ✅ 3) GET /api/pos/monthly-status?month=2025-12: Combined crosscheck + confirm status working ✅ 4) POST /api/pos/monthly/2025-10/confirm: Month confirmation working (status=confirmed, locked=true, confirmed_by=admin@carlsburg.de) ✅ 5) Existing POS endpoints: All 6 legacy endpoints working (backward compatibility maintained) ✅ 6) Authorization: All new endpoints properly secured (403 Forbidden for unauthorized access) ✅. All acceptance criteria from review request satisfied. POS Cockpit Monitoring & Monatsabschluss backend is production-ready."
