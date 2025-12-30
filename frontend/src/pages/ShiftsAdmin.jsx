@@ -98,14 +98,23 @@ const STATUS_LABELS = {
   CANCELLED: "Abgesagt",
 };
 
-// Role Labels
+// Role Labels - V2 kanonische Keys + Aliases
 const ROLE_LABELS = {
+  // Kanonische V2 Keys
   service: "Service",
   kitchen: "Küche",
+  reinigung: "Reinigung",
+  eismacher: "Eismacher",
+  kuechenhilfe: "Küchenhilfe",
+  // Rollen (nicht Departments)
   bar: "Bar",
-  cleaning: "Reinigung",
   schichtleiter: "Schichtleiter",
   aushilfe: "Aushilfe",
+  // Legacy Aliases
+  cleaning: "Reinigung",
+  ice_maker: "Eismacher",
+  kitchen_help: "Küchenhilfe",
+  kueche: "Küche",
 };
 
 export default function ShiftsAdmin() {
