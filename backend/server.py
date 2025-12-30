@@ -3191,6 +3191,9 @@ app.include_router(shift_migration_router)
 # Seeds Backup & Restore Module (Modul 10_COCKPIT)
 app.include_router(seeds_router)
 
+# Staff Import Module (Mode A – Strict Full Import + Merge)
+app.include_router(staff_import_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
