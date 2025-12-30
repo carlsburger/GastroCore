@@ -8277,6 +8277,12 @@ def main():
     
     tester = GastroCoreAPITester()
     
+    # Check if we should run POS Mail Automation tests
+    if len(sys.argv) > 1 and sys.argv[1] == "--pos-mail":
+        print("Running POS PDF Mail-Automation V1 Tests...")
+        success = tester.run_pos_mail_automation_tests()
+        return 0 if success else 1
+    
     # Check if we should run Event Dashboard Widget tests
     if len(sys.argv) > 1 and sys.argv[1] == "--event-dashboard":
         print("Running Event-Dashboard Widget Backend Tests...")
