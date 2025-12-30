@@ -61,21 +61,49 @@ export const getDayName = (date, format = "short") => {
 };
 
 // ============================================================
-// BEREICHS-ABKÜRZUNGEN
+// BEREICHS-ABKÜRZUNGEN (V2 kanonische Keys)
 // ============================================================
 export const AREA_ABBR = {
+  // Deutsche Labels
   "Service": "SVC",
   "Küche": "KÜ",
   "Bar": "BAR",
   "Aushilfe": "AUS",
   "Event": "EVT",
   "Reinigung": "REI",
+  "Eismacher": "EIS",
+  "Küchenhilfe": "KH",
+  // Kanonische V2 Keys (lowercase)
+  "service": "SVC",
+  "kitchen": "KÜ",
+  "reinigung": "REI",
+  "eismacher": "EIS",
+  "kuechenhilfe": "KH",
+  // Legacy Aliases
+  "cleaning": "REI",
+  "ice_maker": "EIS",
+  "kitchen_help": "KH",
   // Fallback
   "default": "—"
 };
 
 export const getAreaAbbr = (areaName) => {
   return AREA_ABBR[areaName] || AREA_ABBR.default;
+};
+
+// ============================================================
+// DEPARTMENT LABELS (V2 Schema)
+// ============================================================
+export const DEPARTMENT_LABELS = {
+  service: "Service",
+  kitchen: "Küche",
+  reinigung: "Reinigung",
+  eismacher: "Eismacher",
+  kuechenhilfe: "Küchenhilfe"
+};
+
+export const getDepartmentLabel = (dept) => {
+  return DEPARTMENT_LABELS[dept] || dept;
 };
 
 // ============================================================
