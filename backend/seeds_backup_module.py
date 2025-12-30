@@ -668,7 +668,7 @@ async def verify_seeds_endpoint(user: dict = Depends(require_admin)):
 @seeds_router.get("/status")
 async def get_seeds_status(user: dict = Depends(require_admin)):
     """
-    Get current seeds status overview.
+    Get current seeds status overview including fingerprint.
     """
     counts = {}
     
@@ -677,6 +677,15 @@ async def get_seeds_status(user: dict = Depends(require_admin)):
         filter_query = config.get("filter", {})
         count = await collection.count_documents(filter_query)
         counts[name] = count
+    
+    # Get current fingerprint
+    fingerprint_data = await get_current_seeds_fingerprint()
+    
+    # Get stored seed version (from last import)
+    seed_version = await db.seed_version.find_one(
+        {"type": "current"},
+        {"_id": 0}
+    )
     
     # Get last backup info
     last_backup = await db.audit_logs.find_one(
@@ -687,7 +696,7 @@ async def get_seeds_status(user: dict = Depends(require_admin)):
     
     # Get last import info
     last_import = await db.audit_logs.find_one(
-        {"type": "seeds_backup", "action": "import"},
+        {"type": "seeds_backup", "action": "import", "result.status": "success"},
         {"_id": 0, "timestamp": 1, "result": 1, "user": 1, "options": 1},
         sort=[("timestamp", -1)]
     )
@@ -698,6 +707,14 @@ async def get_seeds_status(user: dict = Depends(require_admin)):
     return {
         "counts": counts,
         "total_documents": sum(counts.values()),
+        "fingerprint": {
+            "current": fingerprint_data["fingerprint"],
+            "calculated_at": fingerprint_data["calculated_at"],
+            "stored": seed_version.get("fingerprint") if seed_version else None,
+            "imported_at": seed_version.get("imported_at") if seed_version else None,
+            "imported_by": seed_version.get("imported_by") if seed_version else None,
+            "matches": fingerprint_data["fingerprint"] == seed_version.get("fingerprint") if seed_version else None
+        },
         "last_backup": last_backup,
         "last_import": last_import,
         "verification": {
@@ -705,4 +722,37 @@ async def get_seeds_status(user: dict = Depends(require_admin)):
             "warnings": verify_result.warnings,
             "errors": verify_result.errors
         }
+    }
+
+
+@seeds_router.get("/fingerprint")
+async def get_fingerprint(user: dict = Depends(require_admin)):
+    """
+    Get current seed data fingerprint.
+    
+    Returns:
+    - Current calculated fingerprint
+    - Stored fingerprint from last import
+    - Whether they match
+    """
+    # Get current fingerprint
+    fingerprint_data = await get_current_seeds_fingerprint()
+    
+    # Get stored seed version
+    seed_version = await db.seed_version.find_one(
+        {"type": "current"},
+        {"_id": 0}
+    )
+    
+    return {
+        "current_fingerprint": fingerprint_data["fingerprint"],
+        "calculated_at": fingerprint_data["calculated_at"],
+        "collections": fingerprint_data["collections"],
+        "stored_version": {
+            "fingerprint": seed_version.get("fingerprint") if seed_version else None,
+            "imported_at": seed_version.get("imported_at") if seed_version else None,
+            "imported_by": seed_version.get("imported_by") if seed_version else None,
+        } if seed_version else None,
+        "matches": fingerprint_data["fingerprint"] == seed_version.get("fingerprint") if seed_version else None,
+        "drift_detected": seed_version and fingerprint_data["fingerprint"] != seed_version.get("fingerprint")
     }
