@@ -135,6 +135,9 @@ from pos_mail_module import pos_mail_router, set_db as set_pos_mail_db
 # Shift Template Migration Module (Sprint: Schema V2 Migration)
 from shift_template_migration import migration_router as shift_migration_router, set_db as set_migration_db
 
+# Seeds Backup & Restore Module (Modul 10_COCKPIT)
+from seeds_backup_module import seeds_router
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
