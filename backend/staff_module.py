@@ -2161,10 +2161,35 @@ class DayType(str, Enum):
     ALL = "all"
 
 class DepartmentType(str, Enum):
+    """Kanonische Department Keys (V2 Schema)"""
     SERVICE = "service"
     KITCHEN = "kitchen"
     REINIGUNG = "reinigung"
-    KUECHE = "Küche"  # Alias für Kompatibilität
+    EISMACHER = "eismacher"
+    KUECHENHILFE = "kuechenhilfe"
+
+
+# Department normalization for backward compatibility
+DEPARTMENT_ALIASES = {
+    "service": "service",
+    "kitchen": "kitchen",
+    "reinigung": "reinigung",
+    "eismacher": "eismacher",
+    "kuechenhilfe": "kuechenhilfe",
+    "küche": "kitchen",
+    "kueche": "kitchen",
+    "cleaning": "reinigung",
+    "ice_maker": "eismacher",
+    "kitchen_help": "kuechenhilfe",
+    "Küche": "kitchen",
+}
+
+def normalize_department(value: str) -> str:
+    """Normalize department value to canonical key"""
+    if not value:
+        return "service"
+    lower_val = str(value).lower().strip()
+    return DEPARTMENT_ALIASES.get(lower_val, DEPARTMENT_ALIASES.get(value, "service"))
 
 
 class ShiftTemplateCreate(BaseModel):
