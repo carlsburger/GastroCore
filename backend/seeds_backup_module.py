@@ -479,12 +479,12 @@ async def export_seeds(user: dict = Depends(require_admin)):
     READ-ONLY operation, never destructive.
     """
     try:
-        # Create backup
-        zip_buffer, counts = await create_backup_zip()
+        # Create backup with fingerprint
+        zip_buffer, counts, fingerprint = await create_backup_zip()
         
-        # Generate filename
+        # Generate filename with fingerprint
         timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
-        filename = f"carlsburg_system_seeds_{timestamp}.zip"
+        filename = f"carlsburg_system_seeds_{timestamp}_{fingerprint}.zip"
         
         # Audit log
         await db.audit_logs.insert_one({
@@ -496,11 +496,12 @@ async def export_seeds(user: dict = Depends(require_admin)):
             "result": {
                 "status": "success",
                 "filename": filename,
+                "fingerprint": fingerprint,
                 "counts": counts
             }
         })
         
-        logger.info(f"Seeds exported by {user.get('email')}: {counts}")
+        logger.info(f"Seeds exported by {user.get('email')}: fingerprint={fingerprint}, counts={counts}")
         
         return StreamingResponse(
             zip_buffer,
