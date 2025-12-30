@@ -243,61 +243,68 @@ async def get_opening_hours_for_date_legacy(date_str: str) -> Optional[dict]:
     """
     Legacy-Funktion für Öffnungszeiten (ohne Closures/Overrides).
     Wird als Fallback verwendet.
+    
+    SOURCE OF TRUTH: opening_hours_master (via opening_hours_module)
+    LEGACY REMOVED: opening_hours_periods reads removed (collection is empty)
+    
+    HINWEIS: Diese Funktion ist nur noch ein Fallback. Die primäre Logik
+    verwendet calculate_effective_hours() aus opening_hours_module.py
     """
     try:
+        from opening_hours_module import get_active_period_for_date
+        
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         day_of_week = target_date.weekday()
+        weekday_key = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][day_of_week]
         
-        # Suche passenden Zeitraum
-        periods = await db.opening_hours_periods.find(
-            {"archived": False}
-        ).to_list(100)
+        # SOURCE OF TRUTH: opening_hours_master
+        period = await get_active_period_for_date(target_date)
         
-        for period in periods:
-            start = datetime.strptime(period["start_date"], "%Y-%m-%d").date()
-            end = datetime.strptime(period["end_date"], "%Y-%m-%d").date()
+        if period:
+            rules = period.get("rules_by_weekday", {})
+            day_rules = rules.get(weekday_key, {})
             
-            if start <= target_date <= end:
-                # Finde Eintrag für diesen Wochentag
-                for entry in period.get("hours", []):
-                    if entry["day_of_week"] == day_of_week:
-                        return {
-                            "period_name": period["name"],
-                            "period_id": period["id"],
-                            **entry
-                        }
+            if day_rules.get("is_closed"):
+                return {
+                    "day_of_week": day_of_week,
+                    "open_time": None,
+                    "close_time": None,
+                    "is_closed": True,
+                    "period_name": period.get("name", "Unbekannt"),
+                    "period_id": period.get("id")
+                }
+            
+            blocks = day_rules.get("blocks", [])
+            if blocks:
+                first_block = blocks[0]
+                last_block = blocks[-1]
+                return {
+                    "day_of_week": day_of_week,
+                    "open_time": first_block.get("start", "11:00"),
+                    "close_time": last_block.get("end", "22:00"),
+                    "is_closed": False,
+                    "period_name": period.get("name", "Unbekannt"),
+                    "period_id": period.get("id")
+                }
         
-        # Kein Zeitraum gefunden - suche Default-Periode
-        default_period = await db.opening_hours_periods.find_one(
-            {"is_default": True, "archived": False}
-        )
-        if default_period:
-            for entry in default_period.get("hours", []):
-                if entry["day_of_week"] == day_of_week:
-                    return {
-                        "period_name": default_period["name"],
-                        "period_id": default_period["id"],
-                        **entry
-                    }
-        
-        # Fallback auf alte opening_hours Collection
-        old_hours = await db.opening_hours.find_one(
-            {"day_of_week": day_of_week},
-            {"_id": 0}
-        )
-        if old_hours:
-            return old_hours
-        
-        # Absoluter Fallback
+        # Absoluter Fallback (keine Periode gefunden)
         return {
             "day_of_week": day_of_week,
             "open_time": "11:00",
             "close_time": "22:00",
             "is_closed": False,
-            "period_name": "Standard"
+            "period_name": "Standard (Fallback)"
         }
         
     except Exception as e:
+        logger.error(f"Fehler in get_opening_hours_for_date_legacy: {e}")
+        return {
+            "day_of_week": 0,
+            "open_time": "11:00",
+            "close_time": "22:00",
+            "is_closed": False,
+            "period_name": "Standard (Error-Fallback)"
+        }
         logger.error(f"Fehler beim Laden der Öffnungszeiten (Legacy): {e}")
         return None
 
