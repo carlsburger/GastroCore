@@ -3179,6 +3179,9 @@ app.include_router(admin_documents_router)
 # POS Mail Automation Module (Sprint: POS PDF Mail-Automation V1)
 app.include_router(pos_mail_router)
 
+# Shift Template Migration Module (Sprint: Schema V2 Migration)
+app.include_router(shift_migration_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
