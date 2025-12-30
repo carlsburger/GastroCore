@@ -68,6 +68,9 @@ import TableImport from "./pages/TableImport";
 // Service Terminal Standalone (Sprint: Service-Terminal getrennt & abgesichert)
 import ServiceLogin from "./pages/ServiceLogin";
 import ServiceApp from "./pages/ServiceApp";
+// POS Import Monitoring & Monatsabschluss (Sprint: Modul 10_COCKPIT)
+import POSImportMonitoring from "./pages/POSImportMonitoring";
+import MonthlyPOSCrosscheck from "./pages/MonthlyPOSCrosscheck";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
