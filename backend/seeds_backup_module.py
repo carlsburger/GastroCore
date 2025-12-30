@@ -400,31 +400,45 @@ async def verify_seeds() -> VerifyResult:
     """Verify seed data integrity"""
     result = VerifyResult(status="READY", checks={}, warnings=[], errors=[])
     
-    # Check 1: Opening hours master (contains seasonal periods)
-    # NOTE: opening_hours_master stores multiple period documents (Sommer/Winter)
-    # This is the CORRECT architecture - we check for at least 1 active period
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Check 1: opening_hours_master (SOURCE OF TRUTH)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # This collection stores seasonal periods (Sommer/Winter) as multiple documents.
+    # Each period has: id, name, start_date, end_date, priority, active, rules_by_weekday
+    # The system resolves "today's hours" via get_active_period_for_date() which:
+    #   - Filters: active=True, archived!=True
+    #   - Sorts: priority DESC, start_date DESC
+    #   - Returns first period where today is within [start_date, end_date]
     ohm_active_count = await db.opening_hours_master.count_documents({"active": True, "archived": {"$ne": True}})
     ohm_total_count = await db.opening_hours_master.count_documents({})
     result.checks["opening_hours_master"] = {
         "count": ohm_total_count, 
         "active": ohm_active_count,
-        "status": "ok"
+        "status": "ok",
+        "note": "SOURCE OF TRUTH for opening hours"
     }
     if ohm_active_count == 0:
         result.warnings.append("No active opening_hours_master periods found - widget may show default hours")
         result.checks["opening_hours_master"]["status"] = "warning"
     
-    # Check 2: Opening hours periods (LEGACY - may be empty)
-    # NOTE: Some modules still use opening_hours_periods, but opening_hours_master is Source of Truth
-    # We only log info, not warning, as this collection is being phased out
-    ohp_count = await db.opening_hours_periods.count_documents({"active": True})
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Check 2: opening_hours_periods (DEPRECATED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # This collection is DEPRECATED and IGNORED by the system.
+    # All productive reads have been migrated to opening_hours_master.
+    # We only report total count as INFO - NO active filter, NO warnings.
+    # Legacy documents may exist but are not used.
+    ohp_total_count = await db.opening_hours_periods.count_documents({})
     result.checks["opening_hours_periods"] = {
-        "count": ohp_count, 
+        "count": ohp_total_count,
         "status": "ok",
-        "note": "Legacy collection - opening_hours_master is Source of Truth"
+        "note": "DEPRECATED: legacy collection, ignored by system; count is informational only"
     }
+    # Explicitly: NO warning generation for this collection, regardless of count
     
-    # Check 3: Shift templates (at least 1 active)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Check 3: shift_templates (at least 1 active)
+    # ═══════════════════════════════════════════════════════════════════════════
     st_count = await db.shift_templates.count_documents({"active": True, "archived": {"$ne": True}})
     result.checks["shift_templates"] = {"count": st_count, "status": "ok"}
     if st_count == 0:
