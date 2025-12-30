@@ -427,6 +427,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Staff Import (Mode A – Strict Full Import) - Admin only */}
+          <Route
+            path="/staff-import"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <StaffImport />
+              </ProtectedRoute>
+            }
+          />
           {/* Modul 30 V1.1: Abwesenheiten Admin */}
           <Route
             path="/absences"
