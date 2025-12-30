@@ -8233,6 +8233,171 @@ class GastroCoreAPITester:
         
         return dashboard_success
 
+    def test_pos_mail_automation(self):
+        """Test POS PDF Mail-Automation V1 Backend"""
+        print("\n📧 Testing POS PDF Mail-Automation V1...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("POS Mail Automation", False, "Admin token not available")
+            return False
+        
+        pos_success = True
+        
+        # 1. GET /api/pos/ingest/status (admin-only)
+        result = self.make_request("GET", "pos/ingest/status", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            status_data = result["data"]
+            required_fields = ["scheduler_running", "last_processed_uid", "imap_configured", 
+                             "imap_host", "imap_user", "imap_folder", "documents_total", 
+                             "metrics_total", "failed_documents", "latest_ingest"]
+            
+            missing_fields = [field for field in required_fields if field not in status_data]
+            if not missing_fields:
+                # Check specific values from requirements
+                if status_data.get("imap_configured") == False:  # Expected since POS_IMAP_PASSWORD is empty
+                    self.log_test("GET /api/pos/ingest/status", True, 
+                                f"imap_configured=false (expected), imap_host={status_data.get('imap_host')}, imap_user={status_data.get('imap_user')}")
+                else:
+                    self.log_test("GET /api/pos/ingest/status", True, 
+                                f"imap_configured=true, imap_host={status_data.get('imap_host')}, imap_user={status_data.get('imap_user')}")
+                
+                # Verify expected values from requirements
+                if status_data.get("imap_host") == "imap.ionos.de" and status_data.get("imap_user") == "berichte@carlsburg.de":
+                    self.log_test("POS IMAP Configuration Check", True, "IMAP host and user match requirements")
+                else:
+                    self.log_test("POS IMAP Configuration Check", False, 
+                                f"Expected imap.ionos.de/berichte@carlsburg.de, got {status_data.get('imap_host')}/{status_data.get('imap_user')}")
+                    pos_success = False
+            else:
+                self.log_test("GET /api/pos/ingest/status", False, f"Missing fields: {missing_fields}")
+                pos_success = False
+        else:
+            self.log_test("GET /api/pos/ingest/status", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 2. GET /api/pos/documents (admin-only)
+        result = self.make_request("GET", "pos/documents", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            docs_data = result["data"]
+            if "count" in docs_data and "documents" in docs_data:
+                self.log_test("GET /api/pos/documents", True, 
+                            f"Retrieved {docs_data.get('count')} documents (empty list expected)")
+            else:
+                self.log_test("GET /api/pos/documents", False, "Missing count or documents fields")
+                pos_success = False
+        else:
+            self.log_test("GET /api/pos/documents", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 3. GET /api/pos/daily-metrics (admin-only)
+        result = self.make_request("GET", "pos/daily-metrics", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            metrics_data = result["data"]
+            if "metrics" in metrics_data and "summary" in metrics_data:
+                metrics = metrics_data.get("metrics", [])
+                summary = metrics_data.get("summary")
+                
+                # Check if metrics have required fields
+                if metrics:
+                    sample_metric = metrics[0]
+                    required_metric_fields = ["date", "net_total", "food_net", "beverage_net"]
+                    missing_metric_fields = [field for field in required_metric_fields if field not in sample_metric]
+                    
+                    if not missing_metric_fields:
+                        self.log_test("GET /api/pos/daily-metrics", True, 
+                                    f"Retrieved {len(metrics)} metrics with proper structure")
+                    else:
+                        self.log_test("GET /api/pos/daily-metrics", False, 
+                                    f"Metric missing fields: {missing_metric_fields}")
+                        pos_success = False
+                else:
+                    self.log_test("GET /api/pos/daily-metrics", True, "Empty metrics list (expected)")
+                
+                # Check summary structure
+                if summary:
+                    required_summary_fields = ["days", "total_net", "total_food", "total_beverage", "avg_daily_net"]
+                    missing_summary_fields = [field for field in required_summary_fields if field not in summary]
+                    
+                    if not missing_summary_fields:
+                        self.log_test("POS Daily Metrics Summary Structure", True, "All summary fields present")
+                    else:
+                        self.log_test("POS Daily Metrics Summary Structure", False, 
+                                    f"Summary missing fields: {missing_summary_fields}")
+                        pos_success = False
+            else:
+                self.log_test("GET /api/pos/daily-metrics", False, "Missing metrics or summary fields")
+                pos_success = False
+        else:
+            self.log_test("GET /api/pos/daily-metrics", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 4. POST /api/pos/ingest/trigger (admin-only) - Should fail without IMAP password
+        result = self.make_request("POST", "pos/ingest/trigger", {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            trigger_data = result["data"]
+            if trigger_data.get("status") == "not_configured" and "POS_IMAP_PASSWORD not set" in str(trigger_data.get("errors", [])):
+                self.log_test("POST /api/pos/ingest/trigger", True, 
+                            "Correctly returns not_configured status when IMAP password not set")
+            else:
+                self.log_test("POST /api/pos/ingest/trigger", True, 
+                            f"Trigger response: status={trigger_data.get('status')}")
+        else:
+            self.log_test("POST /api/pos/ingest/trigger", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 5. POST /api/pos/scheduler/start (admin-only)
+        result = self.make_request("POST", "pos/scheduler/start", {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            scheduler_data = result["data"]
+            if scheduler_data.get("status") == "started" and scheduler_data.get("interval_minutes") == 10:
+                self.log_test("POST /api/pos/scheduler/start", True, "Scheduler started with 10-minute interval")
+            else:
+                self.log_test("POST /api/pos/scheduler/start", False, 
+                            f"Unexpected response: {scheduler_data}")
+                pos_success = False
+        else:
+            self.log_test("POST /api/pos/scheduler/start", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 6. POST /api/pos/scheduler/stop (admin-only)
+        result = self.make_request("POST", "pos/scheduler/stop", {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            stop_data = result["data"]
+            if stop_data.get("status") == "stopped":
+                self.log_test("POST /api/pos/scheduler/stop", True, "Scheduler stopped successfully")
+            else:
+                self.log_test("POST /api/pos/scheduler/stop", False, 
+                            f"Unexpected response: {stop_data}")
+                pos_success = False
+        else:
+            self.log_test("POST /api/pos/scheduler/stop", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 7. Unauthorized Access Test - Test all endpoints without token
+        pos_endpoints = [
+            ("GET", "pos/ingest/status"),
+            ("GET", "pos/documents"),
+            ("GET", "pos/daily-metrics"),
+            ("POST", "pos/ingest/trigger"),
+            ("POST", "pos/scheduler/start"),
+            ("POST", "pos/scheduler/stop")
+        ]
+        
+        unauthorized_success = True
+        for method, endpoint in pos_endpoints:
+            result = self.make_request(method, endpoint, {}, token=None, expected_status=401)
+            if not result["success"]:
+                self.log_test(f"Unauthorized access blocked for {method} {endpoint}", False, 
+                            f"Expected 401, got {result['status_code']}")
+                unauthorized_success = False
+        
+        if unauthorized_success:
+            self.log_test("POS Endpoints Unauthorized Access Test", True, "All endpoints properly block unauthorized access")
+        else:
+            pos_success = False
+        
+        return pos_success
+
     def run_pos_mail_automation_tests(self):
         """Run only the POS PDF Mail-Automation V1 tests"""
         print("🚀 Starting POS PDF Mail-Automation V1 Backend Tests...")
