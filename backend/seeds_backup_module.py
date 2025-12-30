@@ -22,6 +22,7 @@ import json
 import zipfile
 import logging
 import uuid
+import hashlib
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Tuple
 from enum import Enum
