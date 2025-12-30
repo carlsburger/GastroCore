@@ -932,3 +932,326 @@ async def stop_scheduler_endpoint(user: dict = Depends(require_admin)):
     """Stop the mail scheduler (admin-only)"""
     stop_scheduler()
     return {"status": "stopped"}
+
+
+# ============== CROSSCHECK & MONTHLY CONFIRM ==============
+
+# Crosscheck thresholds (configurable)
+CROSSCHECK_THRESHOLD_ABS = float(os.getenv("POS_CROSSCHECK_THRESHOLD_ABS", "50.0"))  # EUR
+CROSSCHECK_THRESHOLD_PCT = float(os.getenv("POS_CROSSCHECK_THRESHOLD_PCT", "1.0"))   # %
+
+async def crosscheck_pos_month(month: str) -> Dict[str, Any]:
+    """
+    Crosscheck monthly POS data: daily sum vs monthly PDF report.
+    
+    Args:
+        month: Format YYYY-MM
+        
+    Returns:
+        Crosscheck result with daily_sum, monthly_pdf values, diffs, and warning status
+    """
+    result = {
+        "month": month,
+        "has_monthly_pdf": False,
+        "has_daily_data": False,
+        "daily_count": 0,
+        # Daily sum values
+        "daily_sum_net_total": 0.0,
+        "daily_sum_food_net": 0.0,
+        "daily_sum_beverage_net": 0.0,
+        # Monthly PDF values
+        "monthly_pdf_net_total": None,
+        "monthly_pdf_food_net": None,
+        "monthly_pdf_beverage_net": None,
+        # Differences
+        "diff_abs_net_total": None,
+        "diff_abs_food_net": None,
+        "diff_abs_beverage_net": None,
+        "diff_pct_net_total": None,
+        "diff_pct_food_net": None,
+        "diff_pct_beverage_net": None,
+        # Status
+        "warning": False,
+        "warning_reasons": [],
+        "checked_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # 1. Get daily sum for month
+    daily_pipeline = [
+        {"$match": {"date": {"$regex": f"^{month}"}}},
+        {"$group": {
+            "_id": None,
+            "count": {"$sum": 1},
+            "net_total": {"$sum": "$net_total"},
+            "food_net": {"$sum": "$food_net"},
+            "beverage_net": {"$sum": "$beverage_net"}
+        }}
+    ]
+    
+    daily_agg = await db.pos_daily_metrics.aggregate(daily_pipeline).to_list(1)
+    
+    if daily_agg:
+        result["has_daily_data"] = True
+        result["daily_count"] = daily_agg[0].get("count", 0)
+        result["daily_sum_net_total"] = round(daily_agg[0].get("net_total", 0), 2)
+        result["daily_sum_food_net"] = round(daily_agg[0].get("food_net", 0), 2)
+        result["daily_sum_beverage_net"] = round(daily_agg[0].get("beverage_net", 0), 2)
+    
+    # 2. Get monthly PDF (latest for this month)
+    monthly_doc = await db.pos_documents.find_one(
+        {
+            "doc_type": DocType.MONTHLY.value,
+            "parse_status": ParseStatus.PARSED.value,
+            "parsed_meta.month": month
+        },
+        {"_id": 0},
+        sort=[("created_at", -1)]
+    )
+    
+    if monthly_doc and monthly_doc.get("parsed_meta"):
+        result["has_monthly_pdf"] = True
+        meta = monthly_doc["parsed_meta"]
+        result["monthly_pdf_net_total"] = meta.get("net_total")
+        result["monthly_pdf_food_net"] = meta.get("food_net")
+        result["monthly_pdf_beverage_net"] = meta.get("beverage_net")
+        result["monthly_pdf_doc_id"] = monthly_doc.get("id")
+        result["monthly_pdf_file"] = monthly_doc.get("file_name")
+    
+    # 3. Calculate differences (only if monthly PDF exists)
+    if result["has_monthly_pdf"] and result["monthly_pdf_net_total"] is not None:
+        # Net total diff
+        result["diff_abs_net_total"] = round(
+            result["daily_sum_net_total"] - result["monthly_pdf_net_total"], 2
+        )
+        if result["monthly_pdf_net_total"] > 0:
+            result["diff_pct_net_total"] = round(
+                (result["diff_abs_net_total"] / result["monthly_pdf_net_total"]) * 100, 2
+            )
+        
+        # Food diff
+        if result["monthly_pdf_food_net"] is not None:
+            result["diff_abs_food_net"] = round(
+                result["daily_sum_food_net"] - result["monthly_pdf_food_net"], 2
+            )
+            if result["monthly_pdf_food_net"] > 0:
+                result["diff_pct_food_net"] = round(
+                    (result["diff_abs_food_net"] / result["monthly_pdf_food_net"]) * 100, 2
+                )
+        
+        # Beverage diff
+        if result["monthly_pdf_beverage_net"] is not None:
+            result["diff_abs_beverage_net"] = round(
+                result["daily_sum_beverage_net"] - result["monthly_pdf_beverage_net"], 2
+            )
+            if result["monthly_pdf_beverage_net"] > 0:
+                result["diff_pct_beverage_net"] = round(
+                    (result["diff_abs_beverage_net"] / result["monthly_pdf_beverage_net"]) * 100, 2
+                )
+        
+        # Check thresholds
+        if abs(result["diff_abs_net_total"]) > CROSSCHECK_THRESHOLD_ABS:
+            result["warning"] = True
+            result["warning_reasons"].append(
+                f"Net total diff {result['diff_abs_net_total']:.2f}€ exceeds threshold {CROSSCHECK_THRESHOLD_ABS}€"
+            )
+        
+        if result["diff_pct_net_total"] is not None and abs(result["diff_pct_net_total"]) > CROSSCHECK_THRESHOLD_PCT:
+            result["warning"] = True
+            result["warning_reasons"].append(
+                f"Net total diff {result['diff_pct_net_total']:.1f}% exceeds threshold {CROSSCHECK_THRESHOLD_PCT}%"
+            )
+    
+    return result
+
+
+@pos_mail_router.get("/monthly-crosscheck")
+async def get_monthly_crosscheck(
+    month: str = Query(..., pattern=r"^\d{4}-\d{2}$", description="Month in YYYY-MM format"),
+    user: dict = Depends(require_admin)
+):
+    """
+    Get crosscheck data for a month: daily sum vs monthly PDF.
+    Shows differences and warnings if thresholds exceeded.
+    """
+    result = await crosscheck_pos_month(month)
+    return result
+
+
+@pos_mail_router.get("/monthly-status")
+async def get_monthly_status(
+    month: str = Query(..., pattern=r"^\d{4}-\d{2}$", description="Month in YYYY-MM format"),
+    user: dict = Depends(require_admin)
+):
+    """
+    Get complete monthly POS status including crosscheck and confirm state.
+    """
+    # Get crosscheck data
+    crosscheck = await crosscheck_pos_month(month)
+    
+    # Get confirm status from monthly_business_metrics (if exists)
+    monthly_metrics = await db.monthly_business_metrics.find_one(
+        {"month": month},
+        {"_id": 0}
+    )
+    
+    confirmed = False
+    locked = False
+    confirmed_by = None
+    confirmed_at = None
+    
+    if monthly_metrics:
+        confirmed = monthly_metrics.get("status") == "confirmed"
+        locked = monthly_metrics.get("locked", False)
+        confirmed_by = monthly_metrics.get("confirmed_by")
+        confirmed_at = monthly_metrics.get("confirmed_at")
+    
+    return {
+        "month": month,
+        "crosscheck": crosscheck,
+        "confirmed": confirmed,
+        "locked": locked,
+        "confirmed_by": confirmed_by,
+        "confirmed_at": confirmed_at
+    }
+
+
+@pos_mail_router.post("/monthly/{month}/confirm")
+async def confirm_month(
+    month: str,
+    user: dict = Depends(require_admin)
+):
+    """
+    Confirm/lock a month's POS data (admin-only).
+    
+    - Sets status=confirmed, locked=true
+    - Stores crosscheck snapshot
+    - Prevents future recalculations from overwriting
+    """
+    # Validate month format
+    if not re.match(r"^\d{4}-\d{2}$", month):
+        raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+    
+    # Get current crosscheck data
+    crosscheck = await crosscheck_pos_month(month)
+    
+    # Prepare update
+    now = datetime.now(timezone.utc).isoformat()
+    user_email = user.get("email", user.get("sub", "unknown"))
+    
+    update_data = {
+        "month": month,
+        "status": "confirmed",
+        "locked": True,
+        "confirmed_by": user_email,
+        "confirmed_at": now,
+        "pos_crosscheck_snapshot": crosscheck,
+        "updated_at": now
+    }
+    
+    # Also store the POS sums in the monthly metrics
+    if crosscheck["has_daily_data"]:
+        update_data["pos_net_total"] = crosscheck["daily_sum_net_total"]
+        update_data["pos_food_net"] = crosscheck["daily_sum_food_net"]
+        update_data["pos_beverage_net"] = crosscheck["daily_sum_beverage_net"]
+    
+    # Upsert monthly_business_metrics
+    result = await db.monthly_business_metrics.update_one(
+        {"month": month},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    # Audit log
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "type": "monthly_confirm",
+        "action": "pos_month_confirmed",
+        "month": month,
+        "confirmed_by": user_email,
+        "timestamp": now,
+        "crosscheck_warning": crosscheck["warning"],
+        "crosscheck_snapshot": crosscheck
+    })
+    
+    logger.info(f"Month {month} confirmed by {user_email}")
+    
+    return {
+        "status": "confirmed",
+        "month": month,
+        "confirmed_by": user_email,
+        "confirmed_at": now,
+        "crosscheck": crosscheck,
+        "had_warning": crosscheck["warning"]
+    }
+
+
+@pos_mail_router.get("/ingest/status-extended")
+async def get_ingest_status_extended(user: dict = Depends(require_admin)):
+    """
+    Extended ingest status with additional stats for monitoring UI.
+    """
+    basic_status = await get_ingest_status(user)
+    
+    # Get current month
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    
+    # Additional stats
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    # Documents today
+    docs_today = await db.pos_documents.count_documents({
+        "created_at": {"$gte": today + "T00:00:00"}
+    })
+    
+    # Documents last 7 days
+    docs_week = await db.pos_documents.count_documents({
+        "created_at": {"$gte": week_ago + "T00:00:00"}
+    })
+    
+    # Failed documents today
+    failed_today = await db.pos_documents.count_documents({
+        "parse_status": ParseStatus.FAILED.value,
+        "created_at": {"$gte": today + "T00:00:00"}
+    })
+    
+    # Failed documents last 7 days
+    failed_week = await db.pos_documents.count_documents({
+        "parse_status": ParseStatus.FAILED.value,
+        "created_at": {"$gte": week_ago + "T00:00:00"}
+    })
+    
+    # Last 10 failed documents
+    failed_docs = await db.pos_documents.find(
+        {"parse_status": ParseStatus.FAILED.value},
+        {"_id": 0, "id": 1, "received_at": 1, "subject": 1, "parse_error": 1, "file_name": 1}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    # Last successful ingest
+    last_success = await db.pos_ingest_logs.find_one(
+        {"result.status": "success"},
+        {"_id": 0, "timestamp": 1},
+        sort=[("timestamp", -1)]
+    )
+    
+    # Current month crosscheck (quick check)
+    current_crosscheck = await crosscheck_pos_month(current_month)
+    
+    return {
+        **basic_status,
+        "extended": {
+            "docs_today": docs_today,
+            "docs_week": docs_week,
+            "failed_today": failed_today,
+            "failed_week": failed_week,
+            "last_successful_ingest": last_success.get("timestamp") if last_success else None,
+            "failed_documents": failed_docs,
+            "current_month_crosscheck": {
+                "month": current_month,
+                "warning": current_crosscheck["warning"],
+                "has_monthly_pdf": current_crosscheck["has_monthly_pdf"],
+                "daily_count": current_crosscheck["daily_count"]
+            }
+        }
+    }
+
