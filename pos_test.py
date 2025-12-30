@@ -256,12 +256,12 @@ class POSCockpitTester:
         ]
         
         for method, endpoint in unauthorized_endpoints:
-            result = self.make_request(method, endpoint, {}, expected_status=401)
+            result = self.make_request(method, endpoint, {}, expected_status=403)
             if result["success"]:
-                self.log_test(f"Unauthorized access blocked for {endpoint}", True, "401 as expected")
+                self.log_test(f"Unauthorized access blocked for {endpoint}", True, "403 Forbidden as expected")
             else:
                 self.log_test(f"Unauthorized access blocked for {endpoint}", False, 
-                            f"Expected 401, got {result['status_code']}")
+                            f"Expected 403, got {result['status_code']}")
                 pos_success = False
         
         # Restore token
