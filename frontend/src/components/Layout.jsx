@@ -184,6 +184,7 @@ const navigationGroups = [
       { path: "/users", label: "Benutzer", icon: Users },
       { path: "/table-admin", label: "Tisch-Stammdaten", icon: TableProperties },
       { path: "/admin/settings/backup", label: "Backup / Export", icon: HardDrive },
+      { path: "/seeds-backup", label: "System-Seeds", icon: Database },
       { path: "/admin/reservations/import", label: "Tisch-Import", icon: Upload, hidden: true },
     ],
   },
