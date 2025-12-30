@@ -1303,6 +1303,9 @@ test_plan:
       - working: true
         agent: "testing"
         comment: "✅ GET /api/admin/seeds/export → Returns valid ZIP file (5178 bytes) with Content-Type: application/zip. ZIP contains proper seed/ structure with all 7 expected seed files. Export functionality working correctly."
+      - working: true
+        agent: "testing"
+        comment: "✅ SEEDS BACKUP EXPORT REVIEW REQUEST TESTING COMPLETE (30.12.2025): All 7 specific tests passed successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) Login admin@carlsburg.de with password Carlsburg2025! → Token received ✅ 2) GET /api/admin/seeds/export → HTTP 200 status ✅ 3) Content-Type: application/zip header verified ✅ 4) Content-Disposition with filename verified (carlsburg_system_seeds_2025-12-30_1742_59717bc31444.zip) ✅ 5) Valid ZIP file (5477 bytes) with proper PK signature ✅ 6) No responseText errors in binary response ✅ 7) ZIP structure contains 8 seed files ✅. All requirements from review request satisfied. Seeds Backup Export functionality is working correctly without responseText errors."
 
   - task: "Seeds Import API (Dry Run)"
     implemented: true
