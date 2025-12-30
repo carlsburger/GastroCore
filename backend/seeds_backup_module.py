@@ -57,43 +57,43 @@ SEED_COLLECTIONS = {
     "opening_hours_master": {
         "collection": "opening_hours_master",
         "export_path": "seed/opening_hours/opening_hours_master.json",
-        "filter": {},  # No filter, take all
+        "filter": {"active": True},  # active=true
         "order": 2
     },
     "opening_hours_periods": {
         "collection": "opening_hours_periods",
         "export_path": "seed/opening_hours/opening_hours_periods.json",
-        "filter": {"active": True},
+        "filter": {"archived": {"$ne": True}},  # archived=false (active egal)
         "order": 3
     },
     "shift_templates": {
         "collection": "shift_templates",
         "export_path": "seed/shift_templates/shift_templates_master.json",
-        "filter": {"active": True, "archived": {"$ne": True}},
+        "filter": {"active": True, "archived": False},  # active=true, archived=false
         "order": 4
     },
     "reservation_slot_rules": {
         "collection": "reservation_slot_rules",
         "export_path": "seed/reservations/reservation_slot_rules.json",
-        "filter": {"active": {"$ne": False}},
+        "filter": {"active": True},  # active=true
         "order": 6
     },
     "reservation_options": {
         "collection": "reservation_options",
         "export_path": "seed/reservations/reservation_options.json",
-        "filter": {},
+        "filter": {"active": True},  # active=true
         "order": 5
     },
     "reservation_slot_exceptions": {
         "collection": "reservation_slot_exceptions",
         "export_path": "seed/reservations/reservation_slot_exceptions.json",
-        "filter": {},
+        "filter": {"archived": {"$ne": True}},  # archived=false (active egal)
         "order": 7
     },
     "system_settings": {
         "collection": "system_settings",
         "export_path": "seed/system/system_settings.json",
-        "filter": {},
+        "filter": {},  # alle
         "order": 1
     }
 }
