@@ -51,7 +51,8 @@ const COLLECTION_LABELS = {
 };
 
 export default function SeedsBackupRestore() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
+  const token = localStorage.getItem("token");
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [exporting, setExporting] = useState(false);
