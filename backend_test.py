@@ -7145,6 +7145,10 @@ class GastroCoreAPITester:
         print("\n⏰ TIMECLOCK REGRESSION TEST - MINI-FIX:")
         test_results.append(self.test_timeclock_regression_mini_fix())
         
+        # POS PDF MAIL-AUTOMATION V1 TESTS - as per review request
+        print("\n📧 POS PDF MAIL-AUTOMATION V1 TESTING:")
+        test_results.append(self.test_pos_mail_automation())
+        
         # Summary
         print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
