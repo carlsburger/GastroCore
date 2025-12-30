@@ -129,6 +129,9 @@ from reservation_guards import (
     STANDARD_RESERVATION_DURATION_MINUTES
 )
 
+# POS Mail Automation Module (Sprint: POS PDF Mail-Automation V1)
+from pos_mail_module import pos_mail_router, set_db as set_pos_mail_db
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
