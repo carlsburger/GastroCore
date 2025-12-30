@@ -87,36 +87,61 @@ export default function SeedsBackupRestore() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const response = await axios.get(
+      // Use fetch instead of axios for blob downloads to avoid responseType issues
+      const response = await fetch(
         `${BACKEND_URL}/api/admin/seeds/export`,
         { 
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/zip'
+          }
         }
       );
       
-      // Get filename from response header
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = 'carlsburg_system_seeds.zip';
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename=(.+)/);
-        if (match) filename = match[1];
+      if (!response.ok) {
+        // Try to parse error as JSON, fallback to status text
+        let errorMessage = response.statusText;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch {
+          // Response wasn't JSON, use status text
+        }
+        throw new Error(errorMessage);
       }
       
-      // Download file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      // Get blob from response
+      const blob = await response.blob();
+      
+      // Get filename from Content-Disposition header or use fallback
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'carlsburg_system_seeds.zip';
+      if (contentDisposition) {
+        // Match filename="..." or filename=...
+        const match = contentDisposition.match(/filename[*]?=["']?([^"';\n]+)["']?/i);
+        if (match && match[1]) {
+          filename = match[1].trim();
+        }
+      }
+      
+      // Create object URL and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
       toast.success("Backup erfolgreich erstellt");
       fetchStatus();
     } catch (error) {
-      toast.error("Export fehlgeschlagen: " + (error.response?.data?.detail || error.message));
+      console.error("Export error:", error);
+      toast.error("Export fehlgeschlagen: " + (error.message || "Unbekannter Fehler"));
     } finally {
       setExporting(false);
     }
