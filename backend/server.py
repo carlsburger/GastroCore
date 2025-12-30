@@ -3185,6 +3185,9 @@ app.include_router(pos_mail_router)
 # Shift Template Migration Module (Sprint: Schema V2 Migration)
 app.include_router(shift_migration_router)
 
+# Seeds Backup & Restore Module (Modul 10_COCKPIT)
+app.include_router(seeds_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
