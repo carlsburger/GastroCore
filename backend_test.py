@@ -7694,8 +7694,8 @@ class GastroCoreAPITester:
         
         pos_success = True
         
-        # Test GET /api/admin/pos/status
-        result = self.make_request("GET", "admin/pos/status", token=self.tokens["admin"], expected_status=200)
+        # Test GET /api/pos/ingest/status
+        result = self.make_request("GET", "pos/ingest/status", token=self.tokens["admin"], expected_status=200)
         
         if result["success"]:
             status_data = result["data"]
