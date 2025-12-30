@@ -1082,6 +1082,70 @@ class GastroCoreAPITester:
             self.log_test("PDF table plan export", False, f"Error: {str(e)}")
             return False
 
+    def test_seeds_backup_export(self):
+        """Test Seeds Backup Export functionality - Review Request"""
+        print("\n🗂️ Testing Seeds Backup Export...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Seeds Backup Export", False, "Admin token not available")
+            return False
+        
+        seeds_success = True
+        
+        # Test GET /api/admin/seeds/export
+        url = f"{self.base_url}/api/admin/seeds/export"
+        headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                # Check Content-Type header
+                content_type = response.headers.get('content-type', '')
+                if 'application/zip' in content_type:
+                    self.log_test("Seeds Export - Content-Type", True, f"Content-Type: {content_type}")
+                else:
+                    self.log_test("Seeds Export - Content-Type", False, f"Expected application/zip, got: {content_type}")
+                    seeds_success = False
+                
+                # Check Content-Disposition header
+                content_disposition = response.headers.get('content-disposition', '')
+                if 'filename' in content_disposition:
+                    self.log_test("Seeds Export - Content-Disposition", True, f"Content-Disposition: {content_disposition}")
+                else:
+                    self.log_test("Seeds Export - Content-Disposition", False, f"Missing filename in Content-Disposition: {content_disposition}")
+                    seeds_success = False
+                
+                # Check response body is binary ZIP data
+                if len(response.content) > 0:
+                    # Check for ZIP file signature (PK)
+                    if response.content[:2] == b'PK':
+                        zip_size = len(response.content)
+                        self.log_test("Seeds Export - ZIP Data", True, f"Valid ZIP file, size: {zip_size} bytes")
+                    else:
+                        self.log_test("Seeds Export - ZIP Data", False, "Response body is not a valid ZIP file")
+                        seeds_success = False
+                else:
+                    self.log_test("Seeds Export - ZIP Data", False, "Empty response body")
+                    seeds_success = False
+                
+                # Check for "responseText" errors (should not be present in binary response)
+                if b'responseText' not in response.content:
+                    self.log_test("Seeds Export - No responseText errors", True, "No responseText errors found")
+                else:
+                    self.log_test("Seeds Export - No responseText errors", False, "responseText found in binary response")
+                    seeds_success = False
+                
+            else:
+                self.log_test("Seeds Export - HTTP Status", False, f"Expected 200, got {response.status_code}")
+                seeds_success = False
+                
+        except Exception as e:
+            self.log_test("Seeds Export - Request", False, f"Error: {str(e)}")
+            seeds_success = False
+        
+        return seeds_success
+
     def test_sprint3_reminder_rules_crud(self):
         """Test Sprint 3: Reminder Rules CRUD operations"""
         print("\n⏰ Testing Reminder Rules CRUD...")
