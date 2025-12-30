@@ -74,6 +74,10 @@ import POSImportMonitoring from "./pages/POSImportMonitoring";
 import MonthlyPOSCrosscheck from "./pages/MonthlyPOSCrosscheck";
 // Seeds Backup & Restore (Modul 10_COCKPIT)
 import SeedsBackupRestore from "./pages/SeedsBackupRestore";
+// Analytics Pages (Navigation Model A)
+import AnalyticsReservations from "./pages/AnalyticsReservations";
+import AnalyticsStaff from "./pages/AnalyticsStaff";
+import AnalyticsMarketing from "./pages/AnalyticsMarketing";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
