@@ -255,18 +255,17 @@ def extract_net_total(text: str) -> float:
 def extract_hauptwarengruppen(text: str) -> Dict[str, float]:
     """
     Extract Food/Beverage NETTO from Hauptwarengruppen section.
-    KRITISCH: Rechte Zahl = NETTO (nicht Brutto!)
     
-    Pattern examples:
-    - "Food (Speisen) 1234 (€ 5000.00) € 5500.00"
-    - "Beverage (Getränke) 3142 (€ 10189.80) € 10103.02"
-    
-    The format is: Name Count (€ BRUTTO) € NETTO
+    WICHTIG: gastronovi Format in Hauptwarengruppen:
+    - Format: "Name Anzahl (€ NETTO) € BRUTTO"
+    - Beispiel: "Beverage (Getränke) 6645 (€ 28659.80) € 28477.64"
+    - Die Zahl in KLAMMERN ist NETTO!
+    - Die rechte Zahl ohne Klammern ist BRUTTO!
     """
     result = {"food_net": 0.0, "beverage_net": 0.0}
     
     # Find Hauptwarengruppen section
-    hwg_match = re.search(r'Hauptwarengruppen.*?(?=\n[A-Z][a-z]+(?:\s+\n|\s*$)|\nZeitabschnitte|\nKellner|\Z)', 
+    hwg_match = re.search(r'Hauptwarengruppen.*?(?=\n[A-Z][a-z]+(?:\s+\n|\s*$)|\nZeitabschnitte|\nKellner|\nTrinkgeld|\Z)', 
                           text, re.DOTALL | re.IGNORECASE)
     if not hwg_match:
         logger.warning("Hauptwarengruppen section not found")
@@ -278,26 +277,28 @@ def extract_hauptwarengruppen(text: str) -> Dict[str, float]:
     for line in lines:
         line_lower = line.lower()
         
-        # Extract the LAST currency value in the line (this is NETTO)
-        # Pattern: anything followed by € value at the end
-        amounts = re.findall(r'[€]\s*([\d.,]+)', line)
+        # Pattern: Look for value in parentheses (€ NETTO) - this is the NETTO value!
+        # Format: "Beverage (Getränke) 6645 (€ 28659.80) € 28477.64"
+        netto_match = re.search(r'\(€?\s*([\d.,]+)\)', line)
         
-        if not amounts:
-            # Try without € symbol
-            amounts = re.findall(r'\s([\d]+[.,][\d]+)\s*$', line)
+        netto = 0.0
+        if netto_match:
+            # Value in parentheses is NETTO
+            netto = parse_german_currency(netto_match.group(1))
+        else:
+            # Fallback: If no parentheses, try to find currency values
+            # Take the first one as it's more likely to be the relevant value
+            amounts = re.findall(r'€\s*([\d.,]+)', line)
+            if amounts:
+                netto = parse_german_currency(amounts[0])
         
-        if not amounts:
-            continue
-        
-        # Last amount is NETTO (rechte Zahl)
-        netto = parse_german_currency(amounts[-1])
-        
-        if 'beverage' in line_lower or 'getränke' in line_lower:
-            result["beverage_net"] = netto
-            logger.info(f"Beverage NETTO found: {netto}")
-        elif 'food' in line_lower or 'speisen' in line_lower:
-            result["food_net"] = netto
-            logger.info(f"Food NETTO found: {netto}")
+        if netto > 0:
+            if 'beverage' in line_lower or 'getränke' in line_lower:
+                result["beverage_net"] = netto
+                logger.info(f"Beverage NETTO found: {netto}")
+            elif 'food' in line_lower or 'speisen' in line_lower:
+                result["food_net"] = netto
+                logger.info(f"Food NETTO found: {netto}")
     
     return result
 
