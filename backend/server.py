@@ -3173,6 +3173,9 @@ app.include_router(documents_router)
 app.include_router(admin_absences_router)
 app.include_router(admin_documents_router)
 
+# POS Mail Automation Module (Sprint: POS PDF Mail-Automation V1)
+app.include_router(pos_mail_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
