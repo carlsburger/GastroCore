@@ -71,6 +71,8 @@ import ServiceApp from "./pages/ServiceApp";
 // POS Import Monitoring & Monatsabschluss (Sprint: Modul 10_COCKPIT)
 import POSImportMonitoring from "./pages/POSImportMonitoring";
 import MonthlyPOSCrosscheck from "./pages/MonthlyPOSCrosscheck";
+// Seeds Backup & Restore (Modul 10_COCKPIT)
+import SeedsBackupRestore from "./pages/SeedsBackupRestore";
 import "./App.css";
 
 // No Backoffice Access for Mitarbeiter
