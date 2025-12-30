@@ -499,6 +499,34 @@ function App() {
             }
           />
 
+          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* ANALYTICS (Navigation Model A) - Auswertungen             */}
+          {/* ═══════════════════════════════════════════════════════════ */}
+          <Route
+            path="/analytics/reservations"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <AnalyticsReservations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/staff"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <AnalyticsStaff />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/marketing"
+            element={
+              <ProtectedRoute roles={["admin", "schichtleiter"]}>
+                <AnalyticsMarketing />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Marketing Module (Sprint 8) - Admin & Schichtleiter */}
           <Route
             path="/marketing"
