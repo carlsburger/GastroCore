@@ -2698,20 +2698,29 @@ def is_weekend(date_str: str) -> bool:
 
 
 async def get_current_season() -> str:
-    """Determine current season from opening hours periods"""
+    """
+    Determine current season from opening hours periods.
+    
+    SOURCE OF TRUTH: opening_hours_master (via opening_hours_module)
+    LEGACY REMOVED: opening_hours_periods reads removed (collection is empty)
+    """
     try:
-        period = await db.opening_hours_periods.find_one({
-            "archived": False,
-            "is_active": True
-        }, {"_id": 0})
+        from datetime import date
+        from opening_hours_module import get_active_period_for_date
+        
+        # Use central opening hours resolver
+        period = await get_active_period_for_date(date.today())
+        
         if period:
             name = period.get("name", "").lower()
             if "winter" in name:
                 return "winter"
             elif "sommer" in name or "summer" in name:
                 return "summer"
+        
         return "summer"  # Default
-    except:
+    except Exception as e:
+        logger.warning(f"Could not determine current season: {e}")
         return "summer"
 
 
