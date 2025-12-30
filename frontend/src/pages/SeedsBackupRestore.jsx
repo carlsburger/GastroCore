@@ -205,6 +205,7 @@ export default function SeedsBackupRestore() {
   }
 
   const isAdmin = user?.role === "admin";
+  const fingerprint = status?.fingerprint;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -224,8 +225,35 @@ export default function SeedsBackupRestore() {
         </Button>
       </div>
 
+      {/* Seed Version Banner */}
+      {fingerprint?.stored && (
+        <div className={`rounded-lg p-4 flex items-center gap-3 ${
+          fingerprint.matches 
+            ? 'bg-green-50 border border-green-200' 
+            : 'bg-yellow-50 border border-yellow-200'
+        }`}>
+          <Database className={`h-5 w-5 ${fingerprint.matches ? 'text-green-600' : 'text-yellow-600'}`} />
+          <div className="flex-1">
+            <p className={`font-medium ${fingerprint.matches ? 'text-green-800' : 'text-yellow-800'}`}>
+              System basiert auf Seed-Version: <code className="bg-white/50 px-2 py-0.5 rounded font-mono text-sm">{fingerprint.stored}</code>
+            </p>
+            <p className={`text-sm ${fingerprint.matches ? 'text-green-600' : 'text-yellow-600'}`}>
+              Importiert am {formatDate(fingerprint.imported_at)} von {fingerprint.imported_by}
+              {!fingerprint.matches && (
+                <span className="ml-2 font-medium">⚠️ Drift erkannt - aktuelle Version: {fingerprint.current}</span>
+              )}
+            </p>
+          </div>
+          {fingerprint.matches ? (
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+          ) : (
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+          )}
+        </div>
+      )}
+
       {/* Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Verification Status */}
         <Card>
           <CardHeader className="pb-2">
@@ -244,6 +272,26 @@ export default function SeedsBackupRestore() {
             {status?.verification?.errors?.length > 0 && (
               <p className="text-xs text-red-600 mt-2">
                 {status.verification.errors.length} Fehler
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Current Fingerprint */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Seed-Fingerprint
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+              {fingerprint?.current || "—"}
+            </code>
+            {fingerprint?.stored && !fingerprint?.matches && (
+              <p className="text-xs text-yellow-600 mt-2">
+                Weicht von importierter Version ab
               </p>
             )}
           </CardContent>
