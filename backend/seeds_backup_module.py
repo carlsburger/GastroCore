@@ -232,24 +232,38 @@ async def export_collection(name: str) -> Tuple[List[dict], int]:
     
     return cleaned_docs, len(cleaned_docs)
 
-async def create_backup_zip() -> Tuple[io.BytesIO, Dict[str, int]]:
-    """Create ZIP backup of all seed collections"""
+async def create_backup_zip() -> Tuple[io.BytesIO, Dict[str, int], str]:
+    """Create ZIP backup of all seed collections. Returns (buffer, counts, fingerprint)"""
     buffer = io.BytesIO()
     counts = {}
+    seed_data = {}
     
     with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
         for name, config in SEED_COLLECTIONS.items():
             docs, count = await export_collection(name)
             counts[name] = count
+            seed_data[name] = docs
             
             # Create JSON content
             json_content = json.dumps(docs, indent=2, ensure_ascii=False, default=str)
             
             # Add to ZIP
             zf.writestr(config["export_path"], json_content)
+        
+        # Calculate fingerprint
+        fingerprint = calculate_seeds_fingerprint(seed_data)
+        
+        # Add manifest with fingerprint
+        manifest = {
+            "version": "1.0",
+            "fingerprint": fingerprint,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "counts": counts
+        }
+        zf.writestr("seed/manifest.json", json.dumps(manifest, indent=2))
     
     buffer.seek(0)
-    return buffer, counts
+    return buffer, counts, fingerprint
 
 
 # ============== IMPORT FUNCTIONS ==============
