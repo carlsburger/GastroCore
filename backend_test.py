@@ -9141,13 +9141,20 @@ class GastroCoreAPITester:
                                  token=self.tokens["admin"], expected_status=200)
         if result["success"]:
             history_data = result["data"]
-            # History should be a list (empty array is fine)
-            if isinstance(history_data, list):
-                self.log_test("GET /api/admin/staff/import/history", True, 
-                            f"Import history returned: {len(history_data)} entries")
+            # History should be a dict with 'runs' list and 'total' count
+            if isinstance(history_data, dict) and "runs" in history_data and "total" in history_data:
+                runs = history_data["runs"]
+                total = history_data["total"]
+                if isinstance(runs, list):
+                    self.log_test("GET /api/admin/staff/import/history", True, 
+                                f"Import history returned: {total} total entries, {len(runs)} runs")
+                else:
+                    self.log_test("GET /api/admin/staff/import/history", False, 
+                                f"Expected 'runs' to be a list, got: {type(runs)}")
+                    staff_import_success = False
             else:
                 self.log_test("GET /api/admin/staff/import/history", False, 
-                            f"Expected list, got: {type(history_data)}")
+                            f"Expected dict with 'runs' and 'total' fields, got: {history_data}")
                 staff_import_success = False
         else:
             self.log_test("GET /api/admin/staff/import/history", False, 
