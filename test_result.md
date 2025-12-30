@@ -890,3 +890,111 @@ agent_communication:
     message: "✅ EVENT-PRICING + RESERVIERUNG INTEGRATION TESTING COMPLETE: All 6 integration test scenarios passed successfully. A) Schnitzel satt (4 Personen, 29,90€ p.P., keine Anzahlung) → status=neu, total=119.60€, payment=none ✅ B) Gänsemenü main_only (4 Personen, 34,90€ p.P., 20€ Anzahlung) → status=pending_payment, total=139.60€, due=80.00€ ✅ C) Valentinstag menu_classic (2 Personen, 59,90€ p.P., 30€ Anzahlung) → status=pending_payment, total=119.80€, due=60.00€ ✅ D) Payment confirmation (80€, bar) → status=bestätigt, payment_status=paid ✅ E) Pending payments list working ✅ F) Expire unpaid reservations working ✅ All price calculations, status transitions, and payment workflows are functioning correctly."
   - agent: "testing"
     message: "✅ MODUL 30 FINAL TESTING COMPLETE (2025-12-29): All 18 backend tests passed successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) Shifts V2 API: List with date filter (retrieved 32 shifts for week 2025-12-22 to 2025-12-28) ✅, Create new shift (status=DRAFT) ✅, Publish shift (DRAFT→PUBLISHED) ✅, Assign staff to shift (assigned_staff_ids array) ✅ 2) Timeclock State Machine: Clock-in (state=WORKING) ✅, Break-start (WORKING→BREAK) ✅, Clock-out during BREAK properly BLOCKED with 409 CONFLICT ✅, Break-end (BREAK→WORKING) ✅, Clock-out after break (WORKING→CLOSED) ✅ 3) Admin daily overview working correctly ✅. All requirements from review request satisfied. Backend is production-ready."
+
+#====================================================================================================
+# POS PDF Mail-Automation V1 (30.12.2025) - IMPLEMENTATION COMPLETE
+#====================================================================================================
+#
+# STATUS: BACKEND IMPLEMENTATION COMPLETE
+# VERSION: V1.0 (IMAP + PDF Parser + Daily Metrics)
+#
+# ENDPOINTS IMPLEMENTIERT:
+# - POST /api/pos/ingest/trigger (admin-only) - Manueller Ingest
+# - GET /api/pos/documents (admin-only) - Dokumente-Liste
+# - GET /api/pos/daily-metrics (admin-only) - Tagesumsätze
+# - GET /api/pos/ingest/status (admin-only) - Ingest-Status
+# - POST /api/pos/scheduler/start (admin-only) - Scheduler starten
+# - POST /api/pos/scheduler/stop (admin-only) - Scheduler stoppen
+#
+# V1 SCOPE:
+# - KEINE Gäste/Bons
+# - KEIN Pro-Kopf
+# - NUR: net_total, food_net, beverage_net
+#
+# KONFIGURATION (.env):
+# - POS_IMAP_HOST=imap.ionos.de
+# - POS_IMAP_PORT=993
+# - POS_IMAP_USER=berichte@carlsburg.de
+# - POS_IMAP_PASSWORD= (PLACEHOLDER - muss gesetzt werden!)
+# - POS_IMAP_FOLDER=INBOX
+# - POS_IMAP_TLS=true
+#
+#====================================================================================================
+
+user_problem_statement: |
+  POS PDF Mail-Automation V1
+  
+  ZIELE:
+  1. IMAP-Ingestion für gastronovi Z-Berichte aus berichte@carlsburg.de (IONOS)
+  2. PDF Parser für Netto-Werte (net_total, food_net, beverage_net)
+  3. Automatischer Scheduler (10-Minuten-Intervall)
+  4. UID-basiertes Lesen + SHA256 Duplikat-Schutz
+  
+  MAIL-FILTER:
+  - FROM: noreply@gastronovi.de
+  - SUBJECT: beginnt mit "Tagesbericht" oder "Monatsbericht"
+  
+  DATENMODELLE:
+  - pos_documents (PDF-Metadaten)
+  - pos_daily_metrics (Tagesumsätze)
+  - pos_ingest_state (UID-Tracking)
+  
+  BACKEND URL: https://atlas-check.preview.emergentagent.com
+
+backend:
+  - task: "POS Mail Ingest Status API"
+    implemented: true
+    working: pending
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+
+  - task: "POS Documents API"
+    implemented: true
+    working: pending
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+
+  - task: "POS Daily Metrics API"
+    implemented: true
+    working: pending
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+
+  - task: "POS Manual Ingest Trigger"
+    implemented: true
+    working: pending
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+
+  - task: "POS Scheduler Control"
+    implemented: true
+    working: pending
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+
+metadata:
+  created_by: "main_agent"
+  version: "17.0"
+  session_date: "2025-12-30"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "POS Mail Ingest Status API"
+    - "POS Documents API"
+    - "POS Daily Metrics API"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "critical_first"
+
