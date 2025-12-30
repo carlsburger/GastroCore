@@ -3188,6 +3188,9 @@ app.add_middleware(
 async def startup():
     """Initialize default settings, rules, and ensure admin exists on startup"""
     
+    # Set DB reference for POS Mail Module
+    set_pos_mail_db(db)
+    
     # AUTO-RESTORE: Prüfe ob kritische Collections leer sind und stelle ggf. wieder her
     try:
         from auto_restore import check_and_restore
