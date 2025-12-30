@@ -602,6 +602,25 @@ async def import_seeds(
         else:
             result.status = "success"
         
+        # Calculate and store fingerprint after successful import
+        imported_fingerprint = None
+        if not dry_run and result.status == "success":
+            fp_data = await get_current_seeds_fingerprint()
+            imported_fingerprint = fp_data["fingerprint"]
+            
+            # Store seed version info
+            await db.seed_version.update_one(
+                {"type": "current"},
+                {"$set": {
+                    "type": "current",
+                    "fingerprint": imported_fingerprint,
+                    "imported_at": datetime.now(timezone.utc).isoformat(),
+                    "imported_by": user.get("email", user.get("sub", "unknown")),
+                    "source": "import"
+                }},
+                upsert=True
+            )
+        
         # Audit log
         await db.audit_logs.insert_one({
             "id": str(uuid.uuid4()),
@@ -612,6 +631,7 @@ async def import_seeds(
             "options": options.model_dump(),
             "result": {
                 "status": result.status,
+                "fingerprint": imported_fingerprint,
                 "created": result.created,
                 "updated": result.updated,
                 "archived": result.archived,
@@ -619,7 +639,7 @@ async def import_seeds(
             }
         })
         
-        logger.info(f"Seeds import by {user.get('email')}: {result.status}, created={result.created}, updated={result.updated}")
+        logger.info(f"Seeds import by {user.get('email')}: {result.status}, fingerprint={imported_fingerprint}, created={result.created}, updated={result.updated}")
         
         return result
         
