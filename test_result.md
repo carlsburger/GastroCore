@@ -1006,6 +1006,147 @@ agent_communication:
   - agent: "testing"
     message: "✅ POS PDF MAIL-AUTOMATION V1 BACKEND TESTING COMPLETE (30.12.2025): All 5 POS Mail Automation backend tasks tested successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) GET /api/pos/ingest/status: All required fields present, IMAP configuration correct (imap.ionos.de/berichte@carlsburg.de), imap_configured=false as expected ✅ 2) GET /api/pos/documents: Correct structure with count/documents fields, empty list as expected ✅ 3) GET /api/pos/daily-metrics: 12 metrics with proper structure (date, net_total, food_net, beverage_net), complete summary fields ✅ 4) POST /api/pos/ingest/trigger: Proper validation, returns not_configured when IMAP password missing ✅ 5) POST /api/pos/scheduler/start/stop: Scheduler control working (10-minute interval) ✅ 6) Authorization: All endpoints properly block unauthorized access (403 Forbidden) ✅. All requirements from review request satisfied. POS PDF Mail-Automation V1 backend is production-ready."
 
+#====================================================================================================
+# Shift Templates V2 Migration (30.12.2025) - TESTING COMPLETE ✅
+#====================================================================================================
+#
+# STATUS: ALL TESTS PASSED
+# VERSION: Shift Templates V2 Migration Backend Testing
+# ABNAHME: READY FOR PRODUCTION
+#
+# SHIFT TEMPLATES V2 MIGRATION STATUS:
+# - POST /api/admin/shift-templates/migrate-v1-to-v2: ✅ WORKING (idempotent)
+# - POST /api/admin/shift-templates/import-master: ✅ WORKING (9 master templates)
+# - GET /api/admin/shift-templates/verify: ✅ WORKING (status=READY)
+# - GET /api/admin/shift-templates/normalize-department: ✅ WORKING (all aliases)
+# - GET /api/staff/shift-templates: ✅ WORKING (canonical departments)
+#
+#====================================================================================================
+
+user_problem_statement: |
+  Shift Templates V2 Migration - Backend Testing
+
+  BACKEND URL: http://localhost:8001
+  CREDENTIALS: admin@carlsburg.de / Carlsburg2025!
+
+  ENDPOINTS ZU TESTEN:
+
+  1. POST /api/admin/shift-templates/migrate-v1-to-v2 (admin-only)
+     - Sollte erfolgreich sein (idempotent)
+     - Response: status, v1_found, migrated, updated, errors[]
+
+  2. POST /api/admin/shift-templates/import-master (admin-only)
+     - Query param: archive_missing=false
+     - Response: status, created, updated, archived, templates[]
+     - Alle 9 Master-Templates sollten vorhanden sein
+
+  3. GET /api/admin/shift-templates/verify (admin-only)
+     - Response: status="READY", issues=[], counts, departments, samples
+     - counts.active sollte 9 sein
+     - departments sollte service, kitchen, reinigung enthalten
+
+  4. GET /api/admin/shift-templates/normalize-department (admin-only)
+     - Test verschiedene Werte:
+       - ?value=kitchen → canonical="kitchen"
+       - ?value=kueche → canonical="kitchen"
+       - ?value=cleaning → canonical="reinigung"
+       - ?value=ice_maker → canonical="eismacher"
+       - ?value=service → canonical="service"
+
+  5. GET /api/staff/shift-templates (admin)
+     - Sollte nur aktive Templates zurückgeben
+     - Alle sollten department im V2 kanonischen Format haben (lowercase)
+     - Mindestens 9 Templates erwartet
+
+  AKZEPTANZKRITERIEN:
+  - Verify Status = "READY"
+  - Keine V1 aktiven Templates mehr
+  - Alle Departments sind kanonisch (service, kitchen, reinigung, eismacher, kuechenhilfe)
+  - Normalisierung funktioniert für alle Aliases
+
+backend:
+  - task: "V1 to V2 Migration"
+    implemented: true
+    working: true
+    file: "shift_template_migration.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ POST /api/admin/shift-templates/migrate-v1-to-v2 → Status: success, V1 found: 0, Migrated: 0. Migration is idempotent and working correctly."
+
+  - task: "Master Templates Import"
+    implemented: true
+    working: true
+    file: "shift_template_migration.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ POST /api/admin/shift-templates/import-master → Status: success, Created: 0, Updated: 9, Templates: 9. All 9 master templates successfully imported/updated."
+
+  - task: "Templates Verification"
+    implemented: true
+    working: true
+    file: "shift_template_migration.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/admin/shift-templates/verify → Status: READY, Active: 9, Departments: ['kitchen', 'reinigung', 'service']. All verification checks passed, no issues found."
+
+  - task: "Department Normalization"
+    implemented: true
+    working: true
+    file: "shift_template_migration.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/admin/shift-templates/normalize-department → All test values normalized correctly: kitchen→kitchen, kueche→kitchen, cleaning→reinigung, ice_maker→eismacher, service→service. All aliases working."
+
+  - task: "Staff Templates API"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/staff/shift-templates → Retrieved 9 templates, all with canonical departments (lowercase format). All templates are in V2 schema format."
+
+metadata:
+  created_by: "testing_agent"
+  version: "18.0"
+  session_date: "2025-12-30"
+  test_sequence: 6
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "V1 to V2 Migration"
+    - "Master Templates Import"
+    - "Templates Verification"
+    - "Department Normalization"
+    - "Staff Templates API"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "critical_first"
+
+agent_communication:
+  - agent: "testing"
+    message: "✅ SHIFT TEMPLATES V2 MIGRATION BACKEND TESTING COMPLETE (30.12.2025): All 5 shift template migration backend tasks tested successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) POST /api/admin/shift-templates/migrate-v1-to-v2: Idempotent migration working (V1 found: 0, migrated: 0) ✅ 2) POST /api/admin/shift-templates/import-master: All 9 master templates imported/updated successfully ✅ 3) GET /api/admin/shift-templates/verify: Status=READY, Active=9, Departments=['kitchen', 'reinigung', 'service'] ✅ 4) GET /api/admin/shift-templates/normalize-department: All aliases working correctly (kitchen, kueche→kitchen, cleaning→reinigung, ice_maker→eismacher, service→service) ✅ 5) GET /api/staff/shift-templates: 9 templates retrieved, all with canonical V2 departments ✅. All acceptance criteria from review request satisfied. Shift Templates V2 Migration backend is production-ready."
+
 metadata:
   created_by: "main_agent"
   version: "17.0"
