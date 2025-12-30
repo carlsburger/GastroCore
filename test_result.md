@@ -657,6 +657,7 @@ metadata:
 
 test_plan:
   current_focus:
+    - "POS Mail Import Status API"
     - "Staff Import Template API"
     - "Staff Import History API"
     - "Staff Import Authorization"
