@@ -74,7 +74,7 @@ const CarlsburgLogo = ({ collapsed = false, className = "" }) => (
     {!collapsed && (
       <div className="flex flex-col leading-none">
         <span className="text-[10px] text-[#fafbed]/70 tracking-widest uppercase">
-          Cockpit
+          CB | Cockpit
         </span>
       </div>
     )}
