@@ -1011,9 +1011,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "POS Mail Ingest Status API"
-    - "POS Documents API"
-    - "POS Daily Metrics API"
+    - "Event Dashboard Summary API"
+    - "Event Dashboard Legacy Endpoint"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
