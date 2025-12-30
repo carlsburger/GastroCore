@@ -7687,6 +7687,10 @@ class GastroCoreAPITester:
         print("\n📊 MODUL 10: POS COCKPIT MONITORING & MONATSABSCHLUSS:")
         test_results.append(self.test_pos_cockpit_monitoring())
         
+        # MODUL 10_COCKPIT: SEEDS BACKUP & RESTORE - as per review request
+        print("\n🌱 MODUL 10_COCKPIT: SEEDS BACKUP & RESTORE:")
+        test_results.append(self.test_seeds_backup_restore())
+        
         # Summary
         print("\n" + "=" * 80)
         print(f"🏁 TESTING COMPLETE")
