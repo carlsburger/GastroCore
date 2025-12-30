@@ -95,6 +95,46 @@ user_problem_statement: |
   BACKEND URL: https://gastrocore-safe.preview.emergentagent.com
 
 backend:
+  # ============== STAFF IMPORT API ==============
+  
+  - task: "Staff Import Template API"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/admin/staff/import/template → Returns proper template structure with all expected fields: required_columns, identifier_columns, optional_columns, role_values, employment_type_values, notes. Column mapping info working correctly."
+
+  - task: "Staff Import History API"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/admin/staff/import/history → Returns proper history structure with 'runs' array and 'total' count. Import history returned: 0 total entries, 0 runs (empty as expected)."
+
+  - task: "Staff Import Authorization"
+    implemented: true
+    working: true
+    file: "staff_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Authorization working correctly: Both staff import endpoints (template, history) properly return 403 Forbidden when accessed without admin token. Security requirements met."
+
+  # ============== EVENT DASHBOARD WIDGET ==============
+
   - task: "Event Dashboard Summary API"
     implemented: true
     working: true
