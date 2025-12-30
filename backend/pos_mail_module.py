@@ -119,7 +119,15 @@ def decode_email_header(header_value: str) -> str:
     return ''.join(result)
 
 def parse_german_currency(value: str) -> float:
-    """Parse German currency format: 1.234,56 or 1234,56 → 1234.56"""
+    """
+    Parse currency format - handles both German (1.234,56) and English (1234.56) formats.
+    
+    Detection logic:
+    - If contains both . and , → German format (1.234,56)
+    - If contains only , → German format (1234,56)
+    - If contains only . → Check if decimal (1234.56) or thousands (1.234)
+    - Pattern: If . is followed by exactly 2 digits at end → decimal
+    """
     if not value:
         return 0.0
     try:
@@ -128,11 +136,36 @@ def parse_german_currency(value: str) -> float:
         # Handle negative with minus or parentheses
         is_negative = '-' in cleaned or cleaned.startswith('(')
         cleaned = re.sub(r'[()-]', '', cleaned)
-        # German format: 1.234,56 → 1234.56
-        # Also handle: 119.450,74 (thousands separator with dot)
-        cleaned = cleaned.replace('.', '').replace(',', '.')
+        
+        if not cleaned:
+            return 0.0
+        
+        # Detect format
+        has_dot = '.' in cleaned
+        has_comma = ',' in cleaned
+        
+        if has_dot and has_comma:
+            # German format: 1.234,56
+            cleaned = cleaned.replace('.', '').replace(',', '.')
+        elif has_comma and not has_dot:
+            # German format without thousands: 1234,56
+            cleaned = cleaned.replace(',', '.')
+        elif has_dot and not has_comma:
+            # Could be English (1234.56) or German thousands (1.234)
+            # Check if dot is followed by exactly 2 digits at the end → decimal
+            if re.search(r'\.\d{2}$', cleaned):
+                # English decimal format: 1234.56
+                pass  # Already correct
+            elif re.search(r'\.\d{3}', cleaned):
+                # German thousands separator: 1.234 → 1234
+                cleaned = cleaned.replace('.', '')
+            # else: assume decimal (e.g., 1234.5)
+        
         result = float(cleaned) if cleaned else 0.0
         return -result if is_negative else result
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Currency parse failed for '{value}': {e}")
+        return 0.0
     except (ValueError, TypeError) as e:
         logger.warning(f"Currency parse failed for '{value}': {e}")
         return 0.0
