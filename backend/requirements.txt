@@ -79,3 +79,4 @@ httpx
 # Emergent Integrations (Stripe, etc)
 emergentintegrations
 stripe
+pdfplumber>=0.10.0
