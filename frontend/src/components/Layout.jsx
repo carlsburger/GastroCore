@@ -56,6 +56,11 @@ import {
   CalendarOff,
   ExternalLink,
   Database,
+  PieChart,
+  Briefcase,
+  Activity,
+  Server,
+  ShieldCheck,
 } from "lucide-react";
 
 // Offizielles Carlsburg Logo URL - aus zentraler Konstante
