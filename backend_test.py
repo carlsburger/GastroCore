@@ -7086,6 +7086,179 @@ class GastroCoreAPITester:
                         f"Status: {result['status_code']}")
             return False
 
+    def test_shift_templates_v2_migration(self):
+        """Test Shift Templates V2 Migration - Backend Testing"""
+        print("\n🔄 Testing Shift Templates V2 Migration...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Shift Templates V2 Migration", False, "Admin token not available")
+            return False
+        
+        migration_success = True
+        
+        # 1. POST /api/admin/shift-templates/migrate-v1-to-v2 (admin-only)
+        result = self.make_request("POST", "admin/shift-templates/migrate-v1-to-v2", 
+                                 {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            migration_data = result["data"]
+            required_fields = ["status", "v1_found", "migrated", "updated", "errors"]
+            missing_fields = [field for field in required_fields if field not in migration_data]
+            
+            if not missing_fields:
+                self.log_test("POST /api/admin/shift-templates/migrate-v1-to-v2", True, 
+                            f"Status: {migration_data.get('status')}, V1 found: {migration_data.get('v1_found')}, Migrated: {migration_data.get('migrated')}")
+            else:
+                self.log_test("POST /api/admin/shift-templates/migrate-v1-to-v2", False, 
+                            f"Missing fields: {missing_fields}")
+                migration_success = False
+        else:
+            self.log_test("POST /api/admin/shift-templates/migrate-v1-to-v2", False, 
+                        f"Status: {result['status_code']}")
+            migration_success = False
+        
+        # 2. POST /api/admin/shift-templates/import-master (admin-only)
+        result = self.make_request("POST", "admin/shift-templates/import-master", 
+                                 {"archive_missing": False}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            import_data = result["data"]
+            required_fields = ["status", "created", "updated", "archived", "templates"]
+            missing_fields = [field for field in required_fields if field not in import_data]
+            
+            if not missing_fields:
+                templates_count = len(import_data.get("templates", []))
+                self.log_test("POST /api/admin/shift-templates/import-master", True, 
+                            f"Status: {import_data.get('status')}, Created: {import_data.get('created')}, Updated: {import_data.get('updated')}, Templates: {templates_count}")
+                
+                # Check if we have the expected 9 master templates
+                if templates_count >= 9:
+                    self.log_test("Master templates count (≥9)", True, f"Found {templates_count} templates")
+                else:
+                    self.log_test("Master templates count (≥9)", False, f"Expected ≥9, got {templates_count}")
+                    migration_success = False
+            else:
+                self.log_test("POST /api/admin/shift-templates/import-master", False, 
+                            f"Missing fields: {missing_fields}")
+                migration_success = False
+        else:
+            self.log_test("POST /api/admin/shift-templates/import-master", False, 
+                        f"Status: {result['status_code']}")
+            migration_success = False
+        
+        # 3. GET /api/admin/shift-templates/verify (admin-only)
+        result = self.make_request("GET", "admin/shift-templates/verify", 
+                                 {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            verify_data = result["data"]
+            required_fields = ["status", "issues", "counts", "departments", "samples"]
+            missing_fields = [field for field in required_fields if field not in verify_data]
+            
+            if not missing_fields:
+                status = verify_data.get("status")
+                active_count = verify_data.get("counts", {}).get("active", 0)
+                departments = verify_data.get("departments", {})
+                
+                self.log_test("GET /api/admin/shift-templates/verify", True, 
+                            f"Status: {status}, Active: {active_count}, Departments: {list(departments.keys())}")
+                
+                # Check if status is READY
+                if status == "READY":
+                    self.log_test("Verify Status = READY", True)
+                else:
+                    self.log_test("Verify Status = READY", False, f"Status: {status}, Issues: {verify_data.get('issues', [])}")
+                    migration_success = False
+                
+                # Check if active count is 9
+                if active_count == 9:
+                    self.log_test("Active templates count = 9", True)
+                else:
+                    self.log_test("Active templates count = 9", False, f"Expected 9, got {active_count}")
+                    migration_success = False
+                
+                # Check if departments contain expected canonical departments
+                expected_depts = ["service", "kitchen", "reinigung"]
+                found_depts = [dept for dept in expected_depts if dept in departments]
+                if len(found_depts) >= 3:
+                    self.log_test("Canonical departments present", True, f"Found: {found_depts}")
+                else:
+                    self.log_test("Canonical departments present", False, f"Expected {expected_depts}, found {found_depts}")
+                    migration_success = False
+            else:
+                self.log_test("GET /api/admin/shift-templates/verify", False, 
+                            f"Missing fields: {missing_fields}")
+                migration_success = False
+        else:
+            self.log_test("GET /api/admin/shift-templates/verify", False, 
+                        f"Status: {result['status_code']}")
+            migration_success = False
+        
+        # 4. GET /api/admin/shift-templates/normalize-department (admin-only)
+        test_values = [
+            ("kitchen", "kitchen"),
+            ("kueche", "kitchen"),
+            ("cleaning", "reinigung"),
+            ("ice_maker", "eismacher"),
+            ("service", "service")
+        ]
+        
+        normalize_success = True
+        for test_value, expected in test_values:
+            result = self.make_request("GET", "admin/shift-templates/normalize-department", 
+                                     {"value": test_value}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                normalize_data = result["data"]
+                canonical = normalize_data.get("canonical")
+                valid = normalize_data.get("valid", False)
+                
+                if valid and canonical == expected:
+                    self.log_test(f"Normalize '{test_value}' → '{expected}'", True)
+                else:
+                    self.log_test(f"Normalize '{test_value}' → '{expected}'", False, 
+                                f"Got: {canonical}, Valid: {valid}")
+                    normalize_success = False
+            else:
+                self.log_test(f"Normalize '{test_value}' → '{expected}'", False, 
+                            f"Status: {result['status_code']}")
+                normalize_success = False
+        
+        if normalize_success:
+            self.log_test("Department normalization tests", True, "All normalization tests passed")
+        else:
+            migration_success = False
+        
+        # 5. GET /api/staff/shift-templates (admin)
+        result = self.make_request("GET", "staff/shift-templates", 
+                                 {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            staff_templates = result["data"]
+            if isinstance(staff_templates, list):
+                # Check if all templates have canonical department format (lowercase)
+                canonical_depts = ["service", "kitchen", "reinigung", "eismacher", "kuechenhilfe"]
+                non_canonical = [t for t in staff_templates if t.get("department") not in canonical_depts]
+                
+                if not non_canonical:
+                    self.log_test("GET /api/staff/shift-templates", True, 
+                                f"Retrieved {len(staff_templates)} templates, all with canonical departments")
+                    
+                    # Check if we have at least 9 templates
+                    if len(staff_templates) >= 9:
+                        self.log_test("Staff templates count (≥9)", True, f"Found {len(staff_templates)} templates")
+                    else:
+                        self.log_test("Staff templates count (≥9)", False, f"Expected ≥9, got {len(staff_templates)}")
+                        migration_success = False
+                else:
+                    self.log_test("GET /api/staff/shift-templates", False, 
+                                f"Found {len(non_canonical)} templates with non-canonical departments")
+                    migration_success = False
+            else:
+                self.log_test("GET /api/staff/shift-templates", False, "Response is not a list")
+                migration_success = False
+        else:
+            self.log_test("GET /api/staff/shift-templates", False, 
+                        f"Status: {result['status_code']}")
+            migration_success = False
+        
+        return migration_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
