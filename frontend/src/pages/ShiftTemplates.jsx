@@ -463,6 +463,9 @@ export default function ShiftTemplates() {
                 <SelectContent>
                   <SelectItem value="service">Service</SelectItem>
                   <SelectItem value="kitchen">Küche</SelectItem>
+                  <SelectItem value="reinigung">Reinigung</SelectItem>
+                  <SelectItem value="eismacher">Eismacher</SelectItem>
+                  <SelectItem value="kuechenhilfe">Küchenhilfe</SelectItem>
                 </SelectContent>
               </Select>
             </div>
