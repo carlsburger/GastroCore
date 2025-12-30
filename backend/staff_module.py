@@ -2643,40 +2643,35 @@ async def seed_default_templates(user: dict = Depends(require_admin)):
 # ----- APPLY TEMPLATES TO SCHEDULE -----
 
 async def get_closing_time_for_date(date_str: str) -> Optional[str]:
-    """Get closing time for a specific date from opening hours"""
+    """
+    Get closing time for a specific date from opening hours.
+    
+    SOURCE OF TRUTH: opening_hours_master (via opening_hours_module)
+    LEGACY REMOVED: opening_hours_periods reads removed (collection is empty)
+    """
     try:
-        # Try to get from opening-hours effective
-        from datetime import datetime
-        day = await db.opening_hours_periods.find_one({"archived": False}, {"_id": 0})
-        if not day:
-            return "20:00"  # Default fallback
+        from datetime import datetime, date as date_type
+        from opening_hours_module import calculate_effective_hours
         
-        # Get effective hours for the date
-        # This is a simplified version - in production, use the full opening-hours logic
+        # Parse date
         dt = datetime.fromisoformat(date_str)
-        weekday = dt.weekday()
+        target_date = dt.date() if hasattr(dt, 'date') else date_type.fromisoformat(date_str)
         
-        # Check closures first
-        closure = await db.closures.find_one({
-            "date": date_str,
-            "archived": False
-        }, {"_id": 0})
-        if closure and closure.get("full_day"):
-            return None  # Closed
+        # Use central opening hours resolver
+        effective = await calculate_effective_hours(target_date)
         
-        # Get opening hours for this weekday
-        hours = await db.opening_hours_periods.find_one({
-            "archived": False,
-            "is_active": True
-        }, {"_id": 0})
+        # If closed, return None
+        if not effective.get("is_open") or effective.get("is_closed_full_day"):
+            return None
         
-        if hours and hours.get("days"):
-            day_config = hours["days"].get(str(weekday))
-            if day_config and day_config.get("blocks"):
-                last_block = day_config["blocks"][-1]
-                return last_block.get("end", "20:00")
+        # Get last block's end time
+        blocks = effective.get("blocks", [])
+        if blocks:
+            last_block = blocks[-1]
+            return last_block.get("end", "20:00")
         
-        return "20:00"  # Default
+        return "20:00"  # Default fallback
+        
     except Exception as e:
         logger.warning(f"Could not get closing time for {date_str}: {e}")
         return "20:00"
