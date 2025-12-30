@@ -119,6 +119,80 @@ backend:
         agent: "testing"
         comment: "✅ short_name field working correctly. Max 28 characters with '…' suffix when truncated. Tested events show proper length handling (e.g., 'Spareribs Sattessen' = 19 chars)."
 
+  # ============== MODUL 10: POS COCKPIT MONITORING & MONATSABSCHLUSS ==============
+  
+  - task: "POS Extended Status API"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/ingest/status-extended → All required fields present (scheduler_running, imap_configured, documents_total, metrics_total, extended). Extended stats include docs_today=0, docs_week, failed_today, failed_week, current_month_crosscheck with warning=False."
+
+  - task: "POS Monthly Crosscheck API"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/monthly-crosscheck?month=2025-12 → Returns proper crosscheck structure with month, has_monthly_pdf=False, has_daily_data=True, daily_count=5, daily_sum_net_total, daily_sum_food_net, daily_sum_beverage_net, warning=False, warning_reasons=[]."
+
+  - task: "POS Monthly Status API"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/monthly-status?month=2025-12 → Returns combined status with month, crosscheck{}, confirmed=False, locked=False, confirmed_by=None, confirmed_at=None. Properly combines crosscheck data with confirmation state."
+
+  - task: "POS Monthly Confirm API"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ POST /api/pos/monthly/2025-10/confirm → Successfully confirmed month 2025-10 by admin@carlsburg.de with status=confirmed, locked=true. Verification shows confirmed=true, locked=true in subsequent GET monthly-status call."
+
+  - task: "POS Existing Endpoints Compatibility"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ All existing POS endpoints working: GET /api/pos/ingest/status, GET /api/pos/documents, GET /api/pos/daily-metrics, POST /api/pos/ingest/trigger, POST /api/pos/scheduler/start, POST /api/pos/scheduler/stop. Backward compatibility maintained."
+
+  - task: "POS Authorization Security"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Authorization working correctly: All new POS endpoints (status-extended, monthly-crosscheck, monthly-status, monthly/confirm) properly return 403 Forbidden when accessed without admin token. Security requirements met."
+
 #====================================================================================================
 # Modul 20: BACKEND-GUARDS (29.12.2025) - CRITICAL BUG FOUND ❌
 #====================================================================================================
