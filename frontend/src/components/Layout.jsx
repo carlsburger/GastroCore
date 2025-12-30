@@ -134,6 +134,7 @@ const navigationGroups = [
     roles: ["admin", "schichtleiter"],
     children: [
       { path: "/staff", label: "Übersicht", icon: UserCog },
+      { path: "/staff-import", label: "Import", icon: Upload, roles: ["admin"] },
       { path: "/shifts-admin", label: "Dienstplan", icon: CalendarClock },
       { path: "/absences", label: "Abwesenheiten", icon: CalendarOff },
       { path: "/shift-templates", label: "Schichtmodelle", icon: FileText },
