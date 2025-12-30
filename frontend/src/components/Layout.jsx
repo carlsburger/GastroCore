@@ -425,10 +425,12 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
   const groupRef = React.useRef(null);
   const Icon = group.icon;
   
-  // Prüfe ob ein Child aktiv ist
+  // Prüfe ob ein Child aktiv ist (Divider ausschließen)
   const hasActiveChild = group.children?.some(child => 
-    location.pathname === child.path || 
-    (child.path !== "/" && location.pathname.startsWith(child.path))
+    !child.divider && (
+      location.pathname === child.path || 
+      (child.path && child.path !== "/" && location.pathname.startsWith(child.path))
+    )
   );
 
   // Auto-open NUR wenn ein Child aktiv ist
@@ -451,9 +453,9 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
     }
   }, [isOpen, collapsed]);
 
-  // Filter children by role AND hidden flag
+  // Filter children by role AND hidden flag (keep dividers)
   const visibleChildren = group.children?.filter(child => 
-    !child.hidden && (!child.roles || child.roles.some(role => hasRole(role)))
+    child.divider || (!child.hidden && (!child.roles || child.roles.some(role => hasRole(role))))
   ) || [];
 
   // Prüfe ob User Rolle hat
@@ -486,7 +488,9 @@ const NavGroup = ({ group, collapsed, location, onNavigate, hasRole }) => {
     );
   }
 
-  if (visibleChildren.length === 0) return null;
+  // Zähle nur echte Menüpunkte (keine Divider)
+  const actualMenuItems = visibleChildren.filter(c => !c.divider);
+  if (actualMenuItems.length === 0) return null;
 
   return (
     <div className="space-y-1" ref={groupRef}>
