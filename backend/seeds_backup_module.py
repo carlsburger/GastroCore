@@ -135,6 +135,59 @@ class VerifyResult(BaseModel):
     errors: List[str] = []
 
 
+# ============== HASH / FINGERPRINT ==============
+
+def calculate_content_hash(content: str) -> str:
+    """Calculate SHA256 hash of content, return first 12 chars"""
+    return hashlib.sha256(content.encode('utf-8')).hexdigest()[:12]
+
+def calculate_seeds_fingerprint(seed_data: Dict[str, List[dict]]) -> str:
+    """
+    Calculate a deterministic fingerprint for seed data.
+    Sorts keys and values for consistent hashing.
+    """
+    # Create sorted, deterministic JSON representation
+    sorted_data = {}
+    for key in sorted(seed_data.keys()):
+        docs = seed_data[key]
+        # Sort documents by id for consistency
+        sorted_docs = sorted(docs, key=lambda x: x.get('id', ''))
+        sorted_data[key] = sorted_docs
+    
+    canonical_json = json.dumps(sorted_data, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(canonical_json.encode('utf-8')).hexdigest()[:12]
+
+async def get_current_seeds_fingerprint() -> Dict[str, Any]:
+    """
+    Calculate fingerprint of current DB seed state.
+    Returns hash and metadata.
+    """
+    seed_data = {}
+    
+    for name, config in SEED_COLLECTIONS.items():
+        collection = db[config["collection"]]
+        filter_query = config.get("filter", {})
+        docs = await collection.find(filter_query, {"_id": 0}).to_list(1000)
+        
+        # Clean documents
+        cleaned_docs = []
+        for doc in docs:
+            cleaned = clean_document(doc)
+            if name == "shift_templates" and "department" in cleaned:
+                cleaned["department"] = normalize_department(cleaned["department"])
+            cleaned_docs.append(cleaned)
+        
+        seed_data[name] = cleaned_docs
+    
+    fingerprint = calculate_seeds_fingerprint(seed_data)
+    
+    return {
+        "fingerprint": fingerprint,
+        "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "collections": {name: len(docs) for name, docs in seed_data.items()}
+    }
+
+
 # ============== EXPORT FUNCTIONS ==============
 
 def clean_document(doc: dict) -> dict:
