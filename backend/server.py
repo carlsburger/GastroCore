@@ -132,6 +132,9 @@ from reservation_guards import (
 # POS Mail Automation Module (Sprint: POS PDF Mail-Automation V1)
 from pos_mail_module import pos_mail_router, set_db as set_pos_mail_db
 
+# Shift Template Migration Module (Sprint: Schema V2 Migration)
+from shift_template_migration import migration_router as shift_migration_router, set_db as set_migration_db
+
 # ============== APP SETUP ==============
 app = FastAPI(
     title="GastroCore API",
