@@ -35,13 +35,18 @@ logging.basicConfig(level=logging.INFO)
 # Router - /api/pos/* (admin-only)
 pos_mail_router = APIRouter(prefix="/api/pos", tags=["POS Mail Automation"])
 
-# MongoDB wird aus server.py importiert
-db = None
+# MongoDB - import from core.database for consistency
+try:
+    from core.database import db
+except ImportError:
+    # Fallback for standalone usage
+    db = None
 
 def set_db(database):
-    """Set database reference from server.py"""
+    """Set database reference (fallback if core.database not available)"""
     global db
-    db = database
+    if db is None:
+        db = database
 
 
 # ============== CONFIGURATION ==============
