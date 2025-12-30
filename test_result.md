@@ -618,9 +618,9 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "16.0"
-  session_date: "2025-12-29"
-  test_sequence: 5
+  version: "17.0"
+  session_date: "2025-12-30"
+  test_sequence: 6
   run_ui: false
 
 test_plan:
