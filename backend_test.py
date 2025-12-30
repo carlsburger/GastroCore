@@ -7259,6 +7259,177 @@ class GastroCoreAPITester:
         
         return migration_success
 
+    def test_pos_cockpit_monitoring(self):
+        """Test Modul 10_COCKPIT: POS Import Monitoring & Monatsabschluss"""
+        print("\n📊 Testing POS Cockpit Monitoring & Monatsabschluss...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("POS Cockpit Monitoring", False, "Admin token not available")
+            return False
+        
+        pos_success = True
+        
+        # 1. GET /api/pos/ingest/status-extended (admin-only)
+        result = self.make_request("GET", "pos/ingest/status-extended", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            status_data = result["data"]
+            required_fields = ["scheduler_running", "imap_configured", "documents_total", "metrics_total", "extended"]
+            missing_fields = [field for field in required_fields if field not in status_data]
+            
+            if not missing_fields:
+                extended = status_data.get("extended", {})
+                extended_fields = ["docs_today", "docs_week", "failed_today", "failed_week", "current_month_crosscheck"]
+                missing_extended = [field for field in extended_fields if field not in extended]
+                
+                if not missing_extended:
+                    self.log_test("GET /api/pos/ingest/status-extended", True, 
+                                f"All required fields present. Extended stats: docs_today={extended.get('docs_today')}, "
+                                f"current_month_crosscheck warning={extended.get('current_month_crosscheck', {}).get('warning')}")
+                else:
+                    self.log_test("GET /api/pos/ingest/status-extended", False, 
+                                f"Missing extended fields: {missing_extended}")
+                    pos_success = False
+            else:
+                self.log_test("GET /api/pos/ingest/status-extended", False, 
+                            f"Missing required fields: {missing_fields}")
+                pos_success = False
+        else:
+            self.log_test("GET /api/pos/ingest/status-extended", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 2. GET /api/pos/monthly-crosscheck?month=2025-12 (admin-only)
+        test_month = "2025-12"
+        result = self.make_request("GET", f"pos/monthly-crosscheck?month={test_month}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            crosscheck_data = result["data"]
+            required_fields = ["month", "has_monthly_pdf", "has_daily_data", "daily_count", 
+                             "daily_sum_net_total", "daily_sum_food_net", "daily_sum_beverage_net", 
+                             "warning", "warning_reasons"]
+            missing_fields = [field for field in required_fields if field not in crosscheck_data]
+            
+            if not missing_fields:
+                self.log_test("GET /api/pos/monthly-crosscheck", True, 
+                            f"Month: {crosscheck_data.get('month')}, Daily count: {crosscheck_data.get('daily_count')}, "
+                            f"Has monthly PDF: {crosscheck_data.get('has_monthly_pdf')}, Warning: {crosscheck_data.get('warning')}")
+            else:
+                self.log_test("GET /api/pos/monthly-crosscheck", False, 
+                            f"Missing required fields: {missing_fields}")
+                pos_success = False
+        else:
+            self.log_test("GET /api/pos/monthly-crosscheck", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 3. GET /api/pos/monthly-status?month=2025-12 (admin-only)
+        result = self.make_request("GET", f"pos/monthly-status?month={test_month}", 
+                                 token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            status_data = result["data"]
+            required_fields = ["month", "crosscheck", "confirmed", "locked", "confirmed_by", "confirmed_at"]
+            missing_fields = [field for field in required_fields if field not in status_data]
+            
+            if not missing_fields:
+                crosscheck = status_data.get("crosscheck", {})
+                self.log_test("GET /api/pos/monthly-status", True, 
+                            f"Month: {status_data.get('month')}, Confirmed: {status_data.get('confirmed')}, "
+                            f"Locked: {status_data.get('locked')}, Crosscheck warning: {crosscheck.get('warning')}")
+                
+                # Store current status for confirm test
+                self.test_data["pos_month_confirmed"] = status_data.get("confirmed", False)
+            else:
+                self.log_test("GET /api/pos/monthly-status", False, 
+                            f"Missing required fields: {missing_fields}")
+                pos_success = False
+        else:
+            self.log_test("GET /api/pos/monthly-status", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 4. POST /api/pos/monthly/{month}/confirm (admin-only)
+        # Test with a month that's likely not confirmed yet (2025-10)
+        confirm_month = "2025-10"
+        result = self.make_request("POST", f"pos/monthly/{confirm_month}/confirm", 
+                                 {}, self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            confirm_data = result["data"]
+            required_fields = ["status", "month", "confirmed_by", "confirmed_at", "crosscheck"]
+            missing_fields = [field for field in required_fields if field not in confirm_data]
+            
+            if not missing_fields and confirm_data.get("status") == "confirmed":
+                self.log_test("POST /api/pos/monthly/{month}/confirm", True, 
+                            f"Month {confirm_data.get('month')} confirmed by {confirm_data.get('confirmed_by')}, "
+                            f"Had warning: {confirm_data.get('had_warning')}")
+                
+                # Verify the confirm worked by checking status again
+                verify_result = self.make_request("GET", f"pos/monthly-status?month={confirm_month}", 
+                                               token=self.tokens["admin"], expected_status=200)
+                if verify_result["success"]:
+                    verify_data = verify_result["data"]
+                    if verify_data.get("confirmed") and verify_data.get("locked"):
+                        self.log_test("Verify monthly confirm status", True, 
+                                    f"Month {confirm_month} now shows confirmed=true, locked=true")
+                    else:
+                        self.log_test("Verify monthly confirm status", False, 
+                                    f"Month {confirm_month} not properly confirmed/locked")
+                        pos_success = False
+                else:
+                    self.log_test("Verify monthly confirm status", False, f"Status: {verify_result['status_code']}")
+                    pos_success = False
+            else:
+                self.log_test("POST /api/pos/monthly/{month}/confirm", False, 
+                            f"Missing fields or wrong status: {missing_fields}, status={confirm_data.get('status')}")
+                pos_success = False
+        else:
+            self.log_test("POST /api/pos/monthly/{month}/confirm", False, f"Status: {result['status_code']}")
+            pos_success = False
+        
+        # 5. Test existing endpoints still work
+        existing_endpoints = [
+            ("GET", "pos/ingest/status", "Basic ingest status"),
+            ("GET", "pos/documents", "Documents list"),
+            ("GET", "pos/daily-metrics", "Daily metrics"),
+            ("POST", "pos/ingest/trigger", "Manual ingest trigger"),
+            ("POST", "pos/scheduler/start", "Scheduler start"),
+            ("POST", "pos/scheduler/stop", "Scheduler stop")
+        ]
+        
+        for method, endpoint, description in existing_endpoints:
+            result = self.make_request(method, endpoint, {}, self.tokens["admin"], expected_status=200)
+            if result["success"]:
+                self.log_test(f"{method} /api/{endpoint} ({description})", True)
+            else:
+                self.log_test(f"{method} /api/{endpoint} ({description})", False, f"Status: {result['status_code']}")
+                pos_success = False
+        
+        # 6. Test unauthorized access (should return 401/403)
+        unauthorized_endpoints = [
+            ("GET", "pos/ingest/status-extended"),
+            ("GET", f"pos/monthly-crosscheck?month={test_month}"),
+            ("GET", f"pos/monthly-status?month={test_month}"),
+            ("POST", f"pos/monthly/{confirm_month}/confirm")
+        ]
+        
+        for method, endpoint in unauthorized_endpoints:
+            result = self.make_request(method, endpoint, {}, expected_status=401)
+            if result["success"]:
+                self.log_test(f"Unauthorized access blocked for {endpoint}", True, "401/403 as expected")
+            else:
+                # Try with wrong token (mitarbeiter should also be blocked)
+                if "mitarbeiter" in self.tokens:
+                    result = self.make_request(method, endpoint, {}, self.tokens["mitarbeiter"], expected_status=403)
+                    if result["success"]:
+                        self.log_test(f"Unauthorized access blocked for {endpoint}", True, "403 Forbidden as expected")
+                    else:
+                        self.log_test(f"Unauthorized access blocked for {endpoint}", False, 
+                                    f"Expected 403, got {result['status_code']}")
+                        pos_success = False
+                else:
+                    self.log_test(f"Unauthorized access blocked for {endpoint}", False, 
+                                f"Expected 401, got {result['status_code']}")
+                    pos_success = False
+        
+        return pos_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
