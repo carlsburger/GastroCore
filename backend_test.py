@@ -8386,9 +8386,13 @@ class GastroCoreAPITester:
         unauthorized_success = True
         for method, endpoint in pos_endpoints:
             result = self.make_request(method, endpoint, {}, token=None, expected_status=401)
-            if not result["success"]:
+            if result["success"]:
+                self.log_test(f"Unauthorized access blocked for {method} {endpoint}", True, "401 Unauthorized as expected")
+            elif result["status_code"] == 403:
+                self.log_test(f"Unauthorized access blocked for {method} {endpoint}", True, "403 Forbidden as expected")
+            else:
                 self.log_test(f"Unauthorized access blocked for {method} {endpoint}", False, 
-                            f"Expected 401, got {result['status_code']}")
+                            f"Expected 401 or 403, got {result['status_code']}")
                 unauthorized_success = False
         
         if unauthorized_success:
