@@ -944,43 +944,63 @@ user_problem_statement: |
 backend:
   - task: "POS Mail Ingest Status API"
     implemented: true
-    working: pending
+    working: true
     file: "pos_mail_module.py"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/ingest/status tested successfully. All required fields present: scheduler_running, last_processed_uid, imap_configured=false (expected), imap_host=imap.ionos.de, imap_user=berichte@carlsburg.de, imap_folder, documents_total, metrics_total, failed_documents, latest_ingest. IMAP configuration matches requirements."
 
   - task: "POS Documents API"
     implemented: true
-    working: pending
+    working: true
     file: "pos_mail_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/documents tested successfully. Returns correct structure with count and documents fields. Retrieved 0 documents (empty list expected since no documents imported yet)."
 
   - task: "POS Daily Metrics API"
     implemented: true
-    working: pending
+    working: true
     file: "pos_mail_module.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/daily-metrics tested successfully. Retrieved 12 metrics with proper structure. All required fields present in metrics: date, net_total, food_net, beverage_net. Summary structure complete with: days, total_net, total_food, total_beverage, avg_daily_net."
 
   - task: "POS Manual Ingest Trigger"
     implemented: true
-    working: pending
+    working: true
     file: "pos_mail_module.py"
     stuck_count: 0
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ POST /api/pos/ingest/trigger tested successfully. Correctly returns status='not_configured' with error 'POS_IMAP_PASSWORD not set' when IMAP password is not configured. Proper validation working."
 
   - task: "POS Scheduler Control"
     implemented: true
-    working: pending
+    working: true
     file: "pos_mail_module.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ POS Scheduler Control tested successfully. POST /api/pos/scheduler/start returns status='started' with interval_minutes=10. POST /api/pos/scheduler/stop returns status='stopped'. Both endpoints working correctly."
 
 metadata:
   created_by: "main_agent"
