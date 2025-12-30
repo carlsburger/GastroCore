@@ -163,17 +163,18 @@ const getWorkAreaConfig = (department) => {
   return WORK_AREA_COLOR_MAP[key] || WORK_AREA_COLOR_MAP.default;
 };
 
-// Department Filter Options - erweitert mit Reinigung & Eismacher
+// Department Filter Options - V2 kanonische Keys
 const DEPARTMENT_FILTER = {
   all: { label: "Alle", color: "bg-gray-100 text-gray-700", roles: [] },
   service: { label: "Service", color: "bg-emerald-100 text-emerald-700", roles: ["service", "schichtleiter", "bar", "aushilfe"] },
-  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700", roles: ["kueche", "kitchen", "kuechenhilfe"] },
-  reinigung: { label: "Reinigung", color: "bg-slate-100 text-slate-700", roles: ["reinigung"] },
-  eismacher: { label: "Eismacher", color: "bg-sky-100 text-sky-700", roles: ["eismacher"] },
+  kitchen: { label: "Küche", color: "bg-orange-100 text-orange-700", roles: ["kitchen", "kueche", "kuechenhilfe"] },
+  reinigung: { label: "Reinigung", color: "bg-slate-100 text-slate-700", roles: ["reinigung", "cleaning"] },
+  eismacher: { label: "Eismacher", color: "bg-sky-100 text-sky-700", roles: ["eismacher", "ice_maker"] },
+  kuechenhilfe: { label: "Küchenhilfe", color: "bg-amber-100 text-amber-700", roles: ["kuechenhilfe", "kitchen_help"] },
 };
 
 // Eismacher NIE im Dienstplan anzeigen
-const EXCLUDED_ROLES = ["eismacher"];
+const EXCLUDED_ROLES = ["eismacher", "ice_maker"];
 
 /**
  * ZENTRALE Namen-Formatierung
