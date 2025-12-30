@@ -7796,6 +7796,10 @@ class GastroCoreAPITester:
         print("\n📧 POS PDF MAIL-AUTOMATION V1 TESTING:")
         test_results.append(self.test_pos_mail_automation())
         
+        # POS MAIL IMPORT STATUS TEST - Review Request
+        print("\n📧 POS MAIL IMPORT STATUS VERIFICATION:")
+        test_results.append(self.test_pos_mail_import_status())
+        
         # MODUL 10: POS COCKPIT MONITORING & MONATSABSCHLUSS - as per review request
         print("\n📊 MODUL 10: POS COCKPIT MONITORING & MONATSABSCHLUSS:")
         test_results.append(self.test_pos_cockpit_monitoring())
