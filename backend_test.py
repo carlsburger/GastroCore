@@ -9230,6 +9230,12 @@ def main():
     
     tester = GastroCoreAPITester()
     
+    # Check if we should run Staff Import API tests
+    if len(sys.argv) > 1 and sys.argv[1] == "--staff-import":
+        print("Running Staff Import API Tests...")
+        success = tester.run_staff_import_api_test()
+        return 0 if success else 1
+    
     # Check if we should run POS Mail Automation tests
     if len(sys.argv) > 1 and sys.argv[1] == "--pos-mail":
         print("Running POS PDF Mail-Automation V1 Tests...")
