@@ -7430,6 +7430,196 @@ class GastroCoreAPITester:
         
         return pos_success
 
+    def test_seeds_backup_restore(self):
+        """Test Seeds Backup & Restore Backend - Modul 10_COCKPIT"""
+        print("\n🌱 Testing Seeds Backup & Restore Backend...")
+        
+        if "admin" not in self.tokens:
+            self.log_test("Seeds Backup & Restore", False, "Admin token not available")
+            return False
+        
+        seeds_success = True
+        
+        # 1. GET /api/admin/seeds/status (admin-only)
+        result = self.make_request("GET", "admin/seeds/status", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            status_data = result["data"]
+            required_fields = ["counts", "total_documents", "verification"]
+            missing_fields = [field for field in required_fields if field not in status_data]
+            
+            if not missing_fields:
+                counts = status_data.get("counts", {})
+                total_docs = status_data.get("total_documents", 0)
+                verification = status_data.get("verification", {})
+                
+                self.log_test("GET /api/admin/seeds/status", True, 
+                            f"Counts: {len(counts)} collections, Total docs: {total_docs}, Verification status: {verification.get('status', 'unknown')}")
+                
+                # Verify expected collections are present
+                expected_collections = [
+                    "opening_hours_master", "opening_hours_periods", "shift_templates",
+                    "reservation_slot_rules", "reservation_options", "reservation_slot_exceptions", "system_settings"
+                ]
+                missing_collections = [col for col in expected_collections if col not in counts]
+                if missing_collections:
+                    self.log_test("Seeds status collections check", False, f"Missing collections: {missing_collections}")
+                    seeds_success = False
+                else:
+                    self.log_test("Seeds status collections check", True, "All expected collections present")
+                    
+            else:
+                self.log_test("GET /api/admin/seeds/status", False, f"Missing fields: {missing_fields}")
+                seeds_success = False
+        else:
+            self.log_test("GET /api/admin/seeds/status", False, f"Status: {result['status_code']}")
+            seeds_success = False
+        
+        # 2. GET /api/admin/seeds/verify (admin-only)
+        result = self.make_request("GET", "admin/seeds/verify", token=self.tokens["admin"], expected_status=200)
+        if result["success"]:
+            verify_data = result["data"]
+            required_fields = ["status", "checks", "warnings", "errors"]
+            missing_fields = [field for field in required_fields if field not in verify_data]
+            
+            if not missing_fields:
+                status = verify_data.get("status")
+                checks = verify_data.get("checks", {})
+                warnings = verify_data.get("warnings", [])
+                errors = verify_data.get("errors", [])
+                
+                if status in ["READY", "WARNINGS", "STOP"]:
+                    self.log_test("GET /api/admin/seeds/verify", True, 
+                                f"Status: {status}, Checks: {len(checks)}, Warnings: {len(warnings)}, Errors: {len(errors)}")
+                else:
+                    self.log_test("GET /api/admin/seeds/verify", False, f"Invalid status: {status}")
+                    seeds_success = False
+            else:
+                self.log_test("GET /api/admin/seeds/verify", False, f"Missing fields: {missing_fields}")
+                seeds_success = False
+        else:
+            self.log_test("GET /api/admin/seeds/verify", False, f"Status: {result['status_code']}")
+            seeds_success = False
+        
+        # 3. GET /api/admin/seeds/export (admin-only) - Test ZIP file generation
+        url = f"{self.base_url}/api/admin/seeds/export"
+        headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                if 'application/zip' in content_type:
+                    zip_size = len(response.content)
+                    
+                    # Verify ZIP structure
+                    try:
+                        import zipfile
+                        import io
+                        zip_buffer = io.BytesIO(response.content)
+                        with zipfile.ZipFile(zip_buffer, 'r') as zf:
+                            file_list = zf.namelist()
+                            seed_files = [f for f in file_list if f.startswith("seed/") and f.endswith(".json")]
+                            
+                            self.log_test("GET /api/admin/seeds/export", True, 
+                                        f"ZIP generated: {zip_size} bytes, Contains {len(seed_files)} seed files")
+                            
+                            # Check for expected seed structure
+                            expected_paths = [
+                                "seed/system/system_settings.json",
+                                "seed/opening_hours/opening_hours_master.json",
+                                "seed/opening_hours/opening_hours_periods.json",
+                                "seed/shift_templates/shift_templates_master.json",
+                                "seed/reservations/reservation_options.json",
+                                "seed/reservations/reservation_slot_rules.json",
+                                "seed/reservations/reservation_slot_exceptions.json"
+                            ]
+                            
+                            found_paths = [path for path in expected_paths if path in file_list]
+                            self.log_test("Seeds export ZIP structure", True, 
+                                        f"Found {len(found_paths)}/{len(expected_paths)} expected seed files")
+                    except Exception as e:
+                        self.log_test("Seeds export ZIP validation", False, f"ZIP validation error: {str(e)}")
+                        seeds_success = False
+                else:
+                    self.log_test("GET /api/admin/seeds/export", False, 
+                                f"Expected application/zip, got: {content_type}")
+                    seeds_success = False
+            else:
+                self.log_test("GET /api/admin/seeds/export", False, f"Status: {response.status_code}")
+                seeds_success = False
+        except Exception as e:
+            self.log_test("GET /api/admin/seeds/export", False, f"Request error: {str(e)}")
+            seeds_success = False
+        
+        # 4. POST /api/admin/seeds/import with dry_run=true (admin-only)
+        # We'll test with a minimal valid ZIP structure
+        try:
+            import zipfile
+            import io
+            import json
+            
+            # Create a minimal test ZIP
+            test_zip = io.BytesIO()
+            with zipfile.ZipFile(test_zip, 'w') as zf:
+                # Add minimal system_settings
+                test_settings = [{"id": "test-setting", "key": "test", "value": "test"}]
+                zf.writestr("seed/system/system_settings.json", json.dumps(test_settings, indent=2))
+            
+            test_zip.seek(0)
+            
+            # Test dry run import
+            url = f"{self.base_url}/api/admin/seeds/import?dry_run=true"
+            headers = {'Authorization': f'Bearer {self.tokens["admin"]}'}
+            files = {'file': ('test_seeds.zip', test_zip.getvalue(), 'application/zip')}
+            
+            response = requests.post(url, headers=headers, files=files)
+            
+            if response.status_code == 200:
+                import_data = response.json()
+                required_fields = ["status", "created", "updated", "archived", "details"]
+                missing_fields = [field for field in required_fields if field not in import_data]
+                
+                if not missing_fields:
+                    status = import_data.get("status")
+                    if status == "dry_run":
+                        self.log_test("POST /api/admin/seeds/import (dry_run)", True, 
+                                    f"Dry run successful: created={import_data.get('created', 0)}, updated={import_data.get('updated', 0)}")
+                    else:
+                        self.log_test("POST /api/admin/seeds/import (dry_run)", False, 
+                                    f"Expected status='dry_run', got: {status}")
+                        seeds_success = False
+                else:
+                    self.log_test("POST /api/admin/seeds/import (dry_run)", False, 
+                                f"Missing fields: {missing_fields}")
+                    seeds_success = False
+            else:
+                self.log_test("POST /api/admin/seeds/import (dry_run)", False, 
+                            f"Status: {response.status_code}")
+                seeds_success = False
+                
+        except Exception as e:
+            self.log_test("POST /api/admin/seeds/import (dry_run)", False, f"Test setup error: {str(e)}")
+            seeds_success = False
+        
+        # 5. Test unauthorized access (401)
+        unauthorized_endpoints = [
+            ("GET", "admin/seeds/status"),
+            ("GET", "admin/seeds/verify"),
+            ("GET", "admin/seeds/export"),
+        ]
+        
+        for method, endpoint in unauthorized_endpoints:
+            result = self.make_request(method, endpoint, expected_status=401)
+            if result["success"]:
+                self.log_test(f"Unauthorized access blocked: {method} {endpoint}", True, "401 Unauthorized as expected")
+            else:
+                self.log_test(f"Unauthorized access blocked: {method} {endpoint}", False, 
+                            f"Expected 401, got {result['status_code']}")
+                seeds_success = False
+        
+        return seeds_success
+
     def run_all_tests(self):
         """Run all test suites - Focus on Service-Terminal (Sprint 8)"""
         print("🚀 Starting GastroCore Backend API Tests - Service-Terminal (Sprint 8) Focus")
