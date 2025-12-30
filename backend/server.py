@@ -3053,6 +3053,9 @@ from payment_module import payment_router, payment_webhook_router, seed_payment_
 # Import Staff Module (Sprint 5 - Mitarbeiter & Dienstplan)
 from staff_module import staff_router, seed_work_areas, seed_sample_staff
 
+# Import Staff Import Module (Mode A – Strict Full Import + Merge)
+from staff_import_module import staff_import_router
+
 # Import Tax Office Module (Sprint 6 - Steuerbüro Exporte)
 from taxoffice_module import taxoffice_router
 
