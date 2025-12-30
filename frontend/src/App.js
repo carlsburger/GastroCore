@@ -453,6 +453,26 @@ function App() {
             }
           />
 
+          {/* POS Import Monitoring (Modul 10_COCKPIT) - Admin only */}
+          <Route
+            path="/pos-import"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <POSImportMonitoring />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Monthly POS Crosscheck (Modul 10_COCKPIT) - Admin only */}
+          <Route
+            path="/pos-crosscheck"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <MonthlyPOSCrosscheck />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Marketing Module (Sprint 8) - Admin & Schichtleiter */}
           <Route
             path="/marketing"
