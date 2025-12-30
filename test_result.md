@@ -38,7 +38,7 @@ user_problem_statement: |
   - Prefix korrekt: VA für VERANSTALTUNG, AK für AKTION, MA für AKTION_MENUE
   - short_name max 28 Zeichen mit "…" wenn gekürzt
 
-  BACKEND URL: https://system-healthcheck.preview.emergentagent.com
+  BACKEND URL: https://atlas-check.preview.emergentagent.com
 
 backend:
   - task: "Event Dashboard Summary API"
@@ -126,7 +126,7 @@ user_problem_statement: |
   
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
-  - Backend: https://system-healthcheck.preview.emergentagent.com
+  - Backend: https://atlas-check.preview.emergentagent.com
 
 backend:
   - task: "B1 - Standarddauer Guard"
