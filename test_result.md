@@ -114,6 +114,20 @@ user_problem_statement: |
   BACKEND URL: https://gastrocore-safe.preview.emergentagent.com
 
 backend:
+  # ============== POS MAIL IMPORT STATUS ==============
+  
+  - task: "POS Mail Import Status API"
+    implemented: true
+    working: true
+    file: "pos_mail_module.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GET /api/pos/ingest/status → Returns proper status structure with all expected fields: imap_configured=false (password not set), imap_host=imap.ionos.de, imap_user=berichte@carlsburg.de. Additional fields verified: scheduler_running, documents_total, metrics_total, imap_folder."
+
   # ============== STAFF IMPORT API ==============
   
   - task: "Staff Import Template API"
