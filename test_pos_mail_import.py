@@ -49,12 +49,12 @@ def test_pos_mail_import_status():
         print(f"❌ Login error: {str(e)}")
         return False
     
-    # 2. Call GET /api/admin/pos/status
-    print("\n2. Calling GET /api/admin/pos/status...")
+    # 2. Call GET /api/pos/ingest/status
+    print("\n2. Calling GET /api/pos/ingest/status...")
     headers = {'Authorization': f'Bearer {token}'}
     
     try:
-        response = requests.get(f"{base_url}/api/admin/pos/status", headers=headers)
+        response = requests.get(f"{base_url}/api/pos/ingest/status", headers=headers)
         if response.status_code == 200:
             status_data = response.json()
             print("✅ POS status API call successful")
