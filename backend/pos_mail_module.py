@@ -310,25 +310,25 @@ def extract_hauptwarengruppen(text: str) -> Dict[str, float]:
     for line in lines:
         line_lower = line.lower()
         
+        # Skip Non-Foods line (contains "food" but is not Food category)
+        if 'non-food' in line_lower or 'nichtlebensmittel' in line_lower:
+            continue
+        
         # Pattern: Look for value in parentheses (€ NETTO) - this is the NETTO value!
         # Format: "Beverage (Getränke) 6645 (€ 28659.80) € 28477.64"
-        netto_match = re.search(r'\(€?\s*([\d.,]+)\)', line)
+        netto_match = re.search(r'\(€\s*([\d.,]+)\)', line)
         
         netto = 0.0
         if netto_match:
-            # Value in parentheses is NETTO
+            # Value in parentheses with € is NETTO
             netto = parse_german_currency(netto_match.group(1))
-        else:
-            # Fallback: If no parentheses, try to find currency values
-            # Take the first one as it's more likely to be the relevant value
-            amounts = re.findall(r'€\s*([\d.,]+)', line)
-            if amounts:
-                netto = parse_german_currency(amounts[0])
         
         if netto > 0:
+            # Check for Beverage/Getränke FIRST (more specific)
             if 'beverage' in line_lower or 'getränke' in line_lower:
                 result["beverage_net"] = netto
                 logger.info(f"Beverage NETTO found: {netto}")
+            # Then check for Food/Speisen
             elif 'food' in line_lower or 'speisen' in line_lower:
                 result["food_net"] = netto
                 logger.info(f"Food NETTO found: {netto}")
