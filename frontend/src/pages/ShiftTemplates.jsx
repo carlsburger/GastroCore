@@ -254,14 +254,26 @@ export default function ShiftTemplates() {
     setDialogOpen(true);
   };
 
-  // Department Label
+  // Department Label - Kanonische V2 Keys -> Deutsche Labels
   const getDepartmentLabel = (dept) => {
-    const labels = { service: "Service", kitchen: "Küche" };
+    const labels = {
+      service: "Service",
+      kitchen: "Küche",
+      reinigung: "Reinigung",
+      eismacher: "Eismacher",
+      kuechenhilfe: "Küchenhilfe"
+    };
     return labels[dept] || dept;
   };
 
   const getDepartmentColor = (dept) => {
-    const colors = { service: "#3B82F6", kitchen: "#EF4444" };
+    const colors = {
+      service: "#3B82F6",    // Blue
+      kitchen: "#EF4444",    // Red
+      reinigung: "#6B7280",  // Gray
+      eismacher: "#06B6D4",  // Cyan
+      kuechenhilfe: "#F97316" // Orange
+    };
     return colors[dept] || "#6B7280";
   };
 
