@@ -70,27 +70,28 @@
 #====================================================================================================
 
 user_problem_statement: |
-  EVENT-DASHBOARD WIDGET BACKEND TESTING
+  STAFF IMPORT API TESTING
   
   ENDPOINTS ZU TESTEN:
-  1. GET /api/events/dashboard/events-summary
+  1. GET /api/admin/staff/import/template
      - Authentifizierung erforderlich (admin@carlsburg.de / Carlsburg2025!)
      - Prüfe Response-Struktur:
-       - kulturveranstaltungen: { events: [], total: number, label: "Kulturveranstaltungen", prefix: "VA" }
-       - aktionen: { events: [], total: number, label: "Aktionen", prefix: "AK" }
-       - menuaktionen: { events: [], total: number, label: "Menüaktionen", prefix: "MA" }
-       - default_capacity: 95 (WICHTIG: muss 95 sein, nicht 100!)
-     - Jedes Event muss haben: id, type, prefix, title, short_name, date, start_time, capacity, sold, utilization, status
+       - required_columns: Array mit Pflichtfeldern
+       - identifier_columns: Array mit Identifikationsfeldern
+       - optional_columns: Array mit optionalen Feldern
+       - role_values: Array mit verfügbaren Rollen
 
-  2. GET /api/events/dashboard/kultur-summary (Legacy Endpoint)
-     - Muss noch funktionieren für Abwärtskompatibilität
-     - default_capacity muss auch 95 sein
+  2. GET /api/admin/staff/import/history
+     - Authentifizierung erforderlich (admin@carlsburg.de / Carlsburg2025!)
+     - Prüfe Response-Struktur:
+       - runs: Array mit Import-Läufen (kann leer sein)
+       - total: Anzahl der Import-Läufe
 
   AKZEPTANZKRITERIEN:
-  - default_capacity = 95 (NICHT 100!)
-  - Events ohne explizite Kapazität zeigen capacity=95
-  - Prefix korrekt: VA für VERANSTALTUNG, AK für AKTION, MA für AKTION_MENUE
-  - short_name max 28 Zeichen mit "…" wenn gekürzt
+  - Beide Endpoints erfordern Admin-Authentifizierung
+  - Template-Endpoint liefert Spalten-Mapping-Informationen
+  - History-Endpoint liefert Import-Historie (leeres Array ist OK)
+  - Ohne Token: 401/403 Fehler
 
   BACKEND URL: https://gastrocore-safe.preview.emergentagent.com
 
