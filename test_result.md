@@ -56,7 +56,7 @@ user_problem_statement: |
   - Prefix korrekt: VA für VERANSTALTUNG, AK für AKTION, MA für AKTION_MENUE
   - short_name max 28 Zeichen mit "…" wenn gekürzt
 
-  BACKEND URL: https://atlas-check.preview.emergentagent.com
+  BACKEND URL: https://gastrocore-safe.preview.emergentagent.com
 
 backend:
   - task: "Event Dashboard Summary API"
@@ -218,7 +218,7 @@ user_problem_statement: |
   
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
-  - Backend: https://atlas-check.preview.emergentagent.com
+  - Backend: https://gastrocore-safe.preview.emergentagent.com
 
 backend:
   - task: "B1 - Standarddauer Guard"
@@ -1031,7 +1031,7 @@ user_problem_statement: |
   - pos_daily_metrics (Tagesumsätze)
   - pos_ingest_state (UID-Tracking)
   
-  BACKEND URL: https://atlas-check.preview.emergentagent.com
+  BACKEND URL: https://gastrocore-safe.preview.emergentagent.com
 
 backend:
   - task: "POS Mail Ingest Status API"
