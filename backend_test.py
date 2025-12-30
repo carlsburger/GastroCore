@@ -7602,7 +7602,7 @@ class GastroCoreAPITester:
             self.log_test("POST /api/admin/seeds/import (dry_run)", False, f"Test setup error: {str(e)}")
             seeds_success = False
         
-        # 5. Test unauthorized access (401)
+        # 5. Test unauthorized access (403 for admin endpoints)
         unauthorized_endpoints = [
             ("GET", "admin/seeds/status"),
             ("GET", "admin/seeds/verify"),
@@ -7610,12 +7610,12 @@ class GastroCoreAPITester:
         ]
         
         for method, endpoint in unauthorized_endpoints:
-            result = self.make_request(method, endpoint, expected_status=401)
+            result = self.make_request(method, endpoint, expected_status=403)
             if result["success"]:
-                self.log_test(f"Unauthorized access blocked: {method} {endpoint}", True, "401 Unauthorized as expected")
+                self.log_test(f"Unauthorized access blocked: {method} {endpoint}", True, "403 Forbidden as expected")
             else:
                 self.log_test(f"Unauthorized access blocked: {method} {endpoint}", False, 
-                            f"Expected 401, got {result['status_code']}")
+                            f"Expected 403, got {result['status_code']}")
                 seeds_success = False
         
         return seeds_success
