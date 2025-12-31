@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -15,7 +15,7 @@ import {
 } from "../components/ui/select";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Badge } from "../components/ui/badge";
-import { Loader2, Calendar, Clock, Users, CheckCircle, AlertCircle, CalendarClock } from "lucide-react";
+import { Loader2, Calendar, Clock, Users, CheckCircle, AlertCircle, CalendarClock, User, Heart } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
