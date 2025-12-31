@@ -119,6 +119,7 @@ from reservation_guards import (
     calculate_end_time,
     guard_event_blocks_reservation,
     get_event_blocked_slots,
+    get_event_cutoff_info,
     should_trigger_waitlist,
     process_waitlist_on_cancellation,
     check_expired_waitlist_offers,
