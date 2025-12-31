@@ -704,6 +704,7 @@ export const BookingWidget = () => {
       {/* Footer */}
       <div className="absolute bottom-1 left-0 right-0 text-center text-white/50 text-[8px] z-10">
         © {new Date().getFullYear()} Carlsburg
+        <span className="ml-2 opacity-50">Build: 20251231c | galerie-fix-1838</span>
       </div>
     </div>
   );
