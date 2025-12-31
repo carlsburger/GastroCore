@@ -169,11 +169,16 @@ async def guard_event_blocks_reservation(
 
 # ============== GUARD B3: SLOTS BEI EVENT DEAKTIVIEREN ==============
 
+# Default Cutoff vor Event (Minuten)
+DEFAULT_REGULAR_BOOKING_CUTOFF_MINUTES = 90
+
+
 async def get_event_blocked_slots(date_str: str) -> List[str]:
     """
     B3) Hole alle Slots, die durch Events blockiert sind.
     
     Diese Slots werden bei /public/slots als disabled markiert.
+    Berücksichtigt das konfigurierbare Cutoff (last_alacarte_reservation_minutes).
     
     Returns:
         Liste von Zeitslots ["18:00", "18:30", ...] die blockiert sind
@@ -200,11 +205,17 @@ async def get_event_blocked_slots(date_str: str) -> List[str]:
         if not event_start or not event_end:
             continue
         
-        # Generiere alle 30-Min Slots im Event-Zeitraum
+        # Hole konfigurierbares Cutoff (Default: 90 Min)
+        cutoff_minutes = event.get("last_alacarte_reservation_minutes", DEFAULT_REGULAR_BOOKING_CUTOFF_MINUTES)
+        
+        # Berechne reguläres Ende (Event-Start minus Cutoff)
         start_minutes = _time_to_minutes(event_start)
+        regular_end_minutes = start_minutes - cutoff_minutes
+        
+        # Blockiere ab regular_end_time bis Event-Ende
         end_minutes = _time_to_minutes(event_end)
         
-        current = start_minutes
+        current = max(regular_end_minutes, 0)  # Nicht vor 00:00
         while current < end_minutes:
             slot_time = _minutes_to_time(current)
             if slot_time not in blocked_slots:
@@ -212,6 +223,59 @@ async def get_event_blocked_slots(date_str: str) -> List[str]:
             current += 30
     
     return sorted(blocked_slots)
+
+
+async def get_event_cutoff_info(date_str: str) -> Optional[Dict[str, Any]]:
+    """
+    Hole Event-Cutoff-Informationen für ein Datum.
+    
+    Returns:
+        {
+            "event_id": str,
+            "event_title": str,
+            "event_start": "17:00",
+            "cutoff_minutes": 90,
+            "regular_end_time": "15:30",
+            "message": "Reguläre Reservierungen bis 15:30 Uhr möglich."
+        }
+        oder None wenn kein Event
+    """
+    events = await db.events.find({
+        "archived": {"$ne": True},
+        "status": {"$in": ["published", "active"]},
+        "$or": [
+            {"date": date_str},
+            {"event_date": date_str},
+            {"dates": date_str}
+        ]
+    }).to_list(50)
+    
+    for event in events:
+        if not event.get("blocks_normal_reservations", True):
+            continue
+        
+        event_start = event.get("start_time") or event.get("event_start_time")
+        if not event_start:
+            continue
+        
+        # Hole konfigurierbares Cutoff (Default: 90 Min)
+        cutoff_minutes = event.get("last_alacarte_reservation_minutes", DEFAULT_REGULAR_BOOKING_CUTOFF_MINUTES)
+        
+        # Berechne reguläres Ende
+        start_minutes = _time_to_minutes(event_start)
+        regular_end_minutes = max(start_minutes - cutoff_minutes, 0)
+        regular_end_time = _minutes_to_time(regular_end_minutes)
+        
+        return {
+            "event_id": event.get("id"),
+            "event_title": event.get("title") or event.get("name"),
+            "event_start": event_start,
+            "cutoff_minutes": cutoff_minutes,
+            "regular_end_time": regular_end_time,
+            "message": f"Reguläre Reservierungen bis {regular_end_time} Uhr möglich."
+        }
+    
+    return None
 
 
 async def is_event_active_at(date_str: str, time_str: str) -> Tuple[bool, Optional[dict]]:
