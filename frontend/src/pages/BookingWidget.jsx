@@ -22,16 +22,23 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 // Offizielles Carlsburg Logo (wie Login-Seite)
 const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-planner-4/artifacts/87kb0tcl_grafik.png";
 
-// Occasion options
+// Occasion options with display labels
 const OCCASIONS = [
-  { value: "", label: "Kein besonderer Anlass" },
-  { value: "geburtstag", label: "Geburtstag" },
-  { value: "hochzeit", label: "Hochzeit / Verlobung" },
-  { value: "jubilaeum", label: "Jubiläum" },
-  { value: "geschaeftlich", label: "Geschäftlich" },
-  { value: "date", label: "Date Night" },
-  { value: "sonstiges", label: "Sonstiges" },
+  { value: "", label: "Kein besonderer Anlass", displayLabel: "" },
+  { value: "geburtstag", label: "Geburtstag", displayLabel: "Geburtstag" },
+  { value: "hochzeit", label: "Hochzeit / Verlobung", displayLabel: "Hochzeit / Verlobung" },
+  { value: "jubilaeum", label: "Jubiläum", displayLabel: "Jubiläum" },
+  { value: "geschaeftlich", label: "Geschäftlich", displayLabel: "Geschäftlich" },
+  { value: "date", label: "Date Night", displayLabel: "Date Night" },
+  { value: "sonstiges", label: "Sonstiges", displayLabel: "Sonstiges" },
 ];
+
+// Helper to get display label for an occasion value
+const getOccasionDisplayLabel = (value) => {
+  if (!value || value === "none" || value === "") return null;
+  const occasion = OCCASIONS.find(o => o.value === value);
+  return occasion?.displayLabel || null;
+};
 
 export const BookingWidget = () => {
   const [searchParams] = useSearchParams();
