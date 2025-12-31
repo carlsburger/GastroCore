@@ -147,6 +147,7 @@ export const BookingWidget = () => {
     setError("");
     setSelectedEvent(null);
     setIsEventBooking(false);
+    setEventCutoffInfo(null);
     
     await loadEventsForDate(date);
     
@@ -160,6 +161,11 @@ export const BookingWidget = () => {
       });
       
       setAvailableSlots(response.data.slots || []);
+      
+      // Speichere Event-Cutoff-Info wenn vorhanden
+      if (response.data.event_cutoff) {
+        setEventCutoffInfo(response.data.event_cutoff);
+      }
       
       if (!response.data.available) {
         const slots = response.data.slots || [];
