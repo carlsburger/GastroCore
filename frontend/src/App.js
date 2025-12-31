@@ -99,6 +99,12 @@ const NoAccess = () => (
 );
 
 function App() {
+  // Debug: Log current URL for routing diagnosis
+  React.useEffect(() => {
+    console.log('[App.js] Current pathname:', window.location.pathname);
+    console.log('[App.js] Current href:', window.location.href);
+  }, []);
+  
   return (
     <AuthProvider>
       <BrowserRouter>
