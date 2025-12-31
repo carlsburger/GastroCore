@@ -25,18 +25,23 @@ export const Login = () => {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
-  // WORKAROUND: Wenn die URL /book ist, navigiere direkt zum BookingWidget
-  // (React Router funktioniert nicht korrekt im Preview-Kontext)
+  // WORKAROUND: Wenn die URL /book ist, zeige nicht die Login-Seite
+  // Dieses Problem tritt auf wenn React Router im Preview-Kontext nicht korrekt routet
   useEffect(() => {
     const currentPath = window.location.pathname;
-    console.log('[Login] Current path:', currentPath);
-    if (currentPath === '/book') {
-      console.log('[Login] Redirecting to /book via window.location');
-      // Nicht navigate verwenden, da React Router nicht korrekt funktioniert
-      // Stattdessen: Force reload der korrekten Seite
-      return; // Nicht redirecten - die Route sollte korrekt matchen
+    console.log('[Login.jsx] Aktuelle URL:', currentPath);
+    
+    // Liste der öffentlichen Pfade die NICHT zur Login-Seite führen sollten
+    const publicPaths = ['/book', '/cancel/', '/confirm/', '/unsubscribe/', '/events-public', '/event/'];
+    
+    const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
+    
+    if (isPublicPath) {
+      console.log('[Login.jsx] Öffentlicher Pfad erkannt - sollte NICHT Login zeigen!');
+      // Force Navigation zum korrekten Pfad über React Router
+      navigate(currentPath, { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   // Redirect wenn bereits eingeloggt
   useEffect(() => {
