@@ -1722,7 +1722,10 @@ async def check_availability(
     
     available_slots = [s for s in slots if s["available"]]
     
-    return {
+    # Hole Event-Cutoff-Info für das Frontend
+    event_cutoff_info = await get_event_cutoff_info(date)
+    
+    response = {
         "date": date,
         "weekday_de": capacity_data.get("weekday_de", ""),
         "day_type": capacity_data.get("day_type", "weekday"),
@@ -1735,6 +1738,18 @@ async def check_availability(
         "closing_time": capacity_data.get("closing_time"),
         "notes": capacity_data.get("notes", [])
     }
+    
+    # Füge Event-Cutoff-Info hinzu wenn vorhanden (optional fields)
+    if event_cutoff_info:
+        response["event_cutoff"] = {
+            "event_title": event_cutoff_info["event_title"],
+            "event_start": event_cutoff_info["event_start"],
+            "cutoff_minutes": event_cutoff_info["cutoff_minutes"],
+            "regular_end_time": event_cutoff_info["regular_end_time"],
+            "message": event_cutoff_info["message"]
+        }
+    
+    return response
 
 @public_router.post("/book", tags=["Public"])
 async def public_booking(data: PublicBookingCreate, background_tasks: BackgroundTasks):
