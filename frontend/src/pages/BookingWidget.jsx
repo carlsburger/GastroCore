@@ -171,6 +171,7 @@ export const BookingWidget = () => {
     
     setChecking(true);
     setError("");
+    setIsClosedDay(false);
     
     try {
       const response = await axios.get(`${BACKEND_URL}/api/public/availability`, {
@@ -180,10 +181,35 @@ export const BookingWidget = () => {
       setAvailableSlots(response.data.slots || []);
       
       if (!response.data.available) {
-        setError(response.data.message || t.fullyBooked);
+        // Check if the day is closed (no slots or all disabled)
+        const slots = response.data.slots || [];
+        const allClosed = slots.length === 0 || slots.every(s => s.disabled || !s.available);
+        
+        if (allClosed) {
+          setIsClosedDay(true);
+          // Special message for Monday/Tuesday (Ruhetag)
+          if (isRuhetagMoDi) {
+            setError("Sorry, Montag und Dienstag sind Ruhetag. Ab Mittwoch sind wir gern wieder für Sie da.");
+          } else {
+            setError(response.data.message || t.fullyBooked);
+          }
+        } else {
+          setError(response.data.message || t.fullyBooked);
+        }
       }
     } catch (err) {
-      setError(err.response?.data?.detail || "Fehler bei der Verfügbarkeitsprüfung");
+      const errorDetail = err.response?.data?.detail || "";
+      // Check if error indicates closed day
+      if (errorDetail.toLowerCase().includes("geschlossen") || errorDetail.toLowerCase().includes("closed")) {
+        setIsClosedDay(true);
+        if (isRuhetagMoDi) {
+          setError("Sorry, Montag und Dienstag sind Ruhetag. Ab Mittwoch sind wir gern wieder für Sie da.");
+        } else {
+          setError(errorDetail || "Fehler bei der Verfügbarkeitsprüfung");
+        }
+      } else {
+        setError(errorDetail || "Fehler bei der Verfügbarkeitsprüfung");
+      }
     } finally {
       setChecking(false);
     }
