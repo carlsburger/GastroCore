@@ -628,14 +628,6 @@ export const BookingWidget = () => {
                   </div>
                 )}
                 
-                {/* Closed day error (only if no events) */}
-                {error && isClosedDay && !hasEvents && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
                 <Button
                   className="w-full h-12 rounded-full font-semibold bg-[#005500] hover:bg-[#004400] text-white"
                   onClick={() => setStep(2)}
