@@ -355,12 +355,12 @@ export const BookingWidget = () => {
       if (isEventBooking && selectedEvent) {
         // Book event
         const response = await axios.post(`${BACKEND_URL}/api/public/events/${selectedEvent.id}/book`, {
+          event_id: selectedEvent.id,
           guest_name: guestName,
           guest_phone: guestPhone,
-          guest_email: guestEmail,
+          guest_email: guestEmail || null,
           party_size: partySize,
-          time_slot: time,
-          notes: notes || null,
+          notes: notes ? `Gewünschte Zeit: ${time} Uhr. ${notes}` : `Gewünschte Zeit: ${time} Uhr`,
         });
         
         if (response.data.waitlist) {
