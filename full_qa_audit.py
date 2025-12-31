@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 class GastroCoreFullQAAudit:
-    def __init__(self, base_url: str = "https://carlsburg-cockpit.preview.emergentagent.com"):
+    def __init__(self, base_url: str = "https://deploy-verify-10.preview.emergentagent.com"):
         self.base_url = base_url
         self.tokens = {}
         self.test_data = {}
