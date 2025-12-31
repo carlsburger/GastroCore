@@ -21,11 +21,19 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 // Offizielles Carlsburg Logo
 const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-planner-4/artifacts/87kb0tcl_grafik.png";
 
-// Panorama Hintergrundbild - wird durch echtes Carlsburg-Bild ersetzt wenn verfügbar
-// Aktuell: hochwertiges Panorama-Placeholder das dem Carlsburg-Stil entspricht
+// ============================================
+// BILDER-KONFIGURATION
+// ============================================
+// Sobald echte Carlsburg-Bilder hochgeladen werden, hier die Pfade anpassen:
+// HERO_BACKGROUND = "/booking/K7A3951.jpg"
+// GALLERY_IMAGES[0].src = "/booking/blick-terrasse-sommer-1.jpg"
+// etc.
+// ============================================
+
+// Panorama Hintergrundbild (wird durch echtes Carlsburg-Bild ersetzt)
 const HERO_BACKGROUND = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80";
 
-// Galerie-Bilder - werden durch echte Carlsburg-Bilder ersetzt wenn verfügbar
+// Galerie-Bilder (werden durch echte Carlsburg-Bilder ersetzt)
 const GALLERY_IMAGES = [
   { src: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80", alt: "Restaurant Ambiente" },
   { src: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80", alt: "Terrasse mit Aussicht" },
@@ -303,75 +311,68 @@ export const BookingWidget = () => {
       </div>
 
       {/* Main Layout Container - 100vh, no scroll */}
-      <div className="relative z-10 h-full w-full flex items-center justify-center p-4 lg:p-6">
+      <div className="relative z-10 h-full w-full flex items-center justify-center p-3 lg:p-5">
         
         {/* Desktop: 2-Column Layout | Mobile: Single Column */}
-        <div className="w-full max-w-[1200px] h-full max-h-[95vh] flex flex-col lg:flex-row gap-4 lg:gap-6">
+        <div className="w-full max-w-[1100px] h-full max-h-[92vh] flex flex-col lg:flex-row gap-3 lg:gap-4">
           
           {/* LEFT: Booking Widget */}
-          <div className="flex-1 lg:flex-[0_0_60%] min-h-0 flex flex-col">
-            <Card className="flex-1 flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden">
+          <div className="flex-1 lg:flex-[0_0_62%] min-h-0 flex flex-col">
+            <Card className="flex-1 flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden rounded-xl">
               
-              {/* Header - Compact */}
-              <CardHeader className="flex-shrink-0 text-center py-3 lg:py-4 border-b border-gray-100">
-                {/* Logo */}
+              {/* Header - ENTSCHLACKT: Nur Logo, kein Claim-Text */}
+              <CardHeader className="flex-shrink-0 text-center py-2 lg:py-3 border-b border-gray-100">
+                {/* Logo ONLY - kein "Historisches Panoramarestaurant" Text */}
                 <div className="flex justify-center mb-1">
                   <img 
                     src={CARLSBURG_LOGO_URL}
                     alt="Carlsburg"
-                    className="h-10 lg:h-12 object-contain"
+                    className="h-9 lg:h-11 object-contain"
                     style={{ filter: 'brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(1500%) hue-rotate(90deg) brightness(0.7)' }}
                   />
                 </div>
-                <p className="text-[10px] lg:text-xs text-gray-500 tracking-widest uppercase">
-                  Historisches Panoramarestaurant
-                </p>
                 
                 {/* Öffnungszeiten - Kompakt (Winter) */}
-                <div className="mt-2 pt-2 border-t border-gray-100">
-                  <p className="text-[10px] lg:text-xs font-semibold text-gray-700 mb-1">Öffnungszeiten</p>
-                  <div className="text-[10px] lg:text-xs text-gray-600 space-y-0.5">
-                    <div className="flex justify-center gap-4">
-                      <span><span className="font-medium">Mo / Di:</span> <span className="text-red-600">Ruhetag</span></span>
-                    </div>
-                    <div className="flex justify-center gap-4">
-                      <span><span className="font-medium">Mi / Do / So:</span> 12:00 – 18:00</span>
-                    </div>
-                    <div className="flex justify-center gap-4">
-                      <span><span className="font-medium">Fr / Sa:</span> 12:00 – 20:00</span>
-                    </div>
+                <div className="mt-1.5 pt-1.5 border-t border-gray-100">
+                  <p className="text-[9px] lg:text-[10px] font-semibold text-gray-700 mb-0.5">Öffnungszeiten</p>
+                  <div className="text-[9px] lg:text-[10px] text-gray-600 leading-tight">
+                    <span className="font-medium">Mo / Di:</span> <span className="text-red-600">Ruhetag</span>
+                    <span className="mx-1.5">·</span>
+                    <span className="font-medium">Mi / Do / So:</span> 12–18 Uhr
+                    <span className="mx-1.5">·</span>
+                    <span className="font-medium">Fr / Sa:</span> 12–20 Uhr
                   </div>
                 </div>
                 
-                <CardTitle className="font-serif text-lg lg:text-xl mt-2 text-gray-900">{t.title}</CardTitle>
+                <CardTitle className="font-serif text-base lg:text-lg mt-1.5 text-gray-900">{t.title}</CardTitle>
                 
                 {/* Progress */}
-                <div className="flex justify-center gap-2 mt-2">
+                <div className="flex justify-center gap-1.5 mt-1.5">
                   {[1, 2, 3].map((s) => (
-                    <div key={s} className={`w-8 lg:w-10 h-1 rounded-full transition-colors ${s <= step ? "bg-[#005500]" : "bg-gray-200"}`} />
+                    <div key={s} className={`w-7 lg:w-8 h-1 rounded-full transition-colors ${s <= step ? "bg-[#005500]" : "bg-gray-200"}`} />
                   ))}
                 </div>
               </CardHeader>
               
               {/* Content - Scrollable if needed */}
-              <CardContent className="flex-1 overflow-y-auto p-3 lg:p-4">
+              <CardContent className="flex-1 overflow-y-auto p-2.5 lg:p-3">
                 
                 {/* Error Alert */}
                 {error && !hasEvents && (
-                  <Alert variant="destructive" className="mb-3">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs lg:text-sm">{error}</AlertDescription>
+                  <Alert variant="destructive" className="mb-2">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <AlertDescription className="text-[11px] lg:text-xs">{error}</AlertDescription>
                   </Alert>
                 )}
                 
                 {/* Step 1: Date & Time */}
                 {step === 1 && (
-                  <div className="space-y-3">
-                    {/* Date & Party Size - Horizontal on Desktop */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs lg:text-sm flex items-center gap-1 text-gray-700">
-                          <Calendar size={14} className="text-[#005500]" />
+                  <div className="space-y-2.5">
+                    {/* Date & Party Size - Horizontal */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] lg:text-xs flex items-center gap-1 text-gray-700">
+                          <Calendar size={12} className="text-[#005500]" />
                           {t.date}
                         </Label>
                         <Input
@@ -380,16 +381,16 @@ export const BookingWidget = () => {
                           onChange={(e) => setDate(e.target.value)}
                           min={today}
                           max={maxDate}
-                          className="h-9 lg:h-10 text-sm border-gray-300"
+                          className="h-8 lg:h-9 text-xs lg:text-sm border-gray-300"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs lg:text-sm flex items-center gap-1 text-gray-700">
-                          <Users size={14} className="text-[#005500]" />
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] lg:text-xs flex items-center gap-1 text-gray-700">
+                          <Users size={12} className="text-[#005500]" />
                           {t.guests}
                         </Label>
                         <Select value={String(partySize)} onValueChange={(v) => setPartySize(parseInt(v))}>
-                          <SelectTrigger className="h-9 lg:h-10 text-sm border-gray-300">
+                          <SelectTrigger className="h-8 lg:h-9 text-xs lg:text-sm border-gray-300">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -402,8 +403,8 @@ export const BookingWidget = () => {
                     </div>
                     
                     {checking && (
-                      <div className="flex justify-center py-4">
-                        <Loader2 className="h-6 w-6 animate-spin text-[#005500]" />
+                      <div className="flex justify-center py-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-[#005500]" />
                       </div>
                     )}
                     
@@ -417,40 +418,40 @@ export const BookingWidget = () => {
                       return (
                         <div 
                           key={event.id}
-                          className={`p-3 rounded-lg border-2 transition-all ${
+                          className={`p-2.5 rounded-lg border-2 transition-all ${
                             selectedEvent?.id === event.id 
                               ? "border-[#005500] bg-[#005500]/5" 
                               : "border-amber-200 bg-amber-50"
                           }`}
                         >
-                          <div className="flex items-start gap-2 mb-2">
-                            <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center flex-shrink-0">
-                              <Star className="h-4 w-4 text-white" />
+                          <div className="flex items-start gap-2 mb-1.5">
+                            <div className="w-7 h-7 rounded-md bg-amber-500 flex items-center justify-center flex-shrink-0">
+                              <Star className="h-3.5 w-3.5 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-sm text-gray-900 truncate">{event.title}</h3>
-                              <p className="text-xs text-gray-600">
+                              <h3 className="font-semibold text-xs lg:text-sm text-gray-900 truncate">{event.title}</h3>
+                              <p className="text-[10px] lg:text-xs text-gray-600">
                                 Buchbar {startTime}–{endTime} Uhr
                               </p>
                               {eventPrice && (
-                                <p className="text-xs font-semibold text-[#005500]">{eventPrice} p. P.</p>
+                                <p className="text-[10px] lg:text-xs font-semibold text-[#005500]">{eventPrice} p. P.</p>
                               )}
                             </div>
                           </div>
                           
-                          <div className="flex items-start gap-1.5 text-[10px] text-amber-700 bg-amber-100 p-1.5 rounded mb-2">
+                          <div className="flex items-start gap-1 text-[9px] lg:text-[10px] text-amber-700 bg-amber-100 p-1.5 rounded mb-1.5">
                             <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
                             <span>{t.eventHint}</span>
                           </div>
                           
                           {/* Event Slots - 4 columns */}
-                          <div className="grid grid-cols-4 gap-1.5">
+                          <div className="grid grid-cols-4 gap-1">
                             {eventSlots.map((slotTime) => (
                               <Button
                                 key={slotTime}
                                 type="button"
                                 variant={selectedEvent?.id === event.id && time === slotTime ? "default" : "outline"}
-                                className={`h-8 text-xs ${
+                                className={`h-7 text-[10px] lg:text-xs ${
                                   selectedEvent?.id === event.id && time === slotTime 
                                     ? "bg-[#005500] hover:bg-[#004400]" 
                                     : "border-amber-300 hover:bg-amber-100"
@@ -467,18 +468,18 @@ export const BookingWidget = () => {
                     
                     {/* Regular Slots - Grid */}
                     {regularSlots.length > 0 && !checking && (
-                      <div className="space-y-1.5">
-                        <Label className="text-xs lg:text-sm flex items-center gap-1 text-gray-700">
-                          <Clock size={14} className="text-[#005500]" />
+                      <div className="space-y-1">
+                        <Label className="text-[10px] lg:text-xs flex items-center gap-1 text-gray-700">
+                          <Clock size={12} className="text-[#005500]" />
                           {hasEvents ? "Reguläre Zeiten" : t.time}
                         </Label>
-                        <div className="grid grid-cols-4 lg:grid-cols-6 gap-1.5">
+                        <div className="grid grid-cols-4 lg:grid-cols-6 gap-1">
                           {regularSlots.map((slot) => (
                             <Button
                               key={slot.time}
                               type="button"
                               variant={!isEventBooking && time === slot.time ? "default" : "outline"}
-                              className={`h-8 text-xs ${!slot.available ? "opacity-50" : ""} ${
+                              className={`h-7 text-[10px] lg:text-xs ${!slot.available ? "opacity-50" : ""} ${
                                 !isEventBooking && time === slot.time ? "bg-[#005500] hover:bg-[#004400]" : ""
                               }`}
                               onClick={() => slot.available && handleSlotSelect(slot.time)}
@@ -492,7 +493,7 @@ export const BookingWidget = () => {
                     )}
                     
                     <Button
-                      className="w-full h-10 rounded-full font-semibold bg-[#005500] hover:bg-[#004400] text-white text-sm"
+                      className="w-full h-9 rounded-full font-semibold bg-[#005500] hover:bg-[#004400] text-white text-xs lg:text-sm"
                       onClick={() => setStep(2)}
                       disabled={!date || !time}
                     >
@@ -503,63 +504,63 @@ export const BookingWidget = () => {
                 
                 {/* Step 2: Guest Details */}
                 {step === 2 && (
-                  <form onSubmit={handleSubmit} className="space-y-3">
+                  <form onSubmit={handleSubmit} className="space-y-2">
                     {/* Booking Summary */}
-                    <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="bg-gray-50 p-2 rounded-lg">
                       {isEventBooking && selectedEvent && (
-                        <div className="mb-2 pb-2 border-b border-gray-200">
-                          <div className="flex items-center gap-1.5 text-[#005500] text-xs font-semibold">
+                        <div className="mb-1.5 pb-1.5 border-b border-gray-200">
+                          <div className="flex items-center gap-1 text-[#005500] text-[10px] font-semibold">
                             <Star className="h-3 w-3" />
                             <span>{t.youAreBooking}</span>
                           </div>
-                          <p className="font-bold text-sm text-gray-900">{selectedEvent.title}</p>
+                          <p className="font-bold text-xs text-gray-900">{selectedEvent.title}</p>
                           {getEventPrice(selectedEvent) && (
-                            <p className="text-xs text-[#005500]">{getEventPrice(selectedEvent)} p. P.</p>
+                            <p className="text-[10px] text-[#005500]">{getEventPrice(selectedEvent)} p. P.</p>
                           )}
-                          <div className="mt-1.5 text-[10px] text-amber-700 bg-amber-50 p-1.5 rounded flex items-start gap-1">
-                            <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                          <div className="mt-1 text-[9px] text-amber-700 bg-amber-50 p-1 rounded flex items-start gap-1">
+                            <Info className="h-2.5 w-2.5 flex-shrink-0 mt-0.5" />
                             <span>{t.eventHint}</span>
                           </div>
                         </div>
                       )}
-                      <div className="flex items-center gap-3 text-xs text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} className="text-[#005500]" />
+                      <div className="flex items-center gap-2 text-[10px] lg:text-xs text-gray-600">
+                        <span className="flex items-center gap-0.5">
+                          <Calendar size={10} className="text-[#005500]" />
                           {date}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} className="text-[#005500]" />
+                        <span className="flex items-center gap-0.5">
+                          <Clock size={10} className="text-[#005500]" />
                           {time}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Users size={12} className="text-[#005500]" />
+                        <span className="flex items-center gap-0.5">
+                          <Users size={10} className="text-[#005500]" />
                           {partySize}
                         </span>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setStep(1)} className="text-[#005500] text-xs h-6 ml-auto">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setStep(1)} className="text-[#005500] text-[10px] h-5 ml-auto px-1">
                           Ändern
                         </Button>
                       </div>
                     </div>
                     
-                    {/* Form Fields - 2 columns on larger screens */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-gray-700">{t.name} *</Label>
-                        <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} required className="h-9 text-sm border-gray-300" />
+                    {/* Form Fields - 2 columns */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-gray-700">{t.name} *</Label>
+                        <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} required className="h-8 text-xs border-gray-300" />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-gray-700">{t.phone} *</Label>
-                        <Input type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} required className="h-9 text-sm border-gray-300" />
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-gray-700">{t.phone} *</Label>
+                        <Input type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} required className="h-8 text-xs border-gray-300" />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-gray-700">{t.email} *</Label>
-                        <Input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} required className="h-9 text-sm border-gray-300" />
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-gray-700">{t.email} *</Label>
+                        <Input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} required className="h-8 text-xs border-gray-300" />
                       </div>
                       {!isEventBooking && (
-                        <div className="space-y-1">
-                          <Label className="text-xs text-gray-700">{t.occasion}</Label>
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-gray-700">{t.occasion}</Label>
                           <Select value={occasion} onValueChange={setOccasion}>
-                            <SelectTrigger className="h-9 text-sm border-gray-300">
+                            <SelectTrigger className="h-8 text-xs border-gray-300">
                               <SelectValue placeholder="Optional" />
                             </SelectTrigger>
                             <SelectContent>
@@ -572,28 +573,28 @@ export const BookingWidget = () => {
                       )}
                     </div>
                     
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-700">{t.notes}</Label>
+                    <div className="space-y-0.5">
+                      <Label className="text-[10px] text-gray-700">{t.notes}</Label>
                       <Textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Allergien, Kinderstühle, etc."
-                        className="min-h-[60px] text-sm border-gray-300"
+                        className="min-h-[50px] text-xs border-gray-300"
                       />
                     </div>
                     
                     {error && (
                       <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription className="text-xs">{error}</AlertDescription>
+                        <AlertCircle className="h-3 w-3" />
+                        <AlertDescription className="text-[10px]">{error}</AlertDescription>
                       </Alert>
                     )}
                     
-                    <div className="flex gap-3">
-                      <Button type="button" variant="outline" className="flex-1 h-10 rounded-full text-sm border-gray-300" onClick={() => setStep(1)}>
+                    <div className="flex gap-2 pt-1">
+                      <Button type="button" variant="outline" className="flex-1 h-9 rounded-full text-xs border-gray-300" onClick={() => setStep(1)}>
                         {t.back}
                       </Button>
-                      <Button type="submit" className="flex-1 h-10 rounded-full font-semibold bg-[#005500] hover:bg-[#004400] text-sm" disabled={loading}>
+                      <Button type="submit" className="flex-1 h-9 rounded-full font-semibold bg-[#005500] hover:bg-[#004400] text-xs" disabled={loading}>
                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isEventBooking ? t.bookEvent : t.book)}
                       </Button>
                     </div>
@@ -602,37 +603,37 @@ export const BookingWidget = () => {
                 
                 {/* Step 3: Confirmation */}
                 {step === 3 && success && (
-                  <div className="text-center py-4">
-                    <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-3 ${waitlisted ? "bg-yellow-100" : "bg-green-100"}`}>
-                      {waitlisted ? <CalendarClock className="h-6 w-6 text-yellow-600" /> : <CheckCircle className="h-6 w-6 text-green-600" />}
+                  <div className="text-center py-3">
+                    <div className={`w-10 h-10 rounded-full mx-auto flex items-center justify-center mb-2 ${waitlisted ? "bg-yellow-100" : "bg-green-100"}`}>
+                      {waitlisted ? <CalendarClock className="h-5 w-5 text-yellow-600" /> : <CheckCircle className="h-5 w-5 text-green-600" />}
                     </div>
                     
                     {!waitlisted && (
-                      <p className="text-sm text-gray-700 mb-2 font-medium">
+                      <p className="text-xs text-gray-700 mb-1.5 font-medium">
                         Vielen Dank für Ihre Reservierung – wir freuen uns auf Sie.
                       </p>
                     )}
                     
-                    <h2 className="font-serif text-lg mb-1 text-gray-900">
+                    <h2 className="font-serif text-base mb-1 text-gray-900">
                       {waitlisted ? t.waitlistSuccess : t.success}
                     </h2>
-                    <p className="text-xs text-gray-500 mb-3">{waitlisted ? t.waitlistText : t.successText}</p>
+                    <p className="text-[10px] text-gray-500 mb-2">{waitlisted ? t.waitlistText : t.successText}</p>
                     
                     {isEventBooking && selectedEvent && (
-                      <div className="p-2 bg-amber-50 rounded border border-amber-200 mb-3">
-                        <div className="flex items-center gap-1.5 justify-center text-amber-700 text-xs">
+                      <div className="p-1.5 bg-amber-50 rounded border border-amber-200 mb-2">
+                        <div className="flex items-center gap-1 justify-center text-amber-700 text-[10px]">
                           <Star className="h-3 w-3" />
                           <span className="font-semibold">{selectedEvent.title}</span>
                         </div>
-                        <p className="text-[10px] text-amber-600 mt-0.5">{t.eventHint}</p>
+                        <p className="text-[9px] text-amber-600">{t.eventHint}</p>
                       </div>
                     )}
                     
-                    <div className="bg-gray-50 p-3 rounded-lg text-left">
-                      <div className="grid grid-cols-2 gap-1.5 text-xs">
+                    <div className="bg-gray-50 p-2 rounded-lg text-left">
+                      <div className="grid grid-cols-2 gap-1 text-[10px]">
                         {guestName && (
                           <>
-                            <span className="text-gray-500 flex items-center gap-1"><User size={12} />{t.name}:</span>
+                            <span className="text-gray-500 flex items-center gap-0.5"><User size={10} />{t.name}:</span>
                             <span className="font-medium text-gray-900">{guestName}</span>
                           </>
                         )}
@@ -644,7 +645,7 @@ export const BookingWidget = () => {
                         <span className="font-medium text-gray-900">{partySize}</span>
                         {!isEventBooking && getOccasionDisplayLabel(occasion) && (
                           <>
-                            <span className="text-gray-500 flex items-center gap-1"><Heart size={12} />{t.occasion}:</span>
+                            <span className="text-gray-500 flex items-center gap-0.5"><Heart size={10} />{t.occasion}:</span>
                             <span className="font-medium text-gray-900">{getOccasionDisplayLabel(occasion)}</span>
                           </>
                         )}
@@ -656,18 +657,18 @@ export const BookingWidget = () => {
             </Card>
           </div>
           
-          {/* RIGHT: Gallery (Desktop) / Bottom Carousel (Mobile) */}
-          <div className="hidden lg:flex lg:flex-[0_0_38%] flex-col gap-3">
+          {/* RIGHT: Gallery (Desktop) - FIXED: grid-rows mit 1fr für volle Höhe */}
+          <div className="hidden lg:grid lg:flex-[0_0_36%] grid-rows-3 gap-3 h-full">
             {GALLERY_IMAGES.map((img, idx) => (
-              <div key={idx} className="flex-1 rounded-xl overflow-hidden shadow-lg">
+              <div key={idx} className="rounded-xl overflow-hidden shadow-lg h-full">
                 <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
           
           {/* Mobile Gallery Carousel */}
-          <div className="lg:hidden flex-shrink-0 h-20 relative">
-            <div className="flex h-full gap-2 overflow-hidden rounded-lg">
+          <div className="lg:hidden flex-shrink-0 h-16 relative">
+            <div className="flex h-full gap-1.5 overflow-hidden rounded-lg">
               {GALLERY_IMAGES.map((img, idx) => (
                 <div 
                   key={idx} 
@@ -677,26 +678,25 @@ export const BookingWidget = () => {
                 </div>
               ))}
             </div>
-            {/* Carousel Controls */}
             <button 
               onClick={prevGalleryImage}
-              className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white"
+              className="absolute left-0.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={12} />
             </button>
             <button 
               onClick={nextGalleryImage}
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white"
+              className="absolute right-0.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white"
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={12} />
             </button>
           </div>
         </div>
       </div>
       
       {/* Footer */}
-      <div className="absolute bottom-2 left-0 right-0 text-center text-white/60 text-[10px] z-10">
-        © {new Date().getFullYear()} Carlsburg Historisches Panoramarestaurant
+      <div className="absolute bottom-1 left-0 right-0 text-center text-white/50 text-[9px] z-10">
+        © {new Date().getFullYear()} Carlsburg
       </div>
     </div>
   );
