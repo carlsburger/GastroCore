@@ -1,5 +1,9 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// DEBUG: Log sofort beim Import
+console.log('[App.js IMPORT] Window location:', window.location.href);
+console.log('[App.js IMPORT] Pathname:', window.location.pathname);
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import PublicLayout from "./components/PublicLayout";
