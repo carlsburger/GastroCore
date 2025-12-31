@@ -185,13 +185,16 @@ async def get_event_blocked_slots(date_str: str) -> List[str]:
     """
     blocked_slots = []
     
+    # Suche Events die dieses Datum betreffen
     events = await db.events.find({
         "archived": {"$ne": True},
         "status": {"$in": ["published", "active"]},
         "$or": [
             {"date": date_str},
             {"event_date": date_str},
-            {"dates": date_str}
+            {"dates": date_str},
+            # ISO datetime Format: 2026-01-09T17:00:00
+            {"start_datetime": {"$regex": f"^{date_str}T"}}
         ]
     }).to_list(50)
     
@@ -199,8 +202,22 @@ async def get_event_blocked_slots(date_str: str) -> List[str]:
         if not event.get("blocks_normal_reservations", True):
             continue
         
+        # Start-Zeit extrahieren (verschiedene Formate)
         event_start = event.get("start_time") or event.get("event_start_time")
         event_end = event.get("end_time") or event.get("event_end_time")
+        
+        # Falls start_datetime/end_datetime als ISO: extrahiere Zeit
+        if not event_start and event.get("start_datetime"):
+            try:
+                event_start = event["start_datetime"].split("T")[1][:5]
+            except (IndexError, TypeError):
+                pass
+        
+        if not event_end and event.get("end_datetime"):
+            try:
+                event_end = event["end_datetime"].split("T")[1][:5]
+            except (IndexError, TypeError):
+                pass
         
         if not event_start or not event_end:
             continue
