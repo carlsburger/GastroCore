@@ -388,7 +388,15 @@ export const BookingWidget = () => {
       setSuccess(true);
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.detail || "Reservierung fehlgeschlagen");
+      const detail = err.response?.data?.detail;
+      // Handle complex error objects (Pydantic validation errors)
+      if (Array.isArray(detail)) {
+        setError(detail.map(d => d.msg).join(", ") || "Reservierung fehlgeschlagen");
+      } else if (typeof detail === 'object') {
+        setError(detail.msg || JSON.stringify(detail) || "Reservierung fehlgeschlagen");
+      } else {
+        setError(detail || "Reservierung fehlgeschlagen");
+      }
     } finally {
       setLoading(false);
     }
