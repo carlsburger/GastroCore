@@ -93,6 +93,7 @@ export const BookingWidget = () => {
   const [eventsForDate, setEventsForDate] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEventBooking, setIsEventBooking] = useState(false);
+  const [eventCutoffInfo, setEventCutoffInfo] = useState(null);  // Backend event_cutoff info
   
   // Mobile gallery carousel
   const [galleryIndex, setGalleryIndex] = useState(0);
