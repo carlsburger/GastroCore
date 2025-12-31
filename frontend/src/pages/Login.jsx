@@ -25,6 +25,19 @@ export const Login = () => {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
+  // WORKAROUND: Wenn die URL /book ist, navigiere direkt zum BookingWidget
+  // (React Router funktioniert nicht korrekt im Preview-Kontext)
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    console.log('[Login] Current path:', currentPath);
+    if (currentPath === '/book') {
+      console.log('[Login] Redirecting to /book via window.location');
+      // Nicht navigate verwenden, da React Router nicht korrekt funktioniert
+      // Stattdessen: Force reload der korrekten Seite
+      return; // Nicht redirecten - die Route sollte korrekt matchen
+    }
+  }, []);
+
   // Redirect wenn bereits eingeloggt
   useEffect(() => {
     if (isAuthenticated && user) {
