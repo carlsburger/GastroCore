@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Loader2, Calendar, Clock, Users, CheckCircle, AlertCircle, CalendarClock, User, Heart, Star, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Calendar, Clock, Users, CheckCircle, AlertCircle, CalendarClock, User, Heart, Star, Info } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 
@@ -95,9 +95,6 @@ export const BookingWidget = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEventBooking, setIsEventBooking] = useState(false);
   const [eventCutoffInfo, setEventCutoffInfo] = useState(null);  // Backend event_cutoff info
-  
-  // Mobile gallery carousel
-  const [galleryIndex, setGalleryIndex] = useState(0);
   
   // Translations
   const t = {
@@ -309,10 +306,6 @@ export const BookingWidget = () => {
   const maxDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const regularSlots = getFilteredRegularSlots();
   const hasEvents = eventsForDate.length > 0;
-
-  // Mobile gallery navigation
-  const nextGalleryImage = () => setGalleryIndex((prev) => (prev + 1) % GALLERY_IMAGES.length);
-  const prevGalleryImage = () => setGalleryIndex((prev) => (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length);
 
   return (
     <div className="h-screen w-screen overflow-hidden relative">
