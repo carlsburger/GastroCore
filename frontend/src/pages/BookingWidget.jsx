@@ -26,23 +26,24 @@ const CARLSBURG_LOGO_URL = "https://customer-assets.emergentagent.com/job_table-
 // ============================================
 const HERO_BACKGROUND = "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/s1yim511__K7A3951.jpg";
 
+// GALERIE: Genau 4 Bilder in fester Reihenfolge (KEIN Panorama!)
 const GALLERY_IMAGES = [
   { 
-    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/4cp6buxs_17.jpg", 
+    src: "https://images.unsplash.com/photo-1652587907279-454e96a03b07?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwdGVycmFjZXxlbnwwfHx8fDE3NjcyMDQ5NjV8MA&ixlib=rb-4.1.0&q=85", 
+    alt: "Terrasse Sommer"
+  },
+  { 
+    src: "https://images.unsplash.com/photo-1532313432596-0362b492b33c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwzfHx3aW5lJTIwZ2xhc3NlcyUyMGNoZWVyc3xlbnwwfHx8fDE3NjcyMDQ5NzF8MA&ixlib=rb-4.1.0&q=85", 
+    alt: "Anstoßen mit Gläsern"
+  },
+  { 
+    src: "https://images.unsplash.com/photo-1645673197548-9adfa2ea55dc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwzfHxiYWtlZCUyMHBvdGF0b3xlbnwwfHx8fDE3NjcxOTA2MjR8MA&ixlib=rb-4.1.0&q=85", 
+    alt: "Ofenkartoffel"
+  },
+  { 
+    src: "https://images.unsplash.com/photo-1645319639077-0834f959fafc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwxfHxoaXN0b3JpYyUyMG1hbnNpb258ZW58MHx8fHwxNzY3MjA0OTgwfDA&ixlib=rb-4.1.0&q=85", 
     alt: "Historisches Carlsburg", 
-    badge: "Seit 1890"
-  },
-  { 
-    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/c27ktnmv_DSC08347.jpg", 
-    alt: "Kulinarische Köstlichkeiten"
-  },
-  { 
-    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/2t0mqw2t_DSC08348.jpg", 
-    alt: "Frische Gerichte"
-  },
-  { 
-    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/s1yim511__K7A3951.jpg", 
-    alt: "Panoramablick"
+    badge: "Seit 1838"
   },
 ];
 
@@ -316,11 +317,12 @@ export const BookingWidget = () => {
   return (
     <div className="h-screen w-screen overflow-hidden relative">
       {/* Panorama Background - Echtes Carlsburg Bild */}
+      {/* Mobile: bg-top für mehr Himmel, Desktop: bg-center */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-no-repeat bg-top md:bg-center"
         style={{ backgroundImage: `url(${HERO_BACKGROUND})` }}
       >
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/[0.42]" />
       </div>
 
       {/* Main Layout Container - Vertikal: Widget oben, Galerie unten */}
@@ -343,14 +345,14 @@ export const BookingWidget = () => {
                 />
               </div>
               
-              {/* Öffnungszeiten - Kompakt */}
-              <div className="text-[9px] lg:text-[10px] text-gray-600 leading-tight">
-                <span className="font-semibold text-gray-700">Öffnungszeiten:</span>{" "}
-                <span className="font-medium">Mo/Di:</span> <span className="text-red-600">Ruhetag</span>
-                <span className="mx-1">·</span>
-                <span className="font-medium">Mi/Do/So:</span> 12–18h
-                <span className="mx-1">·</span>
-                <span className="font-medium">Fr/Sa:</span> 12–20h
+              {/* Öffnungszeiten - Gut lesbar */}
+              <div className="text-[11px] lg:text-[13px] text-gray-700 leading-relaxed">
+                <span className="font-bold text-gray-800">Öffnungszeiten:</span>{" "}
+                <span className="font-semibold">Mo/Di:</span> <span className="text-red-600 font-semibold">Ruhetag</span>
+                <span className="mx-1.5">·</span>
+                <span className="font-semibold">Mi/Do/So:</span> <span className="font-medium">12–18h</span>
+                <span className="mx-1.5">·</span>
+                <span className="font-semibold">Fr/Sa:</span> <span className="font-medium">12–20h</span>
               </div>
               
               <CardTitle className="font-serif text-base lg:text-lg mt-1 text-gray-900">{t.title}</CardTitle>
@@ -661,15 +663,17 @@ export const BookingWidget = () => {
             </CardContent>
           </Card>
           
-          {/* GALERIE - UNTEN (Desktop: 4 Kacheln, Mobile: Carousel) */}
-          {/* Desktop/iPad: horizontale Kacheln */}
-          <div className="hidden md:grid grid-cols-4 gap-2 h-[140px] lg:h-[160px] flex-shrink-0">
+          {/* GALERIE - UNTEN */}
+          {/* Desktop (lg+): 4-spaltig horizontal */}
+          {/* Tablet (md): 2x2 Grid */}
+          {/* Mobile: Swipe Carousel */}
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-2 h-auto md:h-[160px] lg:h-[160px] flex-shrink-0">
             {GALLERY_IMAGES.map((img, idx) => (
-              <div key={idx} className="relative rounded-xl overflow-hidden shadow-lg group">
+              <div key={idx} className="relative rounded-xl overflow-hidden shadow-lg group h-[80px] md:h-full">
                 <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
                 {/* Badge für historisches Bild */}
                 {img.badge && (
-                  <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
+                  <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded font-semibold">
                     {img.badge}
                   </div>
                 )}
@@ -677,35 +681,29 @@ export const BookingWidget = () => {
             ))}
           </div>
           
-          {/* Mobile: Carousel */}
-          <div className="md:hidden flex-shrink-0 h-14 relative">
-            <div className="flex h-full gap-1 overflow-hidden rounded-lg">
+          {/* Mobile: Horizontaler Swipe Carousel */}
+          <div className="md:hidden flex-shrink-0 h-20 relative">
+            <div className="flex h-full gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-lg px-1">
               {GALLERY_IMAGES.map((img, idx) => (
                 <div 
                   key={idx} 
-                  className={`flex-shrink-0 w-1/4 h-full rounded-lg overflow-hidden transition-opacity relative ${idx === galleryIndex ? 'ring-2 ring-white' : 'opacity-70'}`}
+                  className="flex-shrink-0 w-[45%] h-full rounded-lg overflow-hidden shadow-md snap-center relative"
                 >
                   <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
-                  {img.badge && idx === galleryIndex && (
-                    <div className="absolute bottom-0.5 left-0.5 bg-black/60 text-white text-[7px] px-1 py-0.5 rounded">
+                  {img.badge && (
+                    <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[8px] px-1.5 py-0.5 rounded font-semibold">
                       {img.badge}
                     </div>
                   )}
                 </div>
               ))}
             </div>
-            <button 
-              onClick={prevGalleryImage}
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white"
-            >
-              <ChevronLeft size={10} />
-            </button>
-            <button 
-              onClick={nextGalleryImage}
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white"
-            >
-              <ChevronRight size={10} />
-            </button>
+            {/* Swipe-Indikator */}
+            <div className="flex justify-center gap-1.5 mt-1">
+              {GALLERY_IMAGES.map((_, idx) => (
+                <div key={idx} className="w-1.5 h-1.5 rounded-full bg-white/50" />
+              ))}
+            </div>
           </div>
         </div>
       </div>
