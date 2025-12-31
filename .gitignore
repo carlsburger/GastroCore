@@ -81,52 +81,28 @@ android-sdk/ frontend/node_modules/.cache/default-development/0.pack
 frontend/node_modules/.cache/default-development/0.pack
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 
 # Backup-Dateien (lokal behalten, nicht committen)
 backups/*.zip
@@ -134,36 +110,20 @@ backups/*.patch
 backups/backup_report_*.md
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 frontend/node_modules/.cache/default-development/1.pack
 frontend/node_modules/.cache/default-development/1.pack_
 frontend/node_modules/.cache/default-development/2.pack
@@ -172,227 +132,115 @@ frontend/node_modules/.cache/default-development/5.pack
 frontend/node_modules/.cache/default-development/6.pack
 -e 
 # Environment files
-*.env
-*.env.*
 frontend/node_modules/.cache/default-development/3.pack
 -e 
 # Environment files
-*.env
-*.env.*
 frontend/node_modules/.cache/default-development/8.pack
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
 -e 
 # Environment files
-*.env
-*.env.*
