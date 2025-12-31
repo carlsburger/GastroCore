@@ -471,13 +471,26 @@ export const BookingWidget = () => {
                         <Clock size={11} className="text-[#005500]" />
                         {hasEvents ? "Reguläre Zeiten" : t.time}
                       </Label>
-                      <div className="grid grid-cols-4 lg:grid-cols-6 gap-1">
+                      {/* 
+                        VORBEREITUNG FÜR BACKEND-REGEL:
+                        Falls Backend später `regular_cutoff_time` oder `regular_cutoff_minutes_before_event` liefert,
+                        hier eine Info-Note anzeigen wie:
+                        "Reguläre Reservierungen bis 15:30 Uhr möglich."
+                        
+                        Beispiel-Code (aktivieren wenn Backend bereit):
+                        {hasEvents && availability?.regular_cutoff_time && (
+                          <p className="text-[9px] text-gray-500 mb-1">
+                            Reguläre Reservierungen bis {availability.regular_cutoff_time} Uhr möglich.
+                          </p>
+                        )}
+                      */}
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1">
                         {regularSlots.map((slot) => (
                           <Button
                             key={slot.time}
                             type="button"
                             variant={!isEventBooking && time === slot.time ? "default" : "outline"}
-                            className={`h-6 text-[10px] ${!slot.available ? "opacity-50" : ""} ${
+                            className={`h-7 text-[11px] ${!slot.available ? "opacity-50" : ""} ${
                               !isEventBooking && time === slot.time ? "bg-[#005500] hover:bg-[#004400]" : ""
                             }`}
                             onClick={() => slot.available && handleSlotSelect(slot.time)}
