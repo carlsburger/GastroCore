@@ -303,10 +303,10 @@ export const BookingWidget = () => {
             </p>
           )}
           
-          {/* Öffnungszeiten kompakt */}
+          {/* Öffnungszeiten kompakt - OHNE Season-Label (Task 4) */}
           {openingHoursText && (
             <p className="text-xs text-muted-foreground mt-1">
-              Öffnungszeiten{openingHoursSeasonLabel ? ` (${openingHoursSeasonLabel})` : ''}: {openingHoursText}
+              Öffnungszeiten: {openingHoursText}
             </p>
           )}
           
