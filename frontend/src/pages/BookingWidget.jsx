@@ -532,6 +532,14 @@ export const BookingWidget = () => {
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 )}
               </div>
+              
+              {/* Confirmation Headline - neu */}
+              {!waitlisted && (
+                <p className="text-base text-foreground mb-4 font-medium">
+                  Vielen Dank für Ihre Reservierung – wir freuen uns auf Sie.
+                </p>
+              )}
+              
               <h2 className="font-serif text-2xl mb-2">
                 {waitlisted ? t.waitlistSuccess : t.success}
               </h2>
@@ -541,12 +549,32 @@ export const BookingWidget = () => {
               
               <div className="bg-muted p-4 rounded-lg mt-6 text-left">
                 <div className="grid grid-cols-2 gap-2 text-sm">
+                  {/* Name anzeigen wenn vorhanden */}
+                  {guestName && (
+                    <>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <User size={14} />
+                        {t.name}:
+                      </span>
+                      <span className="font-medium">{guestName}</span>
+                    </>
+                  )}
                   <span className="text-muted-foreground">{t.date}:</span>
                   <span className="font-medium">{date}</span>
                   <span className="text-muted-foreground">{t.time}:</span>
                   <span className="font-medium">{time} Uhr</span>
                   <span className="text-muted-foreground">{t.guests}:</span>
                   <span className="font-medium">{partySize}</span>
+                  {/* Anlass anzeigen NUR wenn ausgewählt (nicht leer) */}
+                  {getOccasionDisplayLabel(occasion) && (
+                    <>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Heart size={14} />
+                        {t.occasion}:
+                      </span>
+                      <span className="font-medium">{getOccasionDisplayLabel(occasion)}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
