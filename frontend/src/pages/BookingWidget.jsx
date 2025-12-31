@@ -535,25 +535,25 @@ export const BookingWidget = () => {
                     </div>
                   </div>
                   
-                  {/* Form Fields - 2 columns */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-0.5">
+                  {/* Form Fields - Mobile: 1 Spalte, Desktop: 2 Spalten */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1 min-w-0">
                       <Label className="text-[10px] text-gray-700">{t.name} *</Label>
-                      <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} required className="h-7 text-xs border-gray-300" />
+                      <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} required className="h-9 text-sm border-gray-300 w-full" />
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1 min-w-0">
                       <Label className="text-[10px] text-gray-700">{t.phone} *</Label>
-                      <Input type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} required className="h-7 text-xs border-gray-300" />
+                      <Input type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} required className="h-9 text-sm border-gray-300 w-full" />
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1 min-w-0">
                       <Label className="text-[10px] text-gray-700">{t.email} *</Label>
-                      <Input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} required className="h-7 text-xs border-gray-300" />
+                      <Input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} required className="h-9 text-sm border-gray-300 w-full" />
                     </div>
                     {!isEventBooking && (
-                      <div className="space-y-0.5">
+                      <div className="space-y-1 min-w-0">
                         <Label className="text-[10px] text-gray-700">{t.occasion}</Label>
                         <Select value={occasion} onValueChange={setOccasion}>
-                          <SelectTrigger className="h-7 text-xs border-gray-300">
+                          <SelectTrigger className="h-9 text-sm border-gray-300 w-full">
                             <SelectValue placeholder="Optional" />
                           </SelectTrigger>
                           <SelectContent>
