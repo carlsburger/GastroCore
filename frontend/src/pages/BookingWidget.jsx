@@ -478,19 +478,12 @@ export const BookingWidget = () => {
                         <Clock size={11} className="text-[#005500]" />
                         {hasEvents ? "Reguläre Zeiten" : t.time}
                       </Label>
-                      {/* 
-                        VORBEREITUNG FÜR BACKEND-REGEL:
-                        Falls Backend später `regular_cutoff_time` oder `regular_cutoff_minutes_before_event` liefert,
-                        hier eine Info-Note anzeigen wie:
-                        "Reguläre Reservierungen bis 15:30 Uhr möglich."
-                        
-                        Beispiel-Code (aktivieren wenn Backend bereit):
-                        {hasEvents && availability?.regular_cutoff_time && (
-                          <p className="text-[9px] text-gray-500 mb-1">
-                            Reguläre Reservierungen bis {availability.regular_cutoff_time} Uhr möglich.
-                          </p>
-                        )}
-                      */}
+                      {/* Event-Cutoff-Info anzeigen wenn vorhanden */}
+                      {hasEvents && eventCutoffInfo && eventCutoffInfo.regular_end_time && (
+                        <p className="text-[9px] text-gray-500 mb-1">
+                          Reguläre Reservierungen bis {eventCutoffInfo.regular_end_time} Uhr möglich.
+                        </p>
+                      )}
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-1">
                         {regularSlots.map((slot) => (
                           <Button
