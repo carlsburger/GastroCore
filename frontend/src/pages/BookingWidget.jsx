@@ -73,6 +73,15 @@ export const BookingWidget = () => {
   const [openingHoursText, setOpeningHoursText] = useState("");
   const [openingHoursSeasonLabel, setOpeningHoursSeasonLabel] = useState("");
   const [logoLoaded, setLogoLoaded] = useState(false);
+  const [isClosedDay, setIsClosedDay] = useState(false);
+  
+  // Check if selected date is Monday (1) or Tuesday (2) for special Ruhetag message
+  const isRuhetagMoDi = useMemo(() => {
+    if (!date) return false;
+    const selectedDate = new Date(date);
+    const dayOfWeek = selectedDate.getDay(); // 0=Sunday, 1=Monday, 2=Tuesday, etc.
+    return dayOfWeek === 1 || dayOfWeek === 2;
+  }, [date]);
   
   // Translations
   const t = {
