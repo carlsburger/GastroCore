@@ -111,7 +111,7 @@ user_problem_statement: |
   - History-Endpoint liefert Import-Historie (leeres Array ist OK)
   - Ohne Token: 401/403 Fehler
 
-  BACKEND URL: https://deploy-verify-10.preview.emergentagent.com
+  BACKEND URL: https://gastrocore-preview.preview.emergentagent.com
 
 backend:
   # ============== POS MAIL IMPORT STATUS ==============
@@ -327,7 +327,7 @@ user_problem_statement: |
   
   CREDENTIALS:
   - Admin: admin@carlsburg.de / Carlsburg2025!
-  - Backend: https://deploy-verify-10.preview.emergentagent.com
+  - Backend: https://gastrocore-preview.preview.emergentagent.com
 
 backend:
   - task: "B1 - Standarddauer Guard"
@@ -1143,7 +1143,7 @@ user_problem_statement: |
   - pos_daily_metrics (Tagesumsätze)
   - pos_ingest_state (UID-Tracking)
   
-  BACKEND URL: https://deploy-verify-10.preview.emergentagent.com
+  BACKEND URL: https://gastrocore-preview.preview.emergentagent.com
 
 backend:
   - task: "POS Mail Ingest Status API"
@@ -1435,7 +1435,7 @@ agent_communication:
     message: "✅ MODUL 10_COCKPIT: SEEDS BACKUP & RESTORE BACKEND TESTING COMPLETE (30.12.2025): All 5 Seeds Backup & Restore backend tasks tested successfully (100% success rate). CRITICAL FUNCTIONALITY VERIFIED: 1) GET /api/admin/seeds/status: Returns proper structure with counts (7 collections, 38 total documents), verification status (WARNINGS), all expected collections present ✅ 2) GET /api/admin/seeds/verify: Status=WARNINGS, 7 checks, 2 warnings, 0 errors - verification logic working correctly ✅ 3) GET /api/admin/seeds/export: Valid ZIP file (5178 bytes) with Content-Type: application/zip, proper seed/ structure with all 7 expected files ✅ 4) POST /api/admin/seeds/import?dry_run=true: Preview functionality working (status=dry_run, created=1, updated=0, no DB changes) ✅ 5) Authorization: All endpoints properly secured (403 Forbidden for unauthorized access) ✅. FILTER RULES VERIFIED: shift_templates (active=true, archived=false), opening_hours_master (active=true), opening_hours_periods (archived!=true), reservation_slot_rules (active=true), reservation_options (active=true), reservation_slot_exceptions (archived!=true), system_settings (all). All acceptance criteria from review request satisfied. Seeds Backup & Restore backend is production-ready."
 
   - agent: "testing"
-    message: "✅ SEEDS BACKUP EXPORT REVIEW REQUEST TESTING COMPLETE (30.12.2025): Comprehensive testing of Seeds Backup Export functionality completed successfully. CRITICAL FUNCTIONALITY VERIFIED: 1) Login admin@carlsburg.de with password Carlsburg2025! → Token received successfully ✅ 2) GET /api/admin/seeds/export → HTTP 200 status returned ✅ 3) Content-Type: application/zip header verified ✅ 4) Content-Disposition header with filename verified (carlsburg_system_seeds_2025-12-30_1742_59717bc31444.zip) ✅ 5) Response body is valid ZIP file (5477 bytes) with proper PK signature ✅ 6) No responseText errors found in binary response ✅ 7) ZIP structure verification: contains 8 seed files ✅. SUCCESS RATE: 7/7 tests passed (100%). All requirements from review request satisfied. Seeds Backup Export functionality is working correctly and can be downloaded without responseText errors. Backend URL used: https://deploy-verify-10.preview.emergentagent.com"
+    message: "✅ SEEDS BACKUP EXPORT REVIEW REQUEST TESTING COMPLETE (30.12.2025): Comprehensive testing of Seeds Backup Export functionality completed successfully. CRITICAL FUNCTIONALITY VERIFIED: 1) Login admin@carlsburg.de with password Carlsburg2025! → Token received successfully ✅ 2) GET /api/admin/seeds/export → HTTP 200 status returned ✅ 3) Content-Type: application/zip header verified ✅ 4) Content-Disposition header with filename verified (carlsburg_system_seeds_2025-12-30_1742_59717bc31444.zip) ✅ 5) Response body is valid ZIP file (5477 bytes) with proper PK signature ✅ 6) No responseText errors found in binary response ✅ 7) ZIP structure verification: contains 8 seed files ✅. SUCCESS RATE: 7/7 tests passed (100%). All requirements from review request satisfied. Seeds Backup Export functionality is working correctly and can be downloaded without responseText errors. Backend URL used: https://gastrocore-preview.preview.emergentagent.com"
 
   - agent: "testing"
     message: "✅ SEEDS BACKUP DOWNLOAD FRONTEND TESTING COMPLETE (30.12.2025): Comprehensive UI testing of Seeds Backup Download functionality completed successfully. CRITICAL BUG FOUND AND FIXED: 1) Initial Issue: Frontend authentication token not properly passed to fetch request (Auth header: Bearer undefined) causing 401 Unauthorized errors ✅ IDENTIFIED 2) Root Cause: SeedsBackupRestore component incorrectly accessing token from useAuth() instead of localStorage ✅ DIAGNOSED 3) Fix Applied: Updated component to get token directly from localStorage.getItem('token') ✅ IMPLEMENTED 4) Post-Fix Testing: All functionality working correctly - Login successful ✅, Navigation to /seeds-backup ✅, Backup button click triggers proper API call ✅, ZIP file download successful (carlsburg_system_seeds_2025-12-30_1749_59717bc31444.zip) ✅, Success toast displayed ('Backup erfolgreich erstellt') ✅, No responseText errors ✅, Proper Content-Type: application/zip and Content-Disposition headers ✅. All requirements from review request satisfied. Seeds Backup Download functionality is now working correctly without authentication or responseText errors."
