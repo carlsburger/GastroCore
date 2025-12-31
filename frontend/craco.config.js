@@ -81,6 +81,9 @@ webpackConfig.devServer = (devServerConfig) => {
   // Allow all hosts for external access (Kubernetes/Ingress)
   devServerConfig.allowedHosts = 'all';
   
+  // CRITICAL: Enable SPA routing - all routes should serve index.html
+  devServerConfig.historyApiFallback = true;
+  
   // Apply visual edits dev server setup only if enabled
   if (config.enableVisualEdits && setupDevServer) {
     devServerConfig = setupDevServer(devServerConfig);
