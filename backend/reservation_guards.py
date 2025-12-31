@@ -240,13 +240,17 @@ async def get_event_cutoff_info(date_str: str) -> Optional[Dict[str, Any]]:
         }
         oder None wenn kein Event
     """
+    # Suche Events die dieses Datum betreffen
+    # Events können date, event_date, dates, oder start_datetime (ISO) verwenden
     events = await db.events.find({
         "archived": {"$ne": True},
         "status": {"$in": ["published", "active"]},
         "$or": [
             {"date": date_str},
             {"event_date": date_str},
-            {"dates": date_str}
+            {"dates": date_str},
+            # ISO datetime Format: 2026-01-09T17:00:00
+            {"start_datetime": {"$regex": f"^{date_str}T"}}
         ]
     }).to_list(50)
     
@@ -254,7 +258,17 @@ async def get_event_cutoff_info(date_str: str) -> Optional[Dict[str, Any]]:
         if not event.get("blocks_normal_reservations", True):
             continue
         
+        # Start-Zeit extrahieren (verschiedene Formate)
         event_start = event.get("start_time") or event.get("event_start_time")
+        
+        # Falls start_datetime als ISO: extrahiere Zeit
+        if not event_start and event.get("start_datetime"):
+            try:
+                # "2026-01-09T17:00:00" -> "17:00"
+                event_start = event["start_datetime"].split("T")[1][:5]
+            except (IndexError, TypeError):
+                pass
+        
         if not event_start:
             continue
         
