@@ -173,6 +173,11 @@ export const BookingWidget = () => {
     setError("");
     setIsClosedDay(false);
     
+    // Calculate if selected date is Monday (1) or Tuesday (2) for Ruhetag message
+    const selectedDate = new Date(date);
+    const dayOfWeek = selectedDate.getDay(); // 0=Sunday, 1=Monday, 2=Tuesday
+    const isMondayOrTuesday = dayOfWeek === 1 || dayOfWeek === 2;
+    
     try {
       const response = await axios.get(`${BACKEND_URL}/api/public/availability`, {
         params: { date, party_size: partySize }
@@ -188,7 +193,7 @@ export const BookingWidget = () => {
         if (allClosed) {
           setIsClosedDay(true);
           // Special message for Monday/Tuesday (Ruhetag)
-          if (isRuhetagMoDi) {
+          if (isMondayOrTuesday) {
             setError("Sorry, Montag und Dienstag sind Ruhetag. Ab Mittwoch sind wir gern wieder für Sie da.");
           } else {
             setError(response.data.message || t.fullyBooked);
@@ -202,7 +207,7 @@ export const BookingWidget = () => {
       // Check if error indicates closed day
       if (errorDetail.toLowerCase().includes("geschlossen") || errorDetail.toLowerCase().includes("closed")) {
         setIsClosedDay(true);
-        if (isRuhetagMoDi) {
+        if (isMondayOrTuesday) {
           setError("Sorry, Montag und Dienstag sind Ruhetag. Ab Mittwoch sind wir gern wieder für Sie da.");
         } else {
           setError(errorDetail || "Fehler bei der Verfügbarkeitsprüfung");
