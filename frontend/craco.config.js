@@ -82,7 +82,24 @@ webpackConfig.devServer = (devServerConfig) => {
   devServerConfig.allowedHosts = 'all';
   
   // CRITICAL: Enable SPA routing - all routes should serve index.html
-  devServerConfig.historyApiFallback = true;
+  devServerConfig.historyApiFallback = {
+    disableDotRule: true,
+    rewrites: [
+      // API calls go to proxy (backend)
+      { from: /^\/api/, to: context => context.parsedUrl.pathname },
+      // All other routes get index.html (SPA routing)
+      { from: /./, to: '/index.html' }
+    ]
+  };
+  
+  // Proxy configuration for API calls only
+  devServerConfig.proxy = {
+    '/api': {
+      target: 'http://localhost:8001',
+      changeOrigin: true,
+      secure: false
+    }
+  };
   
   // Apply visual edits dev server setup only if enabled
   if (config.enableVisualEdits && setupDevServer) {
