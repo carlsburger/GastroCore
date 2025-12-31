@@ -370,9 +370,9 @@ export const BookingWidget = () => {
               {/* Step 1: Date & Time */}
               {step === 1 && (
                 <div className="space-y-2">
-                  {/* Date & Party Size */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-0.5">
+                  {/* Date & Party Size - Mobile: 1 Spalte, Desktop: 2 Spalten */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1 min-w-0">
                       <Label className="text-[10px] lg:text-xs flex items-center gap-1 text-gray-700">
                         <Calendar size={11} className="text-[#005500]" />
                         {t.date}
@@ -383,16 +383,16 @@ export const BookingWidget = () => {
                         onChange={(e) => setDate(e.target.value)}
                         min={today}
                         max={maxDate}
-                        className="h-8 text-xs border-gray-300"
+                        className="h-9 text-sm border-gray-300 w-full"
                       />
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1 min-w-0">
                       <Label className="text-[10px] lg:text-xs flex items-center gap-1 text-gray-700">
                         <Users size={11} className="text-[#005500]" />
                         {t.guests}
                       </Label>
                       <Select value={String(partySize)} onValueChange={(v) => setPartySize(parseInt(v))}>
-                        <SelectTrigger className="h-8 text-xs border-gray-300">
+                        <SelectTrigger className="h-9 text-sm border-gray-300 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
