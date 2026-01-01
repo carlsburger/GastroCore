@@ -194,6 +194,20 @@ export const BookingWidget = () => {
     }
   }, [date, partySize]);
 
+  // Check email status on mount
+  useEffect(() => {
+    const checkEmailStatus = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/public/email-status`);
+        setEmailReady(response.data?.smtp_ready === true);
+      } catch (err) {
+        console.warn("Could not check email status:", err);
+        setEmailReady(false);
+      }
+    };
+    checkEmailStatus();
+  }, []);
+
   // Event handlers
   const handleEventSelect = (event) => {
     setSelectedEvent(event);
