@@ -28,23 +28,20 @@ const HERO_BACKGROUND = "https://customer-assets.emergentagent.com/job_carlsburg
 
 const GALLERY_IMAGES = [
   {
-    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/i9s7g5ar_9K7A3835.jpg",
-    alt: "Sonnenterrasse mit Panoramablick"
-  },
-  {
     src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/j246sdxq_DSC08222%202.jpg",
-    alt: "Anstoßen mit Gläsern"
+    alt: "Anstoßen mit Gläsern",
   },
   {
-    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/sso06p1w_DSC08347.jpg",
-    alt: "Ofenkartoffel / Speise"
+    src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/ss006p1w_DSC08347.jpg",
+    alt: "Ofenkartoffel / Speise",
   },
   {
     src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/yt8cl3x9_17.jpg",
     alt: "Historisches Restaurant Carlsburg",
-    badge: "Seit 1838"
-  }
+    badge: "Seit 1838",
+  },
 ];
+   
 
 // Occasion options
 const OCCASIONS = [
