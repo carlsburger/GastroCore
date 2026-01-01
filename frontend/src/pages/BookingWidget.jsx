@@ -633,7 +633,13 @@ export const BookingWidget = () => {
                   <h2 className="font-serif text-sm mb-1 text-gray-900">
                     {waitlisted ? t.waitlistSuccess : t.success}
                   </h2>
-                  <p className="text-[10px] text-gray-500 mb-2">{waitlisted ? t.waitlistText : t.successText}</p>
+                  <p className="text-[10px] text-gray-500 mb-2">
+                    {waitlisted 
+                      ? t.waitlistText 
+                      : emailReady 
+                        ? t.successText 
+                        : "Ihre Reservierung wurde gespeichert."}
+                  </p>
                   
                   {isEventBooking && selectedEvent && (
                     <div className="p-1.5 bg-amber-50 rounded border border-amber-200 mb-2 inline-block">
