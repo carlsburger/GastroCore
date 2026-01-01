@@ -1994,6 +1994,138 @@ async def send_test_email_endpoint(
     return result
 
 
+# ============== IMAP TEST (Admin) ==============
+class IMAPTestRequest(BaseModel):
+    list_recent: bool = True
+    max_items: int = 5
+
+@api_router.post("/imap/test", tags=["Admin"])
+async def test_imap_connection(
+    request: IMAPTestRequest = IMAPTestRequest(),
+    user: dict = Depends(require_admin)
+):
+    """
+    Test IMAP connection and optionally list recent mail subjects.
+    Returns connection status + last N subjects (no attachments loaded).
+    """
+    import os
+    import imaplib
+    import email
+    from email.header import decode_header
+    
+    imap_host = os.getenv("POS_IMAP_HOST", "")
+    imap_port = int(os.getenv("POS_IMAP_PORT", "993"))
+    imap_user = os.getenv("POS_IMAP_USER", "")
+    imap_password = os.getenv("POS_IMAP_PASSWORD", "")
+    imap_folder = os.getenv("POS_IMAP_FOLDER", "INBOX")
+    imap_tls = os.getenv("POS_IMAP_TLS", "true").lower() == "true"
+    
+    result = {
+        "ok": False,
+        "error": None,
+        "imap_host": imap_host,
+        "imap_port": imap_port,
+        "imap_user": imap_user[:3] + "***" if imap_user else "NOT SET",
+        "folder": imap_folder,
+        "recent": []
+    }
+    
+    # Check if configured
+    if not imap_host or not imap_user or not imap_password:
+        result["error"] = "IMAP nicht konfiguriert - POS_IMAP_HOST, POS_IMAP_USER oder POS_IMAP_PASSWORD fehlt"
+        logger.warning(f"IMAP Test failed: Missing configuration - host={bool(imap_host)}, user={bool(imap_user)}, pass={bool(imap_password)}")
+        return result
+    
+    connection = None
+    try:
+        # Connect
+        logger.info(f"IMAP Test: Connecting to {imap_host}:{imap_port} (TLS={imap_tls})")
+        
+        if imap_tls:
+            import ssl
+            context = ssl.create_default_context()
+            connection = imaplib.IMAP4_SSL(imap_host, imap_port, ssl_context=context)
+        else:
+            connection = imaplib.IMAP4(imap_host, imap_port)
+        
+        # Login
+        logger.info(f"IMAP Test: Logging in as {imap_user}")
+        connection.login(imap_user, imap_password)
+        
+        # Select folder
+        status, _ = connection.select(imap_folder, readonly=True)
+        if status != "OK":
+            result["error"] = f"Ordner '{imap_folder}' nicht gefunden"
+            return result
+        
+        result["ok"] = True
+        result["error"] = None
+        
+        # List recent subjects if requested
+        if request.list_recent:
+            status, data = connection.search(None, "ALL")
+            if status == "OK" and data[0]:
+                mail_ids = data[0].split()
+                # Get last N
+                recent_ids = mail_ids[-request.max_items:] if len(mail_ids) > request.max_items else mail_ids
+                recent_ids = list(reversed(recent_ids))  # Newest first
+                
+                for mail_id in recent_ids:
+                    try:
+                        status, msg_data = connection.fetch(mail_id, "(RFC822.HEADER)")
+                        if status == "OK":
+                            msg = email.message_from_bytes(msg_data[0][1])
+                            subject = msg.get("Subject", "")
+                            # Decode subject if needed
+                            if subject:
+                                decoded = decode_header(subject)
+                                subject = "".join([
+                                    part.decode(enc or "utf-8") if isinstance(part, bytes) else part 
+                                    for part, enc in decoded
+                                ])
+                            from_addr = msg.get("From", "")
+                            date = msg.get("Date", "")
+                            result["recent"].append({
+                                "subject": subject[:100],
+                                "from": from_addr[:50],
+                                "date": date
+                            })
+                    except Exception as e:
+                        logger.warning(f"Could not parse mail {mail_id}: {e}")
+        
+        logger.info(f"IMAP Test successful: {len(result['recent'])} recent mails found")
+        
+        # Audit log
+        await create_audit_log(
+            actor=user,
+            entity="imap",
+            entity_id="test",
+            action="test_connection",
+            after={"success": True, "mails_found": len(result["recent"])}
+        )
+        
+    except imaplib.IMAP4.error as e:
+        error_msg = str(e)
+        result["error"] = f"IMAP Fehler: {error_msg}"
+        logger.error(f"IMAP Test failed - IMAP4 Error: {error_msg}")
+        logger.exception("IMAP connection exception stack:")
+        
+    except Exception as e:
+        error_msg = str(e)
+        result["error"] = f"Verbindungsfehler: {error_msg}"
+        logger.error(f"IMAP Test failed - {type(e).__name__}: {error_msg}")
+        logger.exception("IMAP connection exception stack:")
+        
+    finally:
+        if connection:
+            try:
+                connection.logout()
+            except:
+                pass
+    
+    return result
+
+
 # ============== DATA IMPORT (Sprint: Data Onboarding) ==============
 class StaffImportRequest(BaseModel):
     data: str
