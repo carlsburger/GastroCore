@@ -38,7 +38,7 @@ const GALLERY_IMAGES = [
   {
     src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/sso06p1w_DSC08347.jpg",
     alt: "Ofenkartoffel / Speise"
-  }
+  },
   {
     src: "https://customer-assets.emergentagent.com/job_carlsburg-cockpit/artifacts/yt8cl3x9_17.jpg",
     alt: "Historisches Restaurant Carlsburg",
