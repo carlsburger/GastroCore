@@ -344,6 +344,8 @@ async def send_email(to_email: str, subject: str, html_body: str, text_body: str
         await log_email(to_email, subject, template_type, "skipped", "SMTP nicht konfiguriert")
         return False
     
+    logger.info(f"SMTP Send attempt: host={SMTP_HOST}, port={SMTP_PORT}, user={SMTP_USER[:3]}***, to={to_email}")
+    
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
@@ -357,26 +359,41 @@ async def send_email(to_email: str, subject: str, html_body: str, text_body: str
         
         if SMTP_USE_TLS:
             # STARTTLS (Port 587)
+            logger.debug(f"Using STARTTLS mode (port {SMTP_PORT})")
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
                 server.starttls(context=context)
                 server.login(SMTP_USER, SMTP_PASSWORD)
                 server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
         else:
             # SSL (Port 465)
+            logger.debug(f"Using SSL mode (port {SMTP_PORT})")
             with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
                 server.login(SMTP_USER, SMTP_PASSWORD)
                 server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
         
-        logger.info(f"E-Mail gesendet an {to_email}")
+        logger.info(f"E-Mail erfolgreich gesendet an {to_email}")
         await log_email(to_email, subject, template_type, "sent")
         return True
+        
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"SMTP Auth Fehler: Falsches Passwort oder Benutzer für {SMTP_USER} auf {SMTP_HOST}:{SMTP_PORT}")
+        logger.exception("SMTP Authentication exception stack:")
+        await log_email(to_email, subject, template_type, "failed", "Authentifizierung fehlgeschlagen")
+        return False
+        
+    except smtplib.SMTPConnectError as e:
+        logger.error(f"SMTP Connect Fehler: Kann {SMTP_HOST}:{SMTP_PORT} nicht erreichen")
+        logger.exception("SMTP Connect exception stack:")
+        await log_email(to_email, subject, template_type, "failed", f"Verbindung fehlgeschlagen: {e}")
+        return False
         
     except Exception as e:
         error_msg = str(e)
         # NEVER log passwords or sensitive data
-        if SMTP_PASSWORD in error_msg:
+        if SMTP_PASSWORD and SMTP_PASSWORD in error_msg:
             error_msg = error_msg.replace(SMTP_PASSWORD, "***")
         logger.error(f"E-Mail-Versand fehlgeschlagen an {to_email}: {error_msg}")
+        logger.exception(f"SMTP exception stack (host={SMTP_HOST}, port={SMTP_PORT}):")
         await log_email(to_email, subject, template_type, "failed", error_msg)
         return False
 
@@ -418,8 +435,14 @@ async def send_test_email(to_email: str) -> dict:
 
 async def send_confirmation_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
     """Send reservation confirmation email"""
-    if not reservation.get('guest_email'):
+    reservation_id = reservation.get('id', 'unknown')
+    guest_email = reservation.get('guest_email')
+    
+    if not guest_email:
+        logger.warning(f"[Confirmation] Keine Guest-Email für Reservierung {reservation_id} - E-Mail wird nicht gesendet")
         return False
+    
+    logger.info(f"[Confirmation] Starte E-Mail-Versand für Reservierung {reservation_id} an {guest_email}")
     
     t = TEMPLATES["confirmation"].get(lang, TEMPLATES["confirmation"]["de"])
     
@@ -440,7 +463,14 @@ async def send_confirmation_email(reservation: dict, area_name: str = None, lang
     html = get_html_template("confirmation", lang, data)
     text = f"{t['greeting']}\n\n{t['date_label']}: {data['date_formatted']}\n{t['time_label']}: {reservation.get('time')}\n{t['guests_label']}: {reservation.get('party_size')}\n\n{data['cancel_url']}"
     
-    return await send_email(reservation['guest_email'], subject, html, text, "confirmation")
+    success = await send_email(guest_email, subject, html, text, "confirmation")
+    
+    if success:
+        logger.info(f"[Confirmation] ✅ E-Mail erfolgreich gesendet: reservation_id={reservation_id}, to={guest_email}, subject={subject[:50]}...")
+    else:
+        logger.error(f"[Confirmation] ❌ E-Mail-Versand fehlgeschlagen: reservation_id={reservation_id}, to={guest_email}")
+    
+    return success
 
 
 async def send_reminder_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
