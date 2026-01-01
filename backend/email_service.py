@@ -435,8 +435,14 @@ async def send_test_email(to_email: str) -> dict:
 
 async def send_confirmation_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
     """Send reservation confirmation email"""
-    if not reservation.get('guest_email'):
+    reservation_id = reservation.get('id', 'unknown')
+    guest_email = reservation.get('guest_email')
+    
+    if not guest_email:
+        logger.warning(f"[Confirmation] Keine Guest-Email für Reservierung {reservation_id} - E-Mail wird nicht gesendet")
         return False
+    
+    logger.info(f"[Confirmation] Starte E-Mail-Versand für Reservierung {reservation_id} an {guest_email}")
     
     t = TEMPLATES["confirmation"].get(lang, TEMPLATES["confirmation"]["de"])
     
@@ -457,7 +463,14 @@ async def send_confirmation_email(reservation: dict, area_name: str = None, lang
     html = get_html_template("confirmation", lang, data)
     text = f"{t['greeting']}\n\n{t['date_label']}: {data['date_formatted']}\n{t['time_label']}: {reservation.get('time')}\n{t['guests_label']}: {reservation.get('party_size')}\n\n{data['cancel_url']}"
     
-    return await send_email(reservation['guest_email'], subject, html, text, "confirmation")
+    success = await send_email(guest_email, subject, html, text, "confirmation")
+    
+    if success:
+        logger.info(f"[Confirmation] ✅ E-Mail erfolgreich gesendet: reservation_id={reservation_id}, to={guest_email}, subject={subject[:50]}...")
+    else:
+        logger.error(f"[Confirmation] ❌ E-Mail-Versand fehlgeschlagen: reservation_id={reservation_id}, to={guest_email}")
+    
+    return success
 
 
 async def send_reminder_email(reservation: dict, area_name: str = None, lang: str = "de") -> bool:
