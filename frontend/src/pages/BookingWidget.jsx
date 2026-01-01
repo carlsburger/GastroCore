@@ -78,6 +78,7 @@ export const BookingWidget = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [waitlisted, setWaitlisted] = useState(false);
+  const [emailReady, setEmailReady] = useState(true); // Default true, wird beim Load geprüft
   
   // Form data
   const [date, setDate] = useState(initialDate);
