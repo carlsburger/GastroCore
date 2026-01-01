@@ -1663,6 +1663,37 @@ async def get_public_restaurant_info():
     return result
 
 
+# ============== PUBLIC EMAIL STATUS (Diagnose) ==============
+@public_router.get("/email-status", tags=["Public"])
+async def get_public_email_status():
+    """
+    Public endpoint to check if email services are configured.
+    Returns ONLY boolean flags and host names - NO secrets.
+    
+    Used by operators to verify ENV configuration without login.
+    """
+    import os
+    from email_service import is_smtp_configured, SMTP_HOST, SMTP_PORT
+    
+    # IMAP config check
+    imap_password = os.getenv("POS_IMAP_PASSWORD", "")
+    imap_host = os.getenv("POS_IMAP_HOST", "")
+    imap_configured = bool(imap_password and imap_host)
+    
+    return {
+        "smtp_configured": is_smtp_configured(),
+        "smtp_host": SMTP_HOST if SMTP_HOST else None,
+        "smtp_port": SMTP_PORT,
+        "imap_configured": imap_configured,
+        "imap_host": os.getenv("POS_IMAP_HOST", None),
+        "imap_port": int(os.getenv("POS_IMAP_PORT", "993")),
+        "message": "Beide Dienste konfiguriert" if (is_smtp_configured() and imap_configured) 
+                   else "SMTP OK" if is_smtp_configured() 
+                   else "IMAP OK" if imap_configured 
+                   else "Keine E-Mail-Dienste konfiguriert"
+    }
+
+
 # ============== PUBLIC BOOKING (Widget) ==============
 @public_router.get("/availability", tags=["Public"])
 async def check_availability(
