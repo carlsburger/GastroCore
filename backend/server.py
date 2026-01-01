@@ -1680,17 +1680,28 @@ async def get_public_email_status():
     imap_host = os.getenv("POS_IMAP_HOST", "")
     imap_configured = bool(imap_password and imap_host)
     
+    # Check if SMTP password is a placeholder
+    smtp_password = os.getenv("SMTP_PASSWORD", "")
+    smtp_password_valid = bool(smtp_password and not smtp_password.startswith("<") and smtp_password != "")
+    
+    # Determine actual status
+    smtp_ready = is_smtp_configured() and smtp_password_valid
+    
     return {
         "smtp_configured": is_smtp_configured(),
+        "smtp_ready": smtp_ready,
         "smtp_host": SMTP_HOST if SMTP_HOST else None,
         "smtp_port": SMTP_PORT,
+        "smtp_password_set": smtp_password_valid,
         "imap_configured": imap_configured,
         "imap_host": os.getenv("POS_IMAP_HOST", None),
         "imap_port": int(os.getenv("POS_IMAP_PORT", "993")),
-        "message": "Beide Dienste konfiguriert" if (is_smtp_configured() and imap_configured) 
-                   else "SMTP OK" if is_smtp_configured() 
-                   else "IMAP OK" if imap_configured 
-                   else "Keine E-Mail-Dienste konfiguriert"
+        "message": "Beide Dienste bereit" if (smtp_ready and imap_configured) 
+                   else "SMTP konfiguriert aber Passwort fehlt/ungültig" if (is_smtp_configured() and not smtp_password_valid)
+                   else "SMTP bereit" if smtp_ready 
+                   else "IMAP bereit" if imap_configured 
+                   else "Keine E-Mail-Dienste konfiguriert",
+        "warning": "SMTP_PASSWORD ist Platzhalter - echtes Passwort im Emergent Dashboard setzen!" if not smtp_password_valid else None
     }
 
 
