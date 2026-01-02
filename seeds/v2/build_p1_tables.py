@@ -232,6 +232,7 @@ def add_missing_tables_from_combinations(
             "seats_max": seats,
             "active": True,
             "fixed": False,
+            "season": "summer" if area == "terrasse" else "all",  # Terrassen-Tische = summer
             "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
         }
         
