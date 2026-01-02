@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "description": "Carlsburg Öffnungszeiten-Overrides V2 - Source of Truth für Clean Rebuild",
+    "created_at": "2026-01-02T00:20:16.704306+00:00",
+    "source": "build_p2_opening_hours.py",
+    "target_db": "gastrocore_v2",
+    "count": 2
+  },
+  "data": [
+    {
+      "id": "override_silvester_2025",
+      "name": "Silvester / Neujahr 2025/2026",
+      "date_from": "2025-12-31",
+      "date_to": "2026-01-02",
+      "status": "closed",
+      "open_from": null,
+      "open_to": null,
+      "last_reservation_time": null,
+      "priority": 100,
+      "active": true
+    },
+    {
+      "id": "override_heiligabend_2026",
+      "name": "Heiligabend 2026",
+      "date_from": "2026-12-24",
+      "date_to": "2026-12-24",
+      "status": "closed",
+      "open_from": null,
+      "open_to": null,
+      "last_reservation_time": null,
+      "priority": 100,
+      "active": true
+    }
+  ]
+}

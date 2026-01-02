@@ -1,0 +1,124 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "description": "Carlsburg Öffnungszeiten-Perioden V2 - Source of Truth für Clean Rebuild",
+    "created_at": "2026-01-02T00:20:16.704076+00:00",
+    "source": "build_p2_opening_hours.py",
+    "target_db": "gastrocore_v2",
+    "count": 2
+  },
+  "data": [
+    {
+      "id": "period_summer",
+      "name": "Sommerzeit",
+      "recurrence": {
+        "type": "yearly",
+        "from_mm_dd": "04-01",
+        "to_mm_dd": "10-31",
+        "timezone": "Europe/Berlin"
+      },
+      "priority": 10,
+      "active": true,
+      "hours": [
+        {
+          "day_of_week": 0,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 1,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 2,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 3,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 4,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 5,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 6,
+          "is_closed": false,
+          "open_time": "11:30",
+          "close_time": "20:00"
+        }
+      ]
+    },
+    {
+      "id": "period_winter",
+      "name": "Winterzeit",
+      "recurrence": {
+        "type": "yearly",
+        "from_mm_dd": "11-01",
+        "to_mm_dd": "03-31",
+        "timezone": "Europe/Berlin"
+      },
+      "priority": 10,
+      "active": true,
+      "hours": [
+        {
+          "day_of_week": 0,
+          "is_closed": true,
+          "open_time": null,
+          "close_time": null
+        },
+        {
+          "day_of_week": 1,
+          "is_closed": true,
+          "open_time": null,
+          "close_time": null
+        },
+        {
+          "day_of_week": 2,
+          "is_closed": false,
+          "open_time": "12:00",
+          "close_time": "18:00"
+        },
+        {
+          "day_of_week": 3,
+          "is_closed": false,
+          "open_time": "12:00",
+          "close_time": "18:00"
+        },
+        {
+          "day_of_week": 4,
+          "is_closed": false,
+          "open_time": "12:00",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 5,
+          "is_closed": false,
+          "open_time": "12:00",
+          "close_time": "20:00"
+        },
+        {
+          "day_of_week": 6,
+          "is_closed": false,
+          "open_time": "12:00",
+          "close_time": "18:00"
+        }
+      ]
+    }
+  ]
+}
