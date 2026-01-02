@@ -83,6 +83,38 @@ def now_iso() -> str:
 # MAIN BUILD FUNCTIONS
 # ============================================================
 
+def determine_season(row: pd.Series, area: str, notes: str) -> str:
+    """
+    Bestimmt die Saison für einen Tisch.
+    
+    Regeln:
+    - Default: "all"
+    - Wenn notes "Wintersaison" enthält → "winter"
+    - Wenn Terrasse und notes "Sommer" oder "saisonal" enthält → "summer"
+    - Wenn Excel-Spalte "season" vorhanden → direkt verwenden
+    
+    Returns:
+        "all", "summer", oder "winter"
+    """
+    # Direkte Spalte hat Vorrang
+    if "season" in row.index and pd.notna(row.get("season")):
+        return str(row["season"]).strip().lower()
+    
+    # Notes auswerten
+    notes_lower = (notes or "").lower()
+    
+    # Winter-Logik
+    if "wintersaison" in notes_lower or "winter" in notes_lower:
+        return "winter"
+    
+    # Sommer-Logik (vor allem Terrasse)
+    if area == "terrasse":
+        if "sommer" in notes_lower or "saisonal" in notes_lower or "summer" in notes_lower:
+            return "summer"
+    
+    return "all"
+
+
 def build_tables_seed(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], Set[str]]:
     """
     Baut tables_master_v2.json aus DataFrame.
@@ -119,6 +151,9 @@ def build_tables_seed(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], Set[str]]
         elif pd.notna(row.get("reason_not_combinable")):
             notes = str(row["reason_not_combinable"]).strip()
         
+        # Season bestimmen
+        season = determine_season(row, area, notes)
+        
         table_doc = {
             "id": table_id,
             "table_number": table_number,
@@ -127,7 +162,8 @@ def build_tables_seed(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], Set[str]]
             "seats_default": seats_default,
             "seats_max": seats_max,
             "active": active,
-            "fixed": fixed
+            "fixed": fixed,
+            "season": season
         }
         
         if notes:
