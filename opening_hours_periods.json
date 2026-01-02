@@ -1,0 +1,58 @@
+{
+  "_id": {
+    "$oid": "694ada410a3cf33789edef45"
+  },
+  "id": "20a80a92-f37e-4659-b0c4-85aabb7299e9",
+  "name": "Sommerzeit",
+  "start_date": "2026-04-01",
+  "end_date": "2026-10-31",
+  "is_default": false,
+  "hours": [
+    {
+      "day_of_week": 0,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    },
+    {
+      "day_of_week": 1,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    },
+    {
+      "day_of_week": 2,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    },
+    {
+      "day_of_week": 3,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    },
+    {
+      "day_of_week": 4,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    },
+    {
+      "day_of_week": 5,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    },
+    {
+      "day_of_week": 6,
+      "open_time": "11:30",
+      "close_time": "20:00",
+      "is_closed": false
+    }
+  ],
+  "created_at": "2025-12-23T18:06:57.997277+00:00",
+  "updated_at": "2025-12-30T16:51:25.517494+00:00",
+  "archived": false,
+  "_seed_imported": true
+}
