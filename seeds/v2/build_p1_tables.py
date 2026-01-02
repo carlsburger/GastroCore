@@ -338,7 +338,7 @@ def print_summary(tables: List[Dict], combinations: List[Dict]):
     
     areas = {}
     for t in tables:
-        key = f"{t['area']}/{t['sub_area']}" if t['sub_area'] else t['area']
+        key = f"{t['area']}/{t['sub_area']}" if t.get('sub_area') else t['area']
         if key not in areas:
             areas[key] = {"count": 0, "seats": 0, "max": 0}
         areas[key]["count"] += 1
@@ -352,11 +352,22 @@ def print_summary(tables: List[Dict], combinations: List[Dict]):
     for area, stats in sorted(areas.items()):
         print(f"   - {area}: {stats['count']} Tische, {stats['seats']}/{stats['max']} Plätze")
     
+    # Season-Verteilung
+    seasons = {}
+    for t in tables:
+        s = t.get("season", "all")
+        seasons[s] = seasons.get(s, 0) + 1
+    
+    print("\n🌡️  SEASON-VERTEILUNG:")
+    for season, count in sorted(seasons.items()):
+        emoji = {"all": "🔄", "summer": "☀️", "winter": "❄️"}.get(season, "❓")
+        print(f"   {emoji} {season}: {count} Tische")
+    
     # Kombinationen
     print(f"\n🔗 KOMBINATIONEN: {len(combinations)}")
     combo_by_area = {}
     for c in combinations:
-        area = c["sub_area"] or c["area"]
+        area = c.get("sub_area") or c["area"]
         combo_by_area[area] = combo_by_area.get(area, 0) + 1
     for area, count in sorted(combo_by_area.items()):
         print(f"   - {area}: {count} Kombinationen")
