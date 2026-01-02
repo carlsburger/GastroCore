@@ -1,0 +1,230 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "description": "Carlsburg Tischkombinationen Master V2 - Source of Truth für Clean Rebuild",
+    "created_at": "2026-01-02T00:04:02.072170+00:00",
+    "source": "build_p1_tables.py",
+    "target_db": "gastrocore_v2",
+    "count": 17
+  },
+  "data": [
+    {
+      "id": "combo_S1",
+      "combo_id": "S1",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "tables": [
+        "table_9",
+        "table_10"
+      ],
+      "target_capacity": 6,
+      "active": true,
+      "notes": "Standard Sechser"
+    },
+    {
+      "id": "combo_S2",
+      "combo_id": "S2",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "tables": [
+        "table_8",
+        "table_9",
+        "table_10"
+      ],
+      "target_capacity": 8,
+      "active": true,
+      "notes": "Achtertisch"
+    },
+    {
+      "id": "combo_S3",
+      "combo_id": "S3",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "tables": [
+        "table_13",
+        "table_114"
+      ],
+      "target_capacity": 9,
+      "active": true
+    },
+    {
+      "id": "combo_S4",
+      "combo_id": "S4",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "tables": [
+        "table_13",
+        "table_114",
+        "table_1"
+      ],
+      "target_capacity": 11,
+      "active": true,
+      "notes": "Tisch 2 wird blockiert"
+    },
+    {
+      "id": "combo_W1",
+      "combo_id": "W1",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "tables": [
+        "table_22",
+        "table_23",
+        "table_24"
+      ],
+      "target_capacity": 16,
+      "active": true,
+      "notes": "Grosse Tafel"
+    },
+    {
+      "id": "combo_W2",
+      "combo_id": "W2",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "tables": [
+        "table_23",
+        "table_24"
+      ],
+      "target_capacity": 9,
+      "active": true
+    },
+    {
+      "id": "combo_W3",
+      "combo_id": "W3",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "tables": [
+        "table_15",
+        "table_14"
+      ],
+      "target_capacity": 7,
+      "active": true
+    },
+    {
+      "id": "combo_W4",
+      "combo_id": "W4",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "tables": [
+        "table_16",
+        "table_18"
+      ],
+      "target_capacity": 7,
+      "active": true
+    },
+    {
+      "id": "combo_W5",
+      "combo_id": "W5",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "tables": [
+        "table_14",
+        "table_15",
+        "table_16"
+      ],
+      "target_capacity": 9,
+      "active": true
+    },
+    {
+      "id": "combo_W6",
+      "combo_id": "W6",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "tables": [
+        "table_18",
+        "table_16",
+        "table_17",
+        "table_15"
+      ],
+      "target_capacity": 13,
+      "active": true,
+      "notes": "Tisch 14 bleibt frei"
+    },
+    {
+      "id": "combo_T1",
+      "combo_id": "T1",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_35",
+        "table_34",
+        "table_36",
+        "table_33"
+      ],
+      "target_capacity": 11,
+      "active": true,
+      "notes": "Grosse Tafel"
+    },
+    {
+      "id": "combo_T2",
+      "combo_id": "T2",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_37",
+        "table_38"
+      ],
+      "target_capacity": 8,
+      "active": true
+    },
+    {
+      "id": "combo_T3",
+      "combo_id": "T3",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_39",
+        "table_40"
+      ],
+      "target_capacity": 8,
+      "active": true
+    },
+    {
+      "id": "combo_T4",
+      "combo_id": "T4",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_41",
+        "table_42"
+      ],
+      "target_capacity": 8,
+      "active": true
+    },
+    {
+      "id": "combo_T5",
+      "combo_id": "T5",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_35",
+        "table_36"
+      ],
+      "target_capacity": 7,
+      "active": true
+    },
+    {
+      "id": "combo_T6",
+      "combo_id": "T6",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_39",
+        "table_38_1"
+      ],
+      "target_capacity": 7,
+      "active": true
+    },
+    {
+      "id": "combo_T7",
+      "combo_id": "T7",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "tables": [
+        "table_41",
+        "table_40_1"
+      ],
+      "target_capacity": 7,
+      "active": true
+    }
+  ]
+}

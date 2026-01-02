@@ -1,0 +1,515 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "description": "Carlsburg Tische Master V2 - Source of Truth für Clean Rebuild",
+    "created_at": "2026-01-02T00:04:02.071695+00:00",
+    "source": "build_p1_tables.py",
+    "target_db": "gastrocore_v2",
+    "count": 49
+  },
+  "data": [
+    {
+      "id": "table_1",
+      "table_number": "1",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_2",
+      "table_number": "2",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": true,
+      "notes": "runder 2er"
+    },
+    {
+      "id": "table_3",
+      "table_number": "3",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": true,
+      "notes": "oval / Exot"
+    },
+    {
+      "id": "table_5",
+      "table_number": "5",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 6,
+      "seats_max": 6,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_6",
+      "table_number": "6",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 7,
+      "seats_max": 9,
+      "active": true,
+      "fixed": false,
+      "notes": "max 9"
+    },
+    {
+      "id": "table_7",
+      "table_number": "7",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 9,
+      "seats_max": 11,
+      "active": true,
+      "fixed": false,
+      "notes": "max 11"
+    },
+    {
+      "id": "table_8",
+      "table_number": "8",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_9",
+      "table_number": "9",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_10",
+      "table_number": "10",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_11",
+      "table_number": "11",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": true,
+      "notes": "runder 2er"
+    },
+    {
+      "id": "table_12",
+      "table_number": "12",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": true,
+      "notes": "runder 2er"
+    },
+    {
+      "id": "table_13",
+      "table_number": "13",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_114",
+      "table_number": "114",
+      "area": "restaurant",
+      "sub_area": "saal",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_15",
+      "table_number": "15",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_16",
+      "table_number": "16",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_17",
+      "table_number": "17",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_18",
+      "table_number": "18",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_19",
+      "table_number": "19",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": true,
+      "notes": "nicht kombinierbar"
+    },
+    {
+      "id": "table_20",
+      "table_number": "20",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": true,
+      "notes": "nicht kombinierbar"
+    },
+    {
+      "id": "table_21",
+      "table_number": "21",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": true,
+      "notes": "nicht kombinierbar"
+    },
+    {
+      "id": "table_22",
+      "table_number": "22",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 7,
+      "seats_max": 7,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_23",
+      "table_number": "23",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_24",
+      "table_number": "24",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_25",
+      "table_number": "25",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false,
+      "notes": "Wintersaison (Nov–März)"
+    },
+    {
+      "id": "table_26",
+      "table_number": "26",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_27",
+      "table_number": "27",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_28",
+      "table_number": "28",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_29",
+      "table_number": "29",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_30",
+      "table_number": "30",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_31",
+      "table_number": "31",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 3,
+      "seats_max": 3,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_32",
+      "table_number": "32",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 3,
+      "seats_max": 3,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_33",
+      "table_number": "33",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_34",
+      "table_number": "34",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_35",
+      "table_number": "35",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_36",
+      "table_number": "36",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_37",
+      "table_number": "37",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_38",
+      "table_number": "38",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_39",
+      "table_number": "39",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_40",
+      "table_number": "40",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_41",
+      "table_number": "41",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_42",
+      "table_number": "42",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_43",
+      "table_number": "43",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_44",
+      "table_number": "44",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_45",
+      "table_number": "45",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_46",
+      "table_number": "46",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 5,
+      "seats_max": 5,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_47",
+      "table_number": "47",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false
+    },
+    {
+      "id": "table_14",
+      "table_number": "14",
+      "area": "restaurant",
+      "sub_area": "wintergarten",
+      "seats_default": 4,
+      "seats_max": 4,
+      "active": true,
+      "fixed": false,
+      "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+    },
+    {
+      "id": "table_38_1",
+      "table_number": "38.1",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false,
+      "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+    },
+    {
+      "id": "table_40_1",
+      "table_number": "40.1",
+      "area": "terrasse",
+      "sub_area": "terrasse",
+      "seats_default": 2,
+      "seats_max": 2,
+      "active": true,
+      "fixed": false,
+      "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+    }
+  ]
+}
