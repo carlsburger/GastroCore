@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "description": "Carlsburg Work Areas Master V2 - Source of Truth",
+    "created_at": "2026-01-02",
+    "target_db": "gastrocore_v2",
+    "count": 5
+  },
+  "data": [
+    {
+      "id": "area-kitchen",
+      "name": "Küche",
+      "code": "KITCHEN",
+      "color": "#FF6B6B",
+      "sort_order": 10,
+      "active": true,
+      "archived": false
+    },
+    {
+      "id": "area-service",
+      "name": "Service",
+      "code": "SERVICE",
+      "color": "#4ECDC4",
+      "sort_order": 20,
+      "active": true,
+      "archived": false
+    },
+    {
+      "id": "area-bar",
+      "name": "Bar",
+      "code": "BAR",
+      "color": "#45B7D1",
+      "sort_order": 30,
+      "active": true,
+      "archived": false
+    },
+    {
+      "id": "area-cleaning",
+      "name": "Reinigung",
+      "code": "CLEANING",
+      "color": "#96CEB4",
+      "sort_order": 40,
+      "active": true,
+      "archived": false
+    },
+    {
+      "id": "area-event",
+      "name": "Event / Bankett",
+      "code": "EVENT",
+      "color": "#DDA0DD",
+      "sort_order": 50,
+      "active": true,
+      "archived": false
+    }
+  ]
+}
