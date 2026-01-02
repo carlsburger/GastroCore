@@ -426,7 +426,15 @@ def main():
     # 3. Tische bauen
     print(f"\n🔧 Baue Tische-Seed...")
     tables, valid_ids = build_tables_seed(df_tables)
-    print(f"   ✅ {len(tables)} Tische verarbeitet")
+    print(f"   ✅ {len(tables)} Tische aus Excel verarbeitet")
+    
+    # 3b. Fehlende Tische aus Kombinationen ergänzen (Legacy-Fix)
+    tables, valid_ids, added_tables = add_missing_tables_from_combinations(
+        tables, valid_ids, df_combinations
+    )
+    if added_tables:
+        print(f"   ⚠️  {len(added_tables)} fehlende Tische ergänzt: {added_tables}")
+        print(f"      (Legacy-Dateninkonsistenz - Tische waren in Kombinationen aber nicht in Tischliste)")
     
     # 4. Kombinationen bauen (mit Validierung)
     print(f"\n🔧 Baue Kombinationen-Seed...")
