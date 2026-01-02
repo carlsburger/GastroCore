@@ -16,7 +16,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_2",
@@ -27,7 +28,8 @@
       "seats_max": 2,
       "active": true,
       "fixed": true,
-      "notes": "runder 2er"
+      "notes": "runder 2er",
+      "season": "all"
     },
     {
       "id": "table_3",
@@ -38,7 +40,8 @@
       "seats_max": 5,
       "active": true,
       "fixed": true,
-      "notes": "oval / Exot"
+      "notes": "oval / Exot",
+      "season": "all"
     },
     {
       "id": "table_5",
@@ -48,7 +51,8 @@
       "seats_default": 6,
       "seats_max": 6,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_6",
@@ -59,7 +63,8 @@
       "seats_max": 9,
       "active": true,
       "fixed": false,
-      "notes": "max 9"
+      "notes": "max 9",
+      "season": "all"
     },
     {
       "id": "table_7",
@@ -70,7 +75,8 @@
       "seats_max": 11,
       "active": true,
       "fixed": false,
-      "notes": "max 11"
+      "notes": "max 11",
+      "season": "all"
     },
     {
       "id": "table_8",
@@ -80,7 +86,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_9",
@@ -90,7 +97,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_10",
@@ -100,7 +108,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_11",
@@ -111,7 +120,8 @@
       "seats_max": 2,
       "active": true,
       "fixed": true,
-      "notes": "runder 2er"
+      "notes": "runder 2er",
+      "season": "all"
     },
     {
       "id": "table_12",
@@ -122,7 +132,8 @@
       "seats_max": 2,
       "active": true,
       "fixed": true,
-      "notes": "runder 2er"
+      "notes": "runder 2er",
+      "season": "all"
     },
     {
       "id": "table_13",
@@ -132,7 +143,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_114",
@@ -142,7 +154,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_15",
@@ -152,7 +165,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_16",
@@ -162,7 +176,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_17",
@@ -172,7 +187,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_18",
@@ -182,7 +198,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_19",
@@ -193,7 +210,8 @@
       "seats_max": 4,
       "active": true,
       "fixed": true,
-      "notes": "nicht kombinierbar"
+      "notes": "nicht kombinierbar",
+      "season": "all"
     },
     {
       "id": "table_20",
@@ -204,7 +222,8 @@
       "seats_max": 4,
       "active": true,
       "fixed": true,
-      "notes": "nicht kombinierbar"
+      "notes": "nicht kombinierbar",
+      "season": "all"
     },
     {
       "id": "table_21",
@@ -215,7 +234,8 @@
       "seats_max": 2,
       "active": true,
       "fixed": true,
-      "notes": "nicht kombinierbar"
+      "notes": "nicht kombinierbar",
+      "season": "all"
     },
     {
       "id": "table_22",
@@ -225,7 +245,8 @@
       "seats_default": 7,
       "seats_max": 7,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_23",
@@ -235,7 +256,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_24",
@@ -245,7 +267,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_25",
@@ -256,7 +279,8 @@
       "seats_max": 5,
       "active": true,
       "fixed": false,
-      "notes": "Wintersaison (Nov–März)"
+      "notes": "Wintersaison (Nov–März)",
+      "season": "all"
     },
     {
       "id": "table_26",
@@ -266,7 +290,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_27",
@@ -276,7 +301,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_28",
@@ -286,7 +312,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_29",
@@ -296,7 +323,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_30",
@@ -306,7 +334,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_31",
@@ -316,7 +345,8 @@
       "seats_default": 3,
       "seats_max": 3,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_32",
@@ -326,7 +356,8 @@
       "seats_default": 3,
       "seats_max": 3,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_33",
@@ -336,7 +367,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_34",
@@ -346,7 +378,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_35",
@@ -356,7 +389,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_36",
@@ -366,7 +400,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_37",
@@ -376,7 +411,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_38",
@@ -386,7 +422,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_39",
@@ -396,7 +433,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_40",
@@ -406,7 +444,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_41",
@@ -416,7 +455,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_42",
@@ -426,7 +466,8 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_43",
@@ -436,7 +477,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_44",
@@ -446,7 +488,8 @@
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_45",
@@ -456,7 +499,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_46",
@@ -466,7 +510,8 @@
       "seats_default": 5,
       "seats_max": 5,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_47",
@@ -476,40 +521,44 @@
       "seats_default": 4,
       "seats_max": 4,
       "active": true,
-      "fixed": false
+      "fixed": false,
+      "season": "all"
     },
     {
       "id": "table_14",
       "table_number": "14",
       "area": "restaurant",
       "sub_area": "wintergarten",
-      "seats_default": 4,
-      "seats_max": 4,
+      "seats_default": 2,
+      "seats_max": 2,
       "active": true,
       "fixed": false,
-      "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+      "notes": "2er Wintergarten",
+      "season": "all"
     },
     {
       "id": "table_38_1",
       "table_number": "38.1",
       "area": "terrasse",
-      "sub_area": "terrasse",
+      "sub_area": null,
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
       "fixed": false,
-      "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+      "notes": "Nebentisch Terrasse (saisonal)",
+      "season": "summer"
     },
     {
       "id": "table_40_1",
       "table_number": "40.1",
       "area": "terrasse",
-      "sub_area": "terrasse",
+      "sub_area": null,
       "seats_default": 2,
       "seats_max": 2,
       "active": true,
       "fixed": false,
-      "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+      "notes": "Nebentisch Terrasse (saisonal)",
+      "season": "summer"
     }
   ]
 }
