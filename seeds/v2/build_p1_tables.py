@@ -139,6 +139,73 @@ def build_tables_seed(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], Set[str]]
     return tables, valid_ids
 
 
+def add_missing_tables_from_combinations(
+    tables: List[Dict[str, Any]], 
+    valid_ids: Set[str],
+    df_combinations: pd.DataFrame
+) -> Tuple[List[Dict[str, Any]], Set[str], List[str]]:
+    """
+    Ergänzt fehlende Tische, die in Kombinationen referenziert werden.
+    
+    LEGACY DATA FIX: Die Excel enthält nicht alle Tische.
+    Diese Funktion identifiziert und ergänzt fehlende Tische.
+    
+    Returns:
+        (updated_tables, updated_valid_ids, added_table_numbers)
+    """
+    # Alle benötigten Tische aus Kombinationen sammeln
+    needed_tables = set()
+    combo_subareas = {}  # table_number -> subarea mapping
+    
+    for _, row in df_combinations.iterrows():
+        tables_str = str(row.get("tables", ""))
+        sub_area = str(row.get("subarea", "")).strip().lower() if pd.notna(row.get("subarea")) else ""
+        
+        for tn in parse_tables_string(tables_str):
+            needed_tables.add(tn)
+            combo_subareas[tn] = sub_area
+    
+    # Fehlende Tische identifizieren
+    missing = []
+    for tn in needed_tables:
+        tid = table_number_to_id(tn)
+        if tid not in valid_ids:
+            missing.append(tn)
+    
+    if not missing:
+        return tables, valid_ids, []
+    
+    # Fehlende Tische ergänzen
+    added = []
+    for tn in sorted(missing, key=lambda x: float(x.replace("_", ".")) if x.replace(".","").replace("_","").isdigit() else 0):
+        tid = table_number_to_id(tn)
+        sub_area = combo_subareas.get(tn, "")
+        area = "terrasse" if sub_area == "terrasse" else "restaurant"
+        
+        # Standardwerte für fehlende Tische
+        # Dezimaltische (38.1, 40.1) sind typisch Terassen-Nebentische
+        is_decimal = "." in tn
+        seats = 2 if is_decimal else 4  # Dezimaltische sind meist 2er
+        
+        table_doc = {
+            "id": tid,
+            "table_number": tn,
+            "area": area,
+            "sub_area": sub_area,
+            "seats_default": seats,
+            "seats_max": seats,
+            "active": True,
+            "fixed": False,
+            "notes": "AUTO-ERGÄNZT: Fehlte in Legacy-Excel, aber in Kombinationen referenziert"
+        }
+        
+        tables.append(table_doc)
+        valid_ids.add(tid)
+        added.append(tn)
+    
+    return tables, valid_ids, added
+
+
 def build_combinations_seed(
     df: pd.DataFrame, 
     valid_table_ids: Set[str]
