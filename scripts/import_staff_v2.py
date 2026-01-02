@@ -24,6 +24,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import pandas as pd
+from dotenv import load_dotenv
+
+# Load environment from backend .env
+load_dotenv('/app/backend/.env')
 
 # ============================================================
 # CONFIGURATION
